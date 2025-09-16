@@ -1,0 +1,617 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		D22EF44B2E78EA0700810204 /* ReMindApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF44A2E78EA0700810204 /* ReMindApp.swift */; };
+		D22EF44D2E78EA0700810204 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF44C2E78EA0700810204 /* ContentView.swift */; };
+		D22EF44F2E78EA0800810204 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D22EF44E2E78EA0800810204 /* Assets.xcassets */; };
+		D22EF4532E78EA0800810204 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D22EF4522E78EA0800810204 /* Preview Assets.xcassets */; };
+		D22EF45D2E78EA0800810204 /* ReMindTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF45C2E78EA0800810204 /* ReMindTests.swift */; };
+		D22EF4672E78EA0800810204 /* ReMindUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4662E78EA0800810204 /* ReMindUITests.swift */; };
+		D22EF4692E78EA0800810204 /* ReMindUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4682E78EA0800810204 /* ReMindUITestsLaunchTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D22EF4592E78EA0800810204 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D22EF43F2E78EA0700810204 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D22EF4462E78EA0700810204;
+			remoteInfo = ReMind;
+		};
+		D22EF4632E78EA0800810204 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D22EF43F2E78EA0700810204 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D22EF4462E78EA0700810204;
+			remoteInfo = ReMind;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		D22EF4472E78EA0700810204 /* ReMind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReMind.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D22EF44A2E78EA0700810204 /* ReMindApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindApp.swift; sourceTree = "<group>"; };
+		D22EF44C2E78EA0700810204 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		D22EF44E2E78EA0800810204 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D22EF4502E78EA0800810204 /* ReMind.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReMind.entitlements; sourceTree = "<group>"; };
+		D22EF4522E78EA0800810204 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		D22EF4582E78EA0800810204 /* ReMindTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReMindTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D22EF45C2E78EA0800810204 /* ReMindTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindTests.swift; sourceTree = "<group>"; };
+		D22EF4622E78EA0800810204 /* ReMindUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReMindUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D22EF4662E78EA0800810204 /* ReMindUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindUITests.swift; sourceTree = "<group>"; };
+		D22EF4682E78EA0800810204 /* ReMindUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindUITestsLaunchTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D22EF4442E78EA0700810204 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D22EF4552E78EA0800810204 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D22EF45F2E78EA0800810204 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D22EF43E2E78EA0700810204 = {
+			isa = PBXGroup;
+			children = (
+				D22EF4492E78EA0700810204 /* ReMind */,
+				D22EF45B2E78EA0800810204 /* ReMindTests */,
+				D22EF4652E78EA0800810204 /* ReMindUITests */,
+				D22EF4482E78EA0700810204 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D22EF4482E78EA0700810204 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF4472E78EA0700810204 /* ReMind.app */,
+				D22EF4582E78EA0800810204 /* ReMindTests.xctest */,
+				D22EF4622E78EA0800810204 /* ReMindUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D22EF4492E78EA0700810204 /* ReMind */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF44A2E78EA0700810204 /* ReMindApp.swift */,
+				D22EF44C2E78EA0700810204 /* ContentView.swift */,
+				D22EF44E2E78EA0800810204 /* Assets.xcassets */,
+				D22EF4502E78EA0800810204 /* ReMind.entitlements */,
+				D22EF4512E78EA0800810204 /* Preview Content */,
+			);
+			path = ReMind;
+			sourceTree = "<group>";
+		};
+		D22EF4512E78EA0800810204 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF4522E78EA0800810204 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		D22EF45B2E78EA0800810204 /* ReMindTests */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF45C2E78EA0800810204 /* ReMindTests.swift */,
+			);
+			path = ReMindTests;
+			sourceTree = "<group>";
+		};
+		D22EF4652E78EA0800810204 /* ReMindUITests */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF4662E78EA0800810204 /* ReMindUITests.swift */,
+				D22EF4682E78EA0800810204 /* ReMindUITestsLaunchTests.swift */,
+			);
+			path = ReMindUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D22EF4462E78EA0700810204 /* ReMind */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D22EF46C2E78EA0800810204 /* Build configuration list for PBXNativeTarget "ReMind" */;
+			buildPhases = (
+				D22EF4432E78EA0700810204 /* Sources */,
+				D22EF4442E78EA0700810204 /* Frameworks */,
+				D22EF4452E78EA0700810204 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ReMind;
+			productName = ReMind;
+			productReference = D22EF4472E78EA0700810204 /* ReMind.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D22EF4572E78EA0800810204 /* ReMindTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D22EF46F2E78EA0800810204 /* Build configuration list for PBXNativeTarget "ReMindTests" */;
+			buildPhases = (
+				D22EF4542E78EA0800810204 /* Sources */,
+				D22EF4552E78EA0800810204 /* Frameworks */,
+				D22EF4562E78EA0800810204 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D22EF45A2E78EA0800810204 /* PBXTargetDependency */,
+			);
+			name = ReMindTests;
+			productName = ReMindTests;
+			productReference = D22EF4582E78EA0800810204 /* ReMindTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		D22EF4612E78EA0800810204 /* ReMindUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D22EF4722E78EA0800810204 /* Build configuration list for PBXNativeTarget "ReMindUITests" */;
+			buildPhases = (
+				D22EF45E2E78EA0800810204 /* Sources */,
+				D22EF45F2E78EA0800810204 /* Frameworks */,
+				D22EF4602E78EA0800810204 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D22EF4642E78EA0800810204 /* PBXTargetDependency */,
+			);
+			name = ReMindUITests;
+			productName = ReMindUITests;
+			productReference = D22EF4622E78EA0800810204 /* ReMindUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D22EF43F2E78EA0700810204 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1430;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					D22EF4462E78EA0700810204 = {
+						CreatedOnToolsVersion = 14.3.1;
+					};
+					D22EF4572E78EA0800810204 = {
+						CreatedOnToolsVersion = 14.3.1;
+						TestTargetID = D22EF4462E78EA0700810204;
+					};
+					D22EF4612E78EA0800810204 = {
+						CreatedOnToolsVersion = 14.3.1;
+						TestTargetID = D22EF4462E78EA0700810204;
+					};
+				};
+			};
+			buildConfigurationList = D22EF4422E78EA0700810204 /* Build configuration list for PBXProject "ReMind" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D22EF43E2E78EA0700810204;
+			productRefGroup = D22EF4482E78EA0700810204 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D22EF4462E78EA0700810204 /* ReMind */,
+				D22EF4572E78EA0800810204 /* ReMindTests */,
+				D22EF4612E78EA0800810204 /* ReMindUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D22EF4452E78EA0700810204 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D22EF4532E78EA0800810204 /* Preview Assets.xcassets in Resources */,
+				D22EF44F2E78EA0800810204 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D22EF4562E78EA0800810204 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D22EF4602E78EA0800810204 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D22EF4432E78EA0700810204 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D22EF44D2E78EA0700810204 /* ContentView.swift in Sources */,
+				D22EF44B2E78EA0700810204 /* ReMindApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D22EF4542E78EA0800810204 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D22EF45D2E78EA0800810204 /* ReMindTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D22EF45E2E78EA0800810204 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D22EF4672E78EA0800810204 /* ReMindUITests.swift in Sources */,
+				D22EF4692E78EA0800810204 /* ReMindUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D22EF45A2E78EA0800810204 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D22EF4462E78EA0700810204 /* ReMind */;
+			targetProxy = D22EF4592E78EA0800810204 /* PBXContainerItemProxy */;
+		};
+		D22EF4642E78EA0800810204 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D22EF4462E78EA0700810204 /* ReMind */;
+			targetProxy = D22EF4632E78EA0800810204 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		D22EF46A2E78EA0800810204 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		D22EF46B2E78EA0800810204 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		D22EF46D2E78EA0800810204 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ReMind/ReMind.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ReMind/Preview Content\"";
+				DEVELOPMENT_TEAM = PM4T2J4QLY;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMind;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D22EF46E2E78EA0800810204 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ReMind/ReMind.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ReMind/Preview Content\"";
+				DEVELOPMENT_TEAM = PM4T2J4QLY;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMind;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D22EF4702E78EA0800810204 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PM4T2J4QLY;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMindTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReMind.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ReMind";
+			};
+			name = Debug;
+		};
+		D22EF4712E78EA0800810204 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PM4T2J4QLY;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMindTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReMind.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ReMind";
+			};
+			name = Release;
+		};
+		D22EF4732E78EA0800810204 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PM4T2J4QLY;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMindUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ReMind;
+			};
+			name = Debug;
+		};
+		D22EF4742E78EA0800810204 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PM4T2J4QLY;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMindUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ReMind;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D22EF4422E78EA0700810204 /* Build configuration list for PBXProject "ReMind" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D22EF46A2E78EA0800810204 /* Debug */,
+				D22EF46B2E78EA0800810204 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D22EF46C2E78EA0800810204 /* Build configuration list for PBXNativeTarget "ReMind" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D22EF46D2E78EA0800810204 /* Debug */,
+				D22EF46E2E78EA0800810204 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D22EF46F2E78EA0800810204 /* Build configuration list for PBXNativeTarget "ReMindTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D22EF4702E78EA0800810204 /* Debug */,
+				D22EF4712E78EA0800810204 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D22EF4722E78EA0800810204 /* Build configuration list for PBXNativeTarget "ReMindUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D22EF4732E78EA0800810204 /* Debug */,
+				D22EF4742E78EA0800810204 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D22EF43F2E78EA0700810204 /* Project object */;
+}
