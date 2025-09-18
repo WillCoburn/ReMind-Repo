@@ -8,12 +8,30 @@
 
 /* Begin PBXBuildFile section */
 		D22EF44B2E78EA0700810204 /* ReMindApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF44A2E78EA0700810204 /* ReMindApp.swift */; };
-		D22EF44D2E78EA0700810204 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF44C2E78EA0700810204 /* ContentView.swift */; };
 		D22EF44F2E78EA0800810204 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D22EF44E2E78EA0800810204 /* Assets.xcassets */; };
 		D22EF4532E78EA0800810204 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D22EF4522E78EA0800810204 /* Preview Assets.xcassets */; };
 		D22EF45D2E78EA0800810204 /* ReMindTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF45C2E78EA0800810204 /* ReMindTests.swift */; };
 		D22EF4672E78EA0800810204 /* ReMindUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4662E78EA0800810204 /* ReMindUITests.swift */; };
 		D22EF4692E78EA0800810204 /* ReMindUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4682E78EA0800810204 /* ReMindUITestsLaunchTests.swift */; };
+		D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF47B2E7B2EE600810204 /* CompositionRoot.swift */; };
+		D22EF47E2E7B2F1300810204 /* Affirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF47D2E7B2F1300810204 /* Affirmation.swift */; };
+		D22EF4802E7B2F2F00810204 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF47F2E7B2F2F00810204 /* UserProfile.swift */; };
+		D22EF4822E7B2F4400810204 /* DataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4812E7B2F4400810204 /* DataStore.swift */; };
+		D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4832E7B2F5F00810204 /* MessagingService.swift */; };
+		D22EF4862E7B2F7A00810204 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4852E7B2F7A00810204 /* ExportService.swift */; };
+		D22EF4882E7B2F9900810204 /* MockDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4872E7B2F9900810204 /* MockDataStore.swift */; };
+		D22EF48A2E7B2FC000810204 /* MockMessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4892E7B2FC000810204 /* MockMessagingService.swift */; };
+		D22EF48C2E7B2FD200810204 /* MockExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF48B2E7B2FD200810204 /* MockExportService.swift */; };
+		D22EF48E2E7B2FEE00810204 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF48D2E7B2FEE00810204 /* AppViewModel.swift */; };
+		D22EF4902E7B302900810204 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF48F2E7B302900810204 /* RootView.swift */; };
+		D22EF4922E7B303E00810204 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4912E7B303E00810204 /* OnboardingView.swift */; };
+		D22EF4942E7B308B00810204 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4932E7B308B00810204 /* MainView.swift */; };
+		D22EF4972E7B30C000810204 /* HintBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4962E7B30C000810204 /* HintBadge.swift */; };
+		D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4992E7B30E700810204 /* ExportSheet.swift */; };
+		D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF49B2E7B312B00810204 /* RandomDeliveryWindow.swift */; };
+		D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF49D2E7B314100810204 /* Design+Utils.swift */; };
+		D22EF4A02E7B944700810204 /* CompletionCollapseBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF49F2E7B944700810204 /* CompletionCollapseBadge.swift */; };
+		D22EF4A42E7BA15000810204 /* GoogleService-Info (1).plist in Resources */ = {isa = PBXBuildFile; fileRef = D22EF4A32E7BA15000810204 /* GoogleService-Info (1).plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,7 +54,6 @@
 /* Begin PBXFileReference section */
 		D22EF4472E78EA0700810204 /* ReMind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReMind.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D22EF44A2E78EA0700810204 /* ReMindApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindApp.swift; sourceTree = "<group>"; };
-		D22EF44C2E78EA0700810204 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		D22EF44E2E78EA0800810204 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D22EF4502E78EA0800810204 /* ReMind.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReMind.entitlements; sourceTree = "<group>"; };
 		D22EF4522E78EA0800810204 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
@@ -45,6 +62,25 @@
 		D22EF4622E78EA0800810204 /* ReMindUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReMindUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D22EF4662E78EA0800810204 /* ReMindUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindUITests.swift; sourceTree = "<group>"; };
 		D22EF4682E78EA0800810204 /* ReMindUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		D22EF47B2E7B2EE600810204 /* CompositionRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionRoot.swift; sourceTree = "<group>"; };
+		D22EF47D2E7B2F1300810204 /* Affirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Affirmation.swift; sourceTree = "<group>"; };
+		D22EF47F2E7B2F2F00810204 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
+		D22EF4812E7B2F4400810204 /* DataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStore.swift; sourceTree = "<group>"; };
+		D22EF4832E7B2F5F00810204 /* MessagingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingService.swift; sourceTree = "<group>"; };
+		D22EF4852E7B2F7A00810204 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
+		D22EF4872E7B2F9900810204 /* MockDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDataStore.swift; sourceTree = "<group>"; };
+		D22EF4892E7B2FC000810204 /* MockMessagingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMessagingService.swift; sourceTree = "<group>"; };
+		D22EF48B2E7B2FD200810204 /* MockExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockExportService.swift; sourceTree = "<group>"; };
+		D22EF48D2E7B2FEE00810204 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
+		D22EF48F2E7B302900810204 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		D22EF4912E7B303E00810204 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		D22EF4932E7B308B00810204 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		D22EF4962E7B30C000810204 /* HintBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HintBadge.swift; sourceTree = "<group>"; };
+		D22EF4992E7B30E700810204 /* ExportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportSheet.swift; sourceTree = "<group>"; };
+		D22EF49B2E7B312B00810204 /* RandomDeliveryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomDeliveryWindow.swift; sourceTree = "<group>"; };
+		D22EF49D2E7B314100810204 /* Design+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Design+Utils.swift"; sourceTree = "<group>"; };
+		D22EF49F2E7B944700810204 /* CompletionCollapseBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionCollapseBadge.swift; sourceTree = "<group>"; };
+		D22EF4A32E7BA15000810204 /* GoogleService-Info (1).plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info (1).plist"; path = "../../Downloads/GoogleService-Info (1).plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,6 +111,7 @@
 		D22EF43E2E78EA0700810204 = {
 			isa = PBXGroup;
 			children = (
+				D22EF4A32E7BA15000810204 /* GoogleService-Info (1).plist */,
 				D22EF4492E78EA0700810204 /* ReMind */,
 				D22EF45B2E78EA0800810204 /* ReMindTests */,
 				D22EF4652E78EA0800810204 /* ReMindUITests */,
@@ -95,8 +132,12 @@
 		D22EF4492E78EA0700810204 /* ReMind */ = {
 			isa = PBXGroup;
 			children = (
-				D22EF44A2E78EA0700810204 /* ReMindApp.swift */,
-				D22EF44C2E78EA0700810204 /* ContentView.swift */,
+				D22EF47A2E7B2EA100810204 /* Utils */,
+				D22EF4792E7B2E9900810204 /* Views */,
+				D22EF4782E7B2E8700810204 /* ViewModels */,
+				D22EF4772E7B2E0400810204 /* Services */,
+				D22EF4762E7B2DDE00810204 /* Models */,
+				D22EF4752E7B2DCF00810204 /* App */,
 				D22EF44E2E78EA0800810204 /* Assets.xcassets */,
 				D22EF4502E78EA0800810204 /* ReMind.entitlements */,
 				D22EF4512E78EA0800810204 /* Preview Content */,
@@ -127,6 +168,83 @@
 				D22EF4682E78EA0800810204 /* ReMindUITestsLaunchTests.swift */,
 			);
 			path = ReMindUITests;
+			sourceTree = "<group>";
+		};
+		D22EF4752E7B2DCF00810204 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF44A2E78EA0700810204 /* ReMindApp.swift */,
+				D22EF47B2E7B2EE600810204 /* CompositionRoot.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		D22EF4762E7B2DDE00810204 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF47D2E7B2F1300810204 /* Affirmation.swift */,
+				D22EF47F2E7B2F2F00810204 /* UserProfile.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		D22EF4772E7B2E0400810204 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF4812E7B2F4400810204 /* DataStore.swift */,
+				D22EF4832E7B2F5F00810204 /* MessagingService.swift */,
+				D22EF4852E7B2F7A00810204 /* ExportService.swift */,
+				D22EF4872E7B2F9900810204 /* MockDataStore.swift */,
+				D22EF4892E7B2FC000810204 /* MockMessagingService.swift */,
+				D22EF48B2E7B2FD200810204 /* MockExportService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		D22EF4782E7B2E8700810204 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF48D2E7B2FEE00810204 /* AppViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		D22EF4792E7B2E9900810204 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF4982E7B30D800810204 /* Sheets */,
+				D22EF4952E7B30B000810204 /* Components */,
+				D22EF48F2E7B302900810204 /* RootView.swift */,
+				D22EF4912E7B303E00810204 /* OnboardingView.swift */,
+				D22EF4932E7B308B00810204 /* MainView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		D22EF47A2E7B2EA100810204 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF49B2E7B312B00810204 /* RandomDeliveryWindow.swift */,
+				D22EF49D2E7B314100810204 /* Design+Utils.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		D22EF4952E7B30B000810204 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF4962E7B30C000810204 /* HintBadge.swift */,
+				D22EF49F2E7B944700810204 /* CompletionCollapseBadge.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		D22EF4982E7B30D800810204 /* Sheets */ = {
+			isa = PBXGroup;
+			children = (
+				D22EF4992E7B30E700810204 /* ExportSheet.swift */,
+			);
+			path = Sheets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -234,6 +352,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D22EF4532E78EA0800810204 /* Preview Assets.xcassets in Resources */,
+				D22EF4A42E7BA15000810204 /* GoogleService-Info (1).plist in Resources */,
 				D22EF44F2E78EA0800810204 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -259,8 +378,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D22EF44D2E78EA0700810204 /* ContentView.swift in Sources */,
+				D22EF4A02E7B944700810204 /* CompletionCollapseBadge.swift in Sources */,
+				D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
+				D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
+				D22EF4942E7B308B00810204 /* MainView.swift in Sources */,
+				D22EF48A2E7B2FC000810204 /* MockMessagingService.swift in Sources */,
+				D22EF4802E7B2F2F00810204 /* UserProfile.swift in Sources */,
+				D22EF48C2E7B2FD200810204 /* MockExportService.swift in Sources */,
+				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,
+				D22EF4862E7B2F7A00810204 /* ExportService.swift in Sources */,
+				D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */,
+				D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */,
+				D22EF47E2E7B2F1300810204 /* Affirmation.swift in Sources */,
+				D22EF4822E7B2F4400810204 /* DataStore.swift in Sources */,
+				D22EF4902E7B302900810204 /* RootView.swift in Sources */,
+				D22EF48E2E7B2FEE00810204 /* AppViewModel.swift in Sources */,
 				D22EF44B2E78EA0700810204 /* ReMindApp.swift in Sources */,
+				D22EF4922E7B303E00810204 /* OnboardingView.swift in Sources */,
+				D22EF4882E7B2F9900810204 /* MockDataStore.swift in Sources */,
+				D22EF4972E7B30C000810204 /* HintBadge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -429,18 +565,20 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMind;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -467,18 +605,20 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMind;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
