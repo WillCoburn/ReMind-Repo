@@ -8,14 +8,13 @@ import FirebaseAuth
 struct OnboardingView: View {
     @EnvironmentObject private var appVM: AppViewModel
 
-    // Step state
     enum Step { case enterPhone, enterCode }
     @State private var step: Step = .enterPhone
 
-    // Phone entry
-    @State private var phone: String = ""             // shown as (xxx)-xxx-xxxx
-    @State private var showErrorBorder = false        // draws red border while typing invalid
-    @State private var errorText: String = ""         // inline text error
+    // Phone entry (store DIGITS ONLY; format only for display)
+    @State private var phoneDigits: String = ""        // "5551234567"
+    @State private var showErrorBorder = false
+    @State private var errorText: String = ""
 
     // Code entry
     @State private var verificationID: String?
@@ -25,9 +24,7 @@ struct OnboardingView: View {
     @State private var isSending = false
     @State private var isVerifying = false
 
-    // Derived
-    private var digitsOnly: String { phone.filter(\.isNumber) }
-    private var isValidPhone: Bool { digitsOnly.count == 10 }
+    private var isValidPhone: Bool { phoneDigits.count == 10 }
 
     var body: some View {
         VStack(spacing: 24) {
@@ -77,22 +74,19 @@ struct OnboardingView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
-            TextField("(123)-456-7890", text: $phone)
-                .keyboardType(UIKeyboardType.numberPad)
-                .textContentType(UIKit.UITextContentType.telephoneNumber)
-                .onChange(of: phone) { newValue in
-                    let formatted = Self.formatPhone(newValue)
-                    if formatted != phone { phone = formatted }
-                    showErrorBorder = !isValidPhone && !newValue.isEmpty
-                    if newValue.isEmpty { errorText = "" }
-                }
-                .padding()
+            PhoneField(digits: $phoneDigits)
+                .frame(height: 48)
+                .padding(.horizontal, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
                         .stroke((isValidPhone || !showErrorBorder) ? Color.gray.opacity(0.2) : .red, lineWidth: 1)
                 )
+                .onChange(of: phoneDigits) { newVal in
+                    showErrorBorder = !(newVal.count == 10) && !newVal.isEmpty
+                    if newVal.isEmpty { errorText = "" }
+                }
 
-            if showErrorBorder && !isValidPhone && !phone.isEmpty {
+            if showErrorBorder && !isValidPhone && !phoneDigits.isEmpty {
                 Text("Please enter a valid 10-digit US number like (123)-456-7890.")
                     .font(.footnote)
                     .foregroundColor(.red)
@@ -128,8 +122,8 @@ struct OnboardingView: View {
                 .foregroundColor(.secondary)
 
             TextField("123456", text: $code)
-                .keyboardType(UIKeyboardType.numberPad)
-                .textContentType(UIKit.UITextContentType.oneTimeCode)
+                .keyboardType(.numberPad)
+                .textContentType(.oneTimeCode)
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 16)
@@ -168,12 +162,9 @@ struct OnboardingView: View {
         isSending = true
         defer { isSending = false }
 
-        // Convert to E.164 for US numbers: +1XXXXXXXXXX
-        let e164 = "+1\(digitsOnly)"
+        let e164 = "+1\(phoneDigits)" // +1XXXXXXXXXX
 
         do {
-            // If you added a Testing Phone Number in Firebase Auth,
-            // this completes instantly without sending an SMS.
             let verID = try await PhoneAuthProvider.provider().verifyPhoneNumber(e164, uiDelegate: nil)
             self.verificationID = verID
             self.step = .enterCode
@@ -194,8 +185,7 @@ struct OnboardingView: View {
 
         do {
             _ = try await Auth.auth().signIn(with: credential)
-            // Persist a minimal profile and switch UI to MainView
-            await appVM.setPhoneProfileAndLoad(digitsOnly)
+            await appVM.setPhoneProfileAndLoad(phoneDigits)   // pass DIGITS ONLY
         } catch {
             self.errorText = "Invalid or expired code. Please try again."
             print("signIn error:", error)
@@ -203,25 +193,148 @@ struct OnboardingView: View {
     }
 }
 
-// MARK: - Formatter
-extension OnboardingView {
-    /// Formats any string into "(xxx)-xxx-xxxx" using at most 10 digits.
-    static func formatPhone(_ input: String) -> String {
-        let digits = input.filter(\.isNumber).prefix(10)
-        let a = Array(digits)
-        switch a.count {
-        case 0: return ""
-        case 1...3:
-            return "(\(String(a)))"
-        case 4...6:
-            let area = String(a[0..<3])
-            let mid  = String(a[3..<a.count])
-            return "(\(area))-\(mid)"
-        default:
-            let area = String(a[0..<3])
-            let mid  = String(a[3..<6])
-            let last = String(a[6..<a.count])
-            return "(\(area))-\(mid)-\(last)"
+// MARK: - UIKit-backed phone field with robust live formatting & deletion
+private struct PhoneField: UIViewRepresentable {
+    @Binding var digits: String   // 0–10 digits only
+
+    func makeUIView(context: Context) -> UITextField {
+        let tf = UITextField(frame: .zero)
+        tf.placeholder = "(123)-456-7890"
+        tf.keyboardType = .numberPad
+        tf.textContentType = .telephoneNumber
+        tf.autocorrectionType = .no
+        tf.autocapitalizationType = .none
+        tf.clearButtonMode = .never
+        tf.delegate = context.coordinator
+        tf.text = Coordinator.format(digits)
+        return tf
+    }
+
+    func updateUIView(_ uiView: UITextField, context: Context) {
+        // Avoid fighting the user's typing: only update when NOT first responder
+        if !uiView.isFirstResponder {
+            let formatted = Coordinator.format(digits)
+            if uiView.text != formatted {
+                uiView.text = formatted
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(digits: $digits)
+    }
+
+    final class Coordinator: NSObject, UITextFieldDelegate {
+        @Binding var digits: String
+
+        init(digits: Binding<String>) {
+            _digits = digits
+        }
+
+        func textField(_ textField: UITextField,
+                       shouldChangeCharactersIn range: NSRange,
+                       replacementString string: String) -> Bool {
+
+            let currentFormatted = textField.text ?? ""
+            let currentDigits = digits
+
+            // Determine if this is a backspace on a separator (non-digit)
+            let isBackspace = string.isEmpty && range.length == 1
+            let charBeingDeleted: Character? = {
+                guard range.location < currentFormatted.count else { return nil }
+                let idx = currentFormatted.index(currentFormatted.startIndex, offsetBy: range.location)
+                return currentFormatted[idx]
+            }()
+
+            // Map formatted-range -> digits-range
+            var startDigitIdx = Self.digitIndex(forFormattedIndex: range.location, in: currentFormatted)
+            var endDigitIdx   = Self.digitIndex(forFormattedIndex: range.location + range.length, in: currentFormatted)
+
+            // If user backspaced a separator (e.g., ')', '-', ' '), delete the previous digit instead.
+            if isBackspace, let ch = charBeingDeleted, !ch.isNumber {
+                startDigitIdx = max(0, startDigitIdx - 1)
+                endDigitIdx = startDigitIdx + 1
+            }
+
+            // Replacement digits (strip non-digits)
+            let replacementDigits = string.filter(\.isNumber)
+
+            // Apply edit to digits-only model
+            var newDigits = currentDigits
+            let start = max(0, min(startDigitIdx, newDigits.count))
+            let end   = max(0, min(endDigitIdx,   newDigits.count))
+            if start <= end {
+                let prefix = newDigits.prefix(start)
+                let suffix = newDigits.dropFirst(end)
+                newDigits = String(prefix) + replacementDigits + String(suffix)
+            }
+            if newDigits.count > 10 { newDigits = String(newDigits.prefix(10)) }
+
+            // Update binding
+            if digits != newDigits { digits = newDigits }
+
+            // Reformat and set text
+            let newFormatted = Self.format(newDigits)
+            if textField.text != newFormatted {
+                textField.text = newFormatted
+            }
+
+            // Compute target caret position (in formatted space) after the inserted digits.
+            let targetDigitCaret = start + replacementDigits.count
+            let caretPos = Self.formattedIndex(forDigitIndex: targetDigitCaret, in: newFormatted)
+
+            if let position = textField.position(from: textField.beginningOfDocument, offset: caretPos) {
+                textField.selectedTextRange = textField.textRange(from: position, to: position)
+            }
+
+            // We handled the change manually.
+            return false
+        }
+
+        // Count how many digits appear in formatted[..<idx]
+        static func digitIndex(forFormattedIndex idx: Int, in formatted: String) -> Int {
+            guard idx > 0 else { return 0 }
+            var count = 0
+            var i = 0
+            for ch in formatted {
+                if i >= idx { break }
+                if ch.isNumber { count += 1 }
+                i += 1
+            }
+            return count
+        }
+
+        // Find the formatted-string index for a digit index (caret placement).
+        static func formattedIndex(forDigitIndex digitIndex: Int, in formatted: String) -> Int {
+            var seen = 0
+            var i = 0
+            for ch in formatted {
+                if ch.isNumber {
+                    if seen == digitIndex { return i }
+                    seen += 1
+                }
+                i += 1
+            }
+            return formatted.count
+        }
+
+        // Progressive US phone formatter: (xxx)-xxx-xxxx
+        static func format(_ digits: String) -> String {
+            let s = String(digits.prefix(10))
+            switch s.count {
+            case 0: return ""
+            case 1...3:
+                return "(\(s))"
+            case 4...6:
+                let area = s.prefix(3)
+                let mid  = s.dropFirst(3)
+                return "(\(area))-\(mid)"
+            default:
+                let area = s.prefix(3)
+                let mid  = s.dropFirst(3).prefix(3)
+                let last = s.dropFirst(6)
+                return "(\(area))-\(mid)-\(last)"
+            }
         }
     }
 }

@@ -10,68 +10,87 @@ struct MainView: View {
     @State private var showExportSheet = false
     @State private var showSuccessMessage = false
 
-    // If you keep an array of affirmations:
-    private var count: Int { appVM.affirmations.count }
-    // If you switched to a counter instead, replace the line above with:
-    // private var count: Int { appVM.submissionsCount }
-
+    // Prefer the VM's counter so we don't need to fetch the whole list
+    private var count: Int { appVM.submissionsCount }
     private let goal: Int = 10
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                Spacer(minLength: 32)
-
-                // Success message ABOVE the input bubble
-                if showSuccessMessage {
-                    Text("✅ Successfully stored!")
-                        .font(.footnote)
-                        .foregroundColor(.green)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                        .animation(.easeInOut(duration: 0.3), value: showSuccessMessage)
-                }
-
-                // Input row
-                HStack(alignment: .center, spacing: 12) {
-                    TextField("Type a moment of clarity…", text: $input, axis: .vertical)
-                        .lineLimit(3...5)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 18)
-                                .fill(Color(UIColor.secondarySystemBackground))
-                        )
-
-                    Button {
-                        Task { await sendAffirmation() }   // <- no name clash with VM method
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 32))
+        content
+            // Force a fresh MainView when the user changes (prevents sticky local @State)
+            .id(appVM.profile?.uid ?? "anon")
+            .onChange(of: appVM.profile?.uid) { _ in
+                input = ""
+                showSuccessMessage = false
+            }
+            // Put the envelope in the nav bar (single instance, owned by this screen)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showExportSheet = true } label: {
+                        Image(systemName: "envelope")
+                            .font(.title3.weight(.semibold))
+                            .accessibilityLabel("Email me a PDF of my entries")
                     }
-                    .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-                .padding(.horizontal)
+            }
+            .sheet(isPresented: $showExportSheet) {
+                ExportSheet()
+            }
+    }
 
-                // Progress / hint badge
-                HintBadge(count: count, goal: goal)
-                    .padding(.horizontal)
+    private var content: some View {
+        VStack(spacing: 20) {
+            Spacer(minLength: 32)
 
-                Spacer(minLength: 16)
+            // Success message ABOVE the input bubble
+            if showSuccessMessage {
+                Text("✅ Successfully stored!")
+                    .font(.footnote)
+                    .foregroundColor(.green)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .animation(.easeInOut(duration: 0.3), value: showSuccessMessage)
             }
 
+            // Input row
+            HStack(alignment: .center, spacing: 12) {
+                TextField("Type a moment of clarity…", text: $input, axis: .vertical)
+                    .lineLimit(3...5)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(Color(UIColor.secondarySystemBackground))
+                    )
+
+                Button {
+                    Task { await sendAffirmation() }
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 32))
+                }
+                .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(.horizontal)
+
+            // Show the progress/hint ONLY until the goal is reached
+            if count < goal {
+                HintBadge(count: count, goal: goal)
+                    // ensure it resets entirely when a different user logs in
+                    .id("hint-\(appVM.profile?.uid ?? "anon")")
+                    .padding(.horizontal)
+            }
+
+            Spacer(minLength: 16)
         }
     }
 
     // MARK: - Actions
-    /// Renamed from `submit()` to avoid any accidental collision with `AppViewModel.submit(...)`
     private func sendAffirmation() async {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
-        await appVM.submit(text: text)   // <- call the environment object value (no `$`)
+        await appVM.submit(text: text)
         input = ""
 
-        // Flash the success message above the input bubble
         withAnimation(.easeInOut(duration: 0.2)) {
             showSuccessMessage = true
         }
