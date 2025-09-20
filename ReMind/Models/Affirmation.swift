@@ -1,22 +1,18 @@
-
-
 // ============================
 // File: Models/Affirmation.swift
 // ============================
 import Foundation
 
+public struct Affirmation: Identifiable, Sendable, Equatable {
+    public let id: String
+    public var text: String
+    public var createdAt: Date?
+    public var sent: Bool
 
-struct Affirmation: Identifiable, Codable, Equatable {
-let id: String
-var text: String
-var createdAt: Date
-var delivered: Bool
-
-
-init(id: String = UUID().uuidString, text: String, createdAt: Date = Date(), delivered: Bool = false) {
-self.id = id
-self.text = text
-self.createdAt = createdAt
-self.delivered = delivered
-}
+    public init(id: String, text: String, createdAt: Date? = nil, sent: Bool = false) {
+        self.id = id
+        self.text = text
+        self.createdAt = createdAt
+        self.sent = sent
+    }
 }

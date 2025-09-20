@@ -1,18 +1,16 @@
 // ======================
 // File: Views/MainView.swift
-// Views/MainView.swift
-
-// Views/MainView.swift
+// ======================
 import SwiftUI
 
 struct MainView: View {
-    @EnvironmentObject var appVM: AppViewModel
+    @EnvironmentObject private var appVM: AppViewModel
+
     @State private var input: String = ""
     @State private var showExportSheet = false
     @State private var showSuccessMessage = false
 
-    // === Progress inputs for HintBadge ===
-    // If you kept the local array:
+    // If you keep an array of affirmations:
     private var count: Int { appVM.affirmations.count }
     // If you switched to a counter instead, replace the line above with:
     // private var count: Int { appVM.submissionsCount }
@@ -44,7 +42,9 @@ struct MainView: View {
                                 .fill(Color(UIColor.secondarySystemBackground))
                         )
 
-                    Button(action: { Task { await submit() } }) {
+                    Button {
+                        Task { await sendAffirmation() }   // <- no name clash with VM method
+                    } label: {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 32))
                     }
@@ -52,8 +52,7 @@ struct MainView: View {
                 }
                 .padding(.horizontal)
 
-                // Progress / hint badge:
-                // Shows progress while count < goal; flashes green & collapses when reaching goal.
+                // Progress / hint badge
                 HintBadge(count: count, goal: goal)
                     .padding(.horizontal)
 
@@ -68,16 +67,18 @@ struct MainView: View {
                 }
             }
             .sheet(isPresented: $showExportSheet) {
-                ExportSheet()   // placeholder version (no args)
+                ExportSheet()   // placeholder
             }
         }
     }
 
     // MARK: - Actions
-    private func submit() async {
+    /// Renamed from `submit()` to avoid any accidental collision with `AppViewModel.submit(...)`
+    private func sendAffirmation() async {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        await appVM.submit(text: text)
+
+        await appVM.submit(text: text)   // <- call the environment object value (no `$`)
         input = ""
 
         // Flash the success message above the input bubble

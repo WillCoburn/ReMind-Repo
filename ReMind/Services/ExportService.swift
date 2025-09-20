@@ -3,8 +3,9 @@
 // ============================
 import Foundation
 
+public protocol ExportService {}
 
-protocol ExportService {
-func generatePDF(from affirmations: [Affirmation]) async throws -> Data
-func emailPDF(_ data: Data, to email: String) async throws
+// No-op implementation so the app compiles/runs.
+public struct NoopExporter: ExportService {
+    public init() {}
 }

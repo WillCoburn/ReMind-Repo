@@ -1,63 +1,61 @@
-
-
 // =============================
-// File: ViewModels/AppViewModel.swift
+// File: App/ViewModels/AppViewModel.swift
 // =============================
 import Foundation
-import SwiftUI
-
+import FirebaseAuth
 
 @MainActor
 final class AppViewModel: ObservableObject {
-    private let store: DataStore
-    private let messenger: MessagingService
-    private let exporter: ExportService
-    
-    
+
+    // MARK: - Published UI state
     @Published var isOnboarded: Bool = false
     @Published var profile: UserProfile?
     @Published var affirmations: [Affirmation] = []
-    @Published var isExporting: Bool = false
-    @Published var showExportResult: Bool = false
-    
-    
-    init(store: DataStore, messenger: MessagingService, exporter: ExportService) {
+    @Published var submissionsCount: Int = 0
+
+    // MARK: - Dependencies
+    private let store: DataStore
+
+    // Auth state listener (optional, used so we can remove it on logout)
+    private var authListener: AuthStateDidChangeListenerHandle?
+
+    // MARK: - Init
+    init(store: DataStore) {
         self.store = store
-        self.messenger = messenger
-        self.exporter = exporter
-        Task { await load() }
-    }
-    
-    
-    func load() async {
-        do {
-            if let user = try await store.currentUser() {
-                profile = user
-                isOnboarded = true
-                affirmations = try await store.listAffirmations()
+
+        // If you already set this up elsewhere, it's fine to keep; this is safe to duplicate-check.
+        authListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+            guard let self else { return }
+            if user == nil {
+                // Signed out
+                self.profile = nil
+                self.affirmations = []
+                self.isOnboarded = false
             }
-        } catch { print("Load error: \(error)") }
+        }
     }
-    
-    
-    func onboard(phone: String) async {
-        guard !phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        do {
-            let p = UserProfile(phoneNumber: phone)
-            try await store.createOrUpdateUser(p)
-            profile = p
-            isOnboarded = true
-        } catch { print("Onboard error: \(error)") }
+
+    // MARK: - Logout
+    func logout() {
+        // 1) Sign out of Firebase
+        do { try Auth.auth().signOut() }
+        catch { print("❌ Failed to sign out: \(error)") }
+
+        // 2) Remove auth listener if present
+        if let h = authListener {
+            Auth.auth().removeStateDidChangeListener(h)
+            authListener = nil
+        }
+
+        // 3) Clear local UI state so RootView will show onboarding again
+        profile = nil
+        affirmations = []
+        isOnboarded = false
+        submissionsCount = 0
     }
-    
-    
-    func submit(text: String) async {
-        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !t.isEmpty else { return }
-        do {
-            let a = try await store.addAffirmation(t)
-            affirmations.insert(a, at: 0)
-            try await messenger.scheduleForFutureDelivery(a)
-        } catch { print("Submit error: \(error)") }
-    }
+
+
 }
+
+
+
