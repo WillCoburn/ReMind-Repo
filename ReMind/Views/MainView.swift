@@ -58,17 +58,7 @@ struct MainView: View {
 
                 Spacer(minLength: 16)
             }
-            .navigationTitle("ReMind")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showExportSheet = true } label: {
-                        Image(systemName: "envelope.fill")
-                    }
-                }
-            }
-            .sheet(isPresented: $showExportSheet) {
-                ExportSheet()   // placeholder
-            }
+
         }
     }
 

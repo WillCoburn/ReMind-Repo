@@ -1,6 +1,4 @@
-// =====================
-// File: Views/RootView.swift
-// =====================
+// Views/RootView.swift
 import SwiftUI
 
 struct RootView: View {
@@ -14,9 +12,7 @@ struct RootView: View {
                         .navigationTitle("ReMind")
                         .toolbar {
                             ToolbarItem(placement: .navigationBarLeading) {
-                                Button("Log Out") {
-                                    appVM.logout()
-                                }
+                                Button("Log Out") { appVM.logout() }
                             }
                         }
                 }
@@ -24,10 +20,8 @@ struct RootView: View {
                 OnboardingView()
             }
         }
-        .animation(.default, value: appVM.isOnboarded) // iOS 16-safe
-        .onAppear {
-            // Run once to confirm Firebase is hooked up
-            FirebasePing.writeHello()
-        }
+        .animation(.default, value: appVM.isOnboarded)
+        // Remove the undefined FirebasePing call (or keep it debug-only if you add the helper)
+        // .onAppear { FirebasePing.writeHello() }
     }
 }
