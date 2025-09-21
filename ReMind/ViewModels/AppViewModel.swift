@@ -1,104 +1,143 @@
-// App/ViewModels/AppViewModel.swift
+// ============================
+// File: App/ViewModels/AppViewModel.swift
+// ============================
 import Foundation
 import FirebaseAuth
+import FirebaseFirestore
+import FirebaseFunctions
 
 @MainActor
 final class AppViewModel: ObservableObject {
-    // MARK: - Published UI state
-    @Published var isOnboarded: Bool = false
-    @Published var profile: UserProfile?
+    // MARK: - Published state
+    @Published var user: UserProfile?
     @Published var affirmations: [Affirmation] = []
-    @Published var submissionsCount: Int = 0
+    @Published var isLoading = false
 
-    // MARK: - Dependencies
-    private let store: DataStore
+    // MARK: - Services
+    private let db = Firestore.firestore()
+    private lazy var functions = Functions.functions()
 
-    // Auth state listener (optional, used so we can remove it on logout)
-    private var authListener: AuthStateDidChangeListenerHandle?
+    // Optional convenience if your views want it:
+    var isOnboarded: Bool { user != nil }
 
     // MARK: - Init
-    init(store: DataStore) {
-        self.store = store
-
-        // Keep UI in sync with auth state
-        authListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            guard let self else { return }
-            if user == nil {
-                // Signed out
-                self.profile = nil
-                self.affirmations = []
-                self.isOnboarded = false
-                self.submissionsCount = 0
-            } else {
-                // Signed in, try to load initial data
-                Task { await self.refreshAll() }
-            }
+    init() {
+        // Observe auth state and refresh when it changes
+        Auth.auth().addStateDidChangeListener { [weak self] _, user in
+            guard let self = self else { return }
+            Task { await self.loadUserAndEntries(user?.uid) }
         }
     }
 
-    // MARK: - Public API called by Views
-
-    /// After successful phone verification, persist minimal user profile and preload data.
-    func setPhoneProfileAndLoad(_ tenDigitUS: String) async {
+    // MARK: - User Profile
+    func setPhoneProfileAndLoad(_ phoneDigits: String) async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
-        let e164 = "+1\(tenDigitUS)"
+        let profile = UserProfile(uid: uid, phoneE164: "+1\(phoneDigits)")
+        self.user = profile
+
         do {
-            try await store.createOrUpdateUser(UserProfile(uid: uid, phoneE164: e164))
+            try await db.collection("users").document(uid).setData([
+                "uid": profile.uid,
+                "phoneE164": profile.phoneE164,
+                "createdAt": FieldValue.serverTimestamp(),
+                "updatedAt": FieldValue.serverTimestamp()
+            ], merge: true)
             await refreshAll()
-            isOnboarded = true
         } catch {
-            print("❌ setPhoneProfileAndLoad error:", error)
+            print("❌ setPhoneProfileAndLoad error:", error.localizedDescription)
         }
     }
 
-    /// Submit a new affirmation, update UI lists/counters.
+    private func loadUserAndEntries(_ uid: String?) async {
+        guard let uid = uid else {
+            self.user = nil
+            self.affirmations = []
+            return
+        }
+        // Load minimal profile (phone may already be set)
+        do {
+            let snap = try await db.collection("users").document(uid).getDocument()
+            if snap.exists {
+                let phone = snap.get("phoneE164") as? String ?? ""
+                self.user = UserProfile(uid: uid, phoneE164: phone)
+            } else {
+                self.user = UserProfile(uid: uid, phoneE164: "")
+            }
+        } catch {
+            print("❌ load user error:", error.localizedDescription)
+        }
+        await refreshAll()
+    }
+
+    // MARK: - Entries
     func submit(text: String) async {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+
         do {
-            let new = try await store.addAffirmation(trimmed)
-            // Prepend for top-of-list UX
-            affirmations.insert(new, at: 0)
-            submissionsCount += 1
+            // Write straight to Firestore; no need to construct local model first
+            try await db.collection("users")
+                .document(uid)
+                .collection("entries")
+                .addDocument(data: [
+                    "text": trimmed,
+                    "createdAt": FieldValue.serverTimestamp(),
+                    "sent": false
+                ])
+            await refreshAll()
         } catch {
-            print("❌ submit error:", error)
+            print("❌ submit error:", error.localizedDescription)
         }
     }
 
-    /// Reload user + affirmations from the backend.
     func refreshAll() async {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        isLoading = true
+        defer { isLoading = false }
+
         do {
-            // Current user (if any)
-            let current = try await store.currentUser()
-            self.profile = current
+            let snapshot = try await db.collection("users")
+                .document(uid)
+                .collection("entries")
+                .order(by: "createdAt", descending: true)
+                .getDocuments()
 
-            // List entries
-            let list = try await store.listAffirmations()
-            self.affirmations = list
-            self.submissionsCount = list.count
-
-            // If user exists, consider them onboarded
-            self.isOnboarded = (current != nil)
+            self.affirmations = snapshot.documents.compactMap { doc in
+                let data = doc.data()
+                guard let text = data["text"] as? String else { return nil }
+                let ts = (data["createdAt"] as? Timestamp)?.dateValue()
+                // Construct with required id
+                return Affirmation(
+                    id: doc.documentID,
+                    text: text,
+                    createdAt: ts
+                )
+            }
         } catch {
-            print("❌ refreshAll error:", error)
+            print("❌ refreshAll error:", error.localizedDescription)
+        }
+    }
+
+    // MARK: - Send One Now (Cloud Function)
+    func sendOneNow() async -> Bool {
+        do {
+            let result = try await functions.httpsCallable("sendOneNow").call([:])
+            print("✅ sendOneNow result:", result.data)
+            await refreshAll()
+            return true
+        } catch {
+            print("❌ sendOneNow error:", error.localizedDescription)
+            return false
         }
     }
 
     // MARK: - Logout
     func logout() {
-        // 1) Sign out of Firebase
         do { try Auth.auth().signOut() } catch {
-            print("❌ Failed to sign out: \(error)")
+            print("❌ signOut error:", error.localizedDescription)
         }
-        // 2) Remove auth listener if present
-        if let h = authListener {
-            Auth.auth().removeStateDidChangeListener(h)
-            authListener = nil
-        }
-        // 3) Clear local UI state so RootView will show onboarding again
-        profile = nil
-        affirmations = []
-        isOnboarded = false
-        submissionsCount = 0
+        self.user = nil
+        self.affirmations = []
     }
 }

@@ -1,4 +1,6 @@
-// Views/RootView.swift
+// =====================
+// File: Views/RootView.swift
+// =====================
 import SwiftUI
 
 struct RootView: View {
@@ -6,7 +8,7 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if appVM.isOnboarded {
+            if appVM.user != nil {
                 NavigationView {
                     MainView()
                         .navigationTitle("ReMind")
@@ -20,8 +22,7 @@ struct RootView: View {
                 OnboardingView()
             }
         }
-        .animation(.default, value: appVM.isOnboarded)
-        // Remove the undefined FirebasePing call (or keep it debug-only if you add the helper)
-        // .onAppear { FirebasePing.writeHello() }
+        // animate when user logs in/out
+        .animation(.default, value: appVM.user != nil)
     }
 }

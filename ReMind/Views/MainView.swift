@@ -10,38 +10,16 @@ struct MainView: View {
     @State private var showExportSheet = false
     @State private var showSuccessMessage = false
 
-    // Prefer the VM's counter so we don't need to fetch the whole list
-    private var count: Int { appVM.submissionsCount }
+    // Current number of entries
+    private var count: Int { appVM.affirmations.count }
+    // When to show the ⚡ button
     private let goal: Int = 10
 
     var body: some View {
-        content
-            // Force a fresh MainView when the user changes (prevents sticky local @State)
-            .id(appVM.profile?.uid ?? "anon")
-            .onChange(of: appVM.profile?.uid) { _ in
-                input = ""
-                showSuccessMessage = false
-            }
-            // Put the envelope in the nav bar (single instance, owned by this screen)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showExportSheet = true } label: {
-                        Image(systemName: "envelope")
-                            .font(.title3.weight(.semibold))
-                            .accessibilityLabel("Email me a PDF of my entries")
-                    }
-                }
-            }
-            .sheet(isPresented: $showExportSheet) {
-                ExportSheet()
-            }
-    }
-
-    private var content: some View {
         VStack(spacing: 20) {
             Spacer(minLength: 32)
 
-            // Success message ABOVE the input bubble
+            // Success toast above input
             if showSuccessMessage {
                 Text("✅ Successfully stored!")
                     .font(.footnote)
@@ -68,18 +46,46 @@ struct MainView: View {
                         .font(.system(size: 32))
                 }
                 .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityLabel("Submit affirmation")
             }
             .padding(.horizontal)
 
-            // Show the progress/hint ONLY until the goal is reached
-            if count < goal {
-                HintBadge(count: count, goal: goal)
-                    // ensure it resets entirely when a different user logs in
-                    .id("hint-\(appVM.profile?.uid ?? "anon")")
-                    .padding(.horizontal)
-            }
+            // Progress / hint badge
+            HintBadge(count: count, goal: goal)
+                .padding(.horizontal)
 
             Spacer(minLength: 16)
+        }
+        .navigationTitle("ReMind")
+        .toolbar {
+            // 📩 Export (always visible)
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { showExportSheet = true } label: {
+                    Image(systemName: "envelope.fill")
+                        .font(.title3.weight(.semibold))
+                }
+                .accessibilityLabel("Email me a PDF of my entries")
+            }
+
+            // ⚡ Send one now (include the whole ToolbarItem conditionally)
+            if count >= goal {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        Task {
+                            let ok = await appVM.sendOneNow()
+                            if ok { UIImpactFeedbackGenerator(style: .rigid).impactOccurred() }
+                        }
+                    } label: {
+                        Image(systemName: "bolt.fill")
+                            .font(.title3.weight(.semibold))
+                    }
+                    .accessibilityLabel("Send one now")
+                }
+            }
+        }
+        .sheet(isPresented: $showExportSheet) {
+            // Replace with your actual export UI if different
+            ExportSheet()
         }
     }
 
@@ -101,3 +107,4 @@ struct MainView: View {
         }
     }
 }
+
