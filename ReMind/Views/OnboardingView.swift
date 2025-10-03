@@ -28,7 +28,7 @@ struct OnboardingView: View {
 
     private let consentMessage =
     """
-    By tapping Agree, you consent to receive reminder text messages from ReMind to the phone number you provide. Message & data rates may apply. Message frequency varies based on your settings and activity. Reply STOP to opt out, or HELP for support.
+    By tapping Agree, you consent to receive reminder text messages from ReMind to the phone number you provide. Message & data rates may apply. Reply STOP to opt out, or HELP for support.
     """
 
     var body: some View {
