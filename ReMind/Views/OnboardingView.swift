@@ -26,6 +26,11 @@ struct OnboardingView: View {
 
     private var isValidPhone: Bool { phoneDigits.count == 10 }
 
+    private let consentMessage =
+    """
+    By tapping Agree, you consent to receive reminder text messages from ReMind to the phone number you provide. Message & data rates may apply. Message frequency varies based on your settings and activity. Reply STOP to opt out, or HELP for support.
+    """
+
     var body: some View {
         VStack(spacing: 24) {
             Spacer(minLength: 24)
@@ -41,7 +46,7 @@ struct OnboardingView: View {
 
             Group {
                 switch step {
-                case .enterPhone: phoneEntry
+                case .enterPhone: phoneEntryContent
                 case .enterCode:  codeEntry
                 }
             }
@@ -56,24 +61,21 @@ struct OnboardingView: View {
 
             Spacer()
 
-            Text("By continuing you agree to our Terms & Privacy.")
-                .font(.footnote)
-                .foregroundColor(.secondary)
-                .padding(.bottom, 12)
+            // Bottom region: consent + button + links
+            if step == .enterPhone {
+                consentAndAgreeBottom
+            }
         }
         .padding(.horizontal)
         .animation(.default, value: step)
         .animation(.default, value: errorText)
+        .animation(.easeInOut, value: isValidPhone)
     }
 
     // MARK: - Subviews
 
-    private var phoneEntry: some View {
+    private var phoneEntryContent: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Your Phone Number")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-
             PhoneField(digits: $phoneDigits)
                 .frame(height: 48)
                 .padding(.horizontal, 12)
@@ -95,12 +97,24 @@ struct OnboardingView: View {
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
+        }
+    }
+
+    private var consentAndAgreeBottom: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(consentMessage)
+                .font(.caption2)
+                .multilineTextAlignment(.leading)
+                .foregroundColor(.black) // always black
+                .accessibilityIdentifier("ConsentMessage")
 
             Button {
                 Task { await sendCode() }
             } label: {
                 ZStack {
-                    Text(isSending ? "Sending…" : "Continue")
+                    Text(isSending
+                         ? "Sending…"
+                         : (isValidPhone ? "Agree & Continue" : "Agree to Continue"))
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -112,7 +126,21 @@ struct OnboardingView: View {
                 .cornerRadius(16)
             }
             .disabled(!isValidPhone || isSending)
+            .accessibilityIdentifier("AgreeAndContinueButton")
+
+            // Links to Terms and Privacy
+            HStack {
+                Link("Privacy Policy",
+                     destination: URL(string: "https://willcoburn.github.io/remind-site/privacy.html")!)
+                Spacer()
+                Link("Terms of Service",
+                     destination: URL(string: "https://willcoburn.github.io/remind-site/terms.html")!)
+            }
+            .font(.caption2)
+            .foregroundColor(.secondary)
+            .padding(.top, 4)
         }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     private var codeEntry: some View {
@@ -162,7 +190,7 @@ struct OnboardingView: View {
         isSending = true
         defer { isSending = false }
 
-        let e164 = "+1\(phoneDigits)" // +1XXXXXXXXXX
+        let e164 = "+1\(phoneDigits)"
 
         do {
             let verID = try await PhoneAuthProvider.provider().verifyPhoneNumber(e164, uiDelegate: nil)
@@ -185,7 +213,7 @@ struct OnboardingView: View {
 
         do {
             _ = try await Auth.auth().signIn(with: credential)
-            await appVM.setPhoneProfileAndLoad(phoneDigits)   // pass DIGITS ONLY
+            await appVM.setPhoneProfileAndLoad(phoneDigits)
         } catch {
             self.errorText = "Invalid or expired code. Please try again."
             print("signIn error:", error)
@@ -193,9 +221,9 @@ struct OnboardingView: View {
     }
 }
 
-// MARK: - UIKit-backed phone field with robust live formatting & deletion
+// MARK: - UIKit-backed phone field
 private struct PhoneField: UIViewRepresentable {
-    @Binding var digits: String   // 0–10 digits only
+    @Binding var digits: String
 
     func makeUIView(context: Context) -> UITextField {
         let tf = UITextField(frame: .zero)
@@ -211,7 +239,6 @@ private struct PhoneField: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UITextField, context: Context) {
-        // Avoid fighting the user's typing: only update when NOT first responder
         if !uiView.isFirstResponder {
             let formatted = Coordinator.format(digits)
             if uiView.text != formatted {
@@ -234,11 +261,9 @@ private struct PhoneField: UIViewRepresentable {
         func textField(_ textField: UITextField,
                        shouldChangeCharactersIn range: NSRange,
                        replacementString string: String) -> Bool {
-
             let currentFormatted = textField.text ?? ""
             let currentDigits = digits
 
-            // Determine if this is a backspace on a separator (non-digit)
             let isBackspace = string.isEmpty && range.length == 1
             let charBeingDeleted: Character? = {
                 guard range.location < currentFormatted.count else { return nil }
@@ -246,20 +271,16 @@ private struct PhoneField: UIViewRepresentable {
                 return currentFormatted[idx]
             }()
 
-            // Map formatted-range -> digits-range
             var startDigitIdx = Self.digitIndex(forFormattedIndex: range.location, in: currentFormatted)
             var endDigitIdx   = Self.digitIndex(forFormattedIndex: range.location + range.length, in: currentFormatted)
 
-            // If user backspaced a separator (e.g., ')', '-', ' '), delete the previous digit instead.
             if isBackspace, let ch = charBeingDeleted, !ch.isNumber {
                 startDigitIdx = max(0, startDigitIdx - 1)
                 endDigitIdx = startDigitIdx + 1
             }
 
-            // Replacement digits (strip non-digits)
             let replacementDigits = string.filter(\.isNumber)
 
-            // Apply edit to digits-only model
             var newDigits = currentDigits
             let start = max(0, min(startDigitIdx, newDigits.count))
             let end   = max(0, min(endDigitIdx,   newDigits.count))
@@ -270,16 +291,13 @@ private struct PhoneField: UIViewRepresentable {
             }
             if newDigits.count > 10 { newDigits = String(newDigits.prefix(10)) }
 
-            // Update binding
             if digits != newDigits { digits = newDigits }
 
-            // Reformat and set text
             let newFormatted = Self.format(newDigits)
             if textField.text != newFormatted {
                 textField.text = newFormatted
             }
 
-            // Compute target caret position (in formatted space) after the inserted digits.
             let targetDigitCaret = start + replacementDigits.count
             let caretPos = Self.formattedIndex(forDigitIndex: targetDigitCaret, in: newFormatted)
 
@@ -287,11 +305,9 @@ private struct PhoneField: UIViewRepresentable {
                 textField.selectedTextRange = textField.textRange(from: position, to: position)
             }
 
-            // We handled the change manually.
             return false
         }
 
-        // Count how many digits appear in formatted[..<idx]
         static func digitIndex(forFormattedIndex idx: Int, in formatted: String) -> Int {
             guard idx > 0 else { return 0 }
             var count = 0
@@ -304,7 +320,6 @@ private struct PhoneField: UIViewRepresentable {
             return count
         }
 
-        // Find the formatted-string index for a digit index (caret placement).
         static func formattedIndex(forDigitIndex digitIndex: Int, in formatted: String) -> Int {
             var seen = 0
             var i = 0
@@ -318,7 +333,6 @@ private struct PhoneField: UIViewRepresentable {
             return formatted.count
         }
 
-        // Progressive US phone formatter: (xxx)-xxx-xxxx
         static func format(_ digits: String) -> String {
             let s = String(digits.prefix(10))
             switch s.count {
