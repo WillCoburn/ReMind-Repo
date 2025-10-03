@@ -15,6 +15,7 @@ struct OnboardingView: View {
     @State private var phoneDigits: String = ""        // "5551234567"
     @State private var showErrorBorder = false
     @State private var errorText: String = ""
+    @State private var hasConsented = false
 
     // Code entry
     @State private var verificationID: String?
@@ -25,6 +26,7 @@ struct OnboardingView: View {
     @State private var isVerifying = false
 
     private var isValidPhone: Bool { phoneDigits.count == 10 }
+    private var canContinue: Bool { isValidPhone && hasConsented }
 
     private let consentMessage =
     """
@@ -102,11 +104,25 @@ struct OnboardingView: View {
 
     private var consentAndAgreeBottom: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(consentMessage)
-                .font(.caption2)
-                .multilineTextAlignment(.leading)
-                .foregroundColor(.black) // always black
-                .accessibilityIdentifier("ConsentMessage")
+            HStack(alignment: .top, spacing: 12) {
+                Button {
+                    hasConsented.toggle()
+                } label: {
+                    Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.black)
+                        .accessibilityIdentifier("ConsentCheckbox")
+                        .accessibilityLabel("Consent checkbox")
+                        .accessibilityValue(hasConsented ? "Checked" : "Unchecked")
+                }
+                .buttonStyle(.plain)
+
+                Text(consentMessage)
+                    .font(.caption2)
+                    .multilineTextAlignment(.leading)
+                    .foregroundColor(.black) // always black
+                    .accessibilityIdentifier("ConsentMessage")
+            }
 
             Button {
                 Task { await sendCode() }
@@ -114,18 +130,18 @@ struct OnboardingView: View {
                 ZStack {
                     Text(isSending
                          ? "Sending…"
-                         : (isValidPhone ? "Agree & Continue" : "Agree to Continue"))
+                         : (canContinue ? "Agree & Continue" : "Agree to Continue"))
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
                         .opacity(isSending ? 0 : 1)
                     if isSending { ProgressView().padding(.vertical) }
                 }
-                .background(isValidPhone ? Color.black : Color.gray.opacity(0.4))
+                .background(canContinue ? Color.black : Color.gray.opacity(0.4))
                 .foregroundColor(.white)
                 .cornerRadius(16)
             }
-            .disabled(!isValidPhone || isSending)
+            .disabled(!canContinue || isSending)
             .accessibilityIdentifier("AgreeAndContinueButton")
 
             // Links to Terms and Privacy
@@ -185,7 +201,7 @@ struct OnboardingView: View {
     // MARK: - Actions
 
     private func sendCode() async {
-        guard isValidPhone else { return }
+        guard canContinue else { return }
         errorText = ""
         isSending = true
         defer { isSending = false }
