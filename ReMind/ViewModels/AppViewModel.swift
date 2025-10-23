@@ -10,7 +10,7 @@ import FirebaseFunctions
 final class AppViewModel: ObservableObject {
     // MARK: - Published state
     @Published var user: UserProfile?
-    @Published var affirmations: [Affirmation] = []
+    @Published var entries: [Entry] = []
     @Published var isLoading = false
 
     // MARK: - Services
@@ -51,7 +51,7 @@ final class AppViewModel: ObservableObject {
     private func loadUserAndEntries(_ uid: String?) async {
         guard let uid = uid else {
             self.user = nil
-            self.affirmations = []
+            self.entries = []
             return
         }
         // Load minimal profile (phone may already be set)
@@ -103,12 +103,12 @@ final class AppViewModel: ObservableObject {
                 .order(by: "createdAt", descending: true)
                 .getDocuments()
 
-            self.affirmations = snapshot.documents.compactMap { doc in
+            self.entries = snapshot.documents.compactMap { doc in
                 let data = doc.data()
                 guard let text = data["text"] as? String else { return nil }
                 let ts = (data["createdAt"] as? Timestamp)?.dateValue()
                 // Construct with required id
-                return Affirmation(
+                return Entry(
                     id: doc.documentID,
                     text: text,
                     createdAt: ts
@@ -138,6 +138,6 @@ final class AppViewModel: ObservableObject {
             print("❌ signOut error:", error.localizedDescription)
         }
         self.user = nil
-        self.affirmations = []
+        self.entries = []
     }
 }

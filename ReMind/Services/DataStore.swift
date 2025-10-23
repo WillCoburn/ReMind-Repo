@@ -16,8 +16,8 @@ public protocol DataStore: Sendable {
     func createOrUpdateUser(_ profile: UserProfile) async throws
     func currentUser() async throws -> UserProfile?
 
-    // Affirmations
-    func addAffirmation(_ text: String) async throws -> Affirmation
-    func listAffirmations() async throws -> [Affirmation]
+    // Entries
+    func addEntry(_ text: String) async throws -> Entry
+    func listEntries() async throws -> [Entry]
     func markDelivered(id: String) async throws
 }

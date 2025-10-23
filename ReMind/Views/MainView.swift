@@ -11,7 +11,8 @@ struct MainView: View {
     @State private var showSuccessMessage = false
 
     // Current number of entries
-    private var count: Int { appVM.affirmations.count }
+    private var count: Int { appVM.entries.count }   
+
     // When to show the ⚡ button
     private let goal: Int = 10
 
@@ -30,7 +31,7 @@ struct MainView: View {
 
             // Input row
             HStack(alignment: .center, spacing: 12) {
-                TextField("Type a moment of clarity…", text: $input, axis: .vertical)
+                TextField("Type an entry…", text: $input, axis: .vertical)
                     .lineLimit(3...5)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 12)
@@ -40,13 +41,13 @@ struct MainView: View {
                     )
 
                 Button {
-                    Task { await sendAffirmation() }
+                    Task { await sendEntry() }
                 } label: {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 32))
                 }
                 .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .accessibilityLabel("Submit affirmation")
+                .accessibilityLabel("Submit entry")
             }
             .padding(.horizontal)
 
@@ -90,7 +91,7 @@ struct MainView: View {
     }
 
     // MARK: - Actions
-    private func sendAffirmation() async {
+    private func sendEntry() async {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
@@ -107,4 +108,3 @@ struct MainView: View {
         }
     }
 }
-

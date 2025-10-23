@@ -5,10 +5,10 @@ import Foundation
 
 
 struct MockExportService: ExportService {
-func generatePDF(from affirmations: [Affirmation]) async throws -> Data {
+func generatePDF(from entries: [Entry]) async throws -> Data {
 // Placeholder: simple UTF-8 text blob to simulate generated PDF data.
 let header = "ReMind – Your Affirmations\n\n"
-let lines = affirmations.map { "• \($0.text)" }.joined(separator: "\n")
+let lines = entries.map { "• \($0.text)" }.joined(separator: "\n")
 return Data((header + lines).utf8)
 }
 

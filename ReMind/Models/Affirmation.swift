@@ -3,7 +3,7 @@
 // ============================
 import Foundation
 
-public struct Affirmation: Identifiable, Sendable, Equatable {
+public struct Entry: Identifiable, Sendable, Equatable {
     public let id: String
     public var text: String
     public var createdAt: Date?

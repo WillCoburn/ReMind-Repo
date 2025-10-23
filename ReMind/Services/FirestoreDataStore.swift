@@ -13,21 +13,27 @@ public final class FirestoreDataStore: DataStore, @unchecked Sendable {
     }
 
     // MARK: - Helpers
+    
+    // Gets UID from Firebase Auth
     private func requireUID() throws -> String {
         if let uid = Auth.auth().currentUser?.uid { return uid }
         throw NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "Not signed in"])
     }
 
+    // Builder for a user's document
     private func userDoc(_ uid: String) -> DocumentReference {
         db.collection("users").document(uid)
     }
 
+    // Builder for the user's collection of entries
     private func entriesCol(_ uid: String) -> CollectionReference {
         // IMPORTANT: use "entries" to match your Firestore rules
         userDoc(uid).collection("entries")
     }
 
-    // MARK: - DataStore (User)
+    // MARK: - User Profile
+
+    // Insert/update basic user fields
     public func createOrUpdateUser(_ profile: UserProfile) async throws {
         try await userDoc(profile.uid).setData([
             "uid": profile.uid,
@@ -36,6 +42,7 @@ public final class FirestoreDataStore: DataStore, @unchecked Sendable {
         ], merge: true)
     }
 
+    // Reads signed-in user to return phone number and uid
     public func currentUser() async throws -> UserProfile? {
         guard let uid = Auth.auth().currentUser?.uid else { return nil }
         let snap = try await userDoc(uid).getDocument()
@@ -45,8 +52,10 @@ public final class FirestoreDataStore: DataStore, @unchecked Sendable {
         return UserProfile(uid: uid, phoneE164: phone)
     }
 
-    // MARK: - DataStore (Affirmations/Entries)
-    public func addAffirmation(_ text: String) async throws -> Affirmation {
+    // MARK: - Entries
+
+    // Ensures signed in, then creates a new entry document
+    public func addEntry(_ text: String) async throws -> Entry {
         let uid = try requireUID()
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -54,12 +63,11 @@ public final class FirestoreDataStore: DataStore, @unchecked Sendable {
         try await doc.setData([
             "text": trimmed,
             "createdAt": FieldValue.serverTimestamp(),
-            // keep simple for now; scheduling will come later
             "sent": false
         ])
 
         // Local model (createdAt will be resolved on next fetch)
-        return Affirmation(
+        return Entry(
             id: doc.documentID,
             text: trimmed,
             createdAt: Date(),
@@ -67,7 +75,8 @@ public final class FirestoreDataStore: DataStore, @unchecked Sendable {
         )
     }
 
-    public func listAffirmations() async throws -> [Affirmation] {
+    // Ensures signed in, then queries entries by created date (newest first)
+    public func listEntries() async throws -> [Entry] {
         let uid = try requireUID()
         let qs = try await entriesCol(uid)
             .order(by: "createdAt", descending: true)
@@ -79,7 +88,7 @@ public final class FirestoreDataStore: DataStore, @unchecked Sendable {
             let ts = data["createdAt"] as? Timestamp
             let sent = data["sent"] as? Bool ?? false
 
-            return Affirmation(
+            return Entry(
                 id: doc.documentID,
                 text: text,
                 createdAt: ts?.dateValue(),
@@ -88,8 +97,9 @@ public final class FirestoreDataStore: DataStore, @unchecked Sendable {
         }
     }
 
+    // Sets "sent" to true after a message is sent
     public func markDelivered(id: String) async throws {
         let uid = try requireUID()
-        try await entriesCol(uid).document(id).updateData([ "sent": true ])
+        try await entriesCol(uid).document(id).updateData(["sent": true])
     }
 }
