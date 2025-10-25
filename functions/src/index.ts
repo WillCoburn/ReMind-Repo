@@ -4,7 +4,7 @@
 
 import * as admin from "firebase-admin";
 import { setGlobalOptions } from "firebase-functions/v2";
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
@@ -38,6 +38,26 @@ async function sendSMS(client: TwilioClient, params: MsgParams) {
   return client.messages.create(params as any);
 }
 
+function parseTwilioPayload(req: any) {
+  const contentType = (req.headers["content-type"] || "").toString();
+
+  if (contentType.includes("application/json")) {
+    return (req.body ?? {}) as Record<string, any>;
+  }
+
+  if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
+    return req.body as Record<string, any>;
+  }
+
+  const raw = req.rawBody ? req.rawBody.toString("utf8") : "";
+  const params = new URLSearchParams(raw);
+  const data: Record<string, any> = {};
+  params.forEach((value, key) => {
+    data[key] = value;
+  });
+  return data;
+}
+
 function buildMsgParams(opts: {
   to: string;
   body: string;
@@ -52,6 +72,72 @@ function buildMsgParams(opts: {
 
 const clampRate = (r: number) => Math.min(5, Math.max(0.1, r));
 const randExpHrs = (mean: number) => -Math.log(1 - Math.random()) * mean;
+
+async function findUserByPhone(phoneE164: string) {
+  const snap = await db
+    .collection("users")
+    .where("phoneE164", "==", phoneE164)
+    .limit(1)
+    .get();
+
+  return snap.empty ? null : snap.docs[0];
+}
+
+const STOP_KEYWORDS = new Set([
+  "STOP",
+  "STOPALL",
+  "UNSUBSCRIBE",
+  "CANCEL",
+  "END",
+  "QUIT",
+]);
+
+const START_KEYWORDS = new Set(["START", "YES", "UNSTOP"]);
+
+function normalizeKeyword(body: string) {
+  return body.trim().toUpperCase();
+}
+
+function escapeXml(text: string) {
+  return text.replace(/[<>&"']/g, (ch) => {
+    switch (ch) {
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case "&":
+        return "&amp;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&apos;";
+      default:
+        return ch;
+    }
+  });
+}
+
+async function applyOptOut(uid: string) {
+  await db
+    .doc(`users/${uid}`)
+    .set({ active: false, smsOptOut: true, nextSendAt: null }, { merge: true });
+}
+
+async function applyOptIn(uid: string) {
+  await db
+    .doc(`users/${uid}`)
+    .set({ active: true, smsOptOut: false }, { merge: true });
+  await scheduleNext(uid, new Date());
+}
+
+function isTwilioStopError(err: any) {
+  const codeStr = err?.code != null ? String(err.code) : "";
+  return (
+    codeStr === "21610" ||
+    /21610/.test(err?.moreInfo || "") ||
+    /replied with STOP|recipient has opted out/i.test(err?.message || "")
+  );
+}
 
 /** ✅ total entries >= min (ANY entries, not just unsent) */
 async function hasAtLeastEntries(uid: string, min = 10) {
@@ -252,6 +338,11 @@ export const sendOneNow = onCall(
 
       return { ok: true, entryId: candidate.id, messageSid: res.sid };
     } catch (err: any) {
+      if (isTwilioStopError(err)) {
+        const uid = req.auth?.uid as string | undefined;
+        if (uid) await applyOptOut(uid);
+      }
+
       if (err?.moreInfo || err?.code || err?.status) throw twilioHttpsError(err);
       logger.error("[sendOneNow] unexpected error", { message: err?.message });
       throw new HttpsError("internal", err?.message ?? "Unknown error");
@@ -293,7 +384,16 @@ async function sendWelcomeIfNeeded(
     msid: msid ?? null,
   });
 
-  const res = await client.messages.create(params as any);
+  let res: any;
+  try {
+    res = await client.messages.create(params as any);
+  } catch (err: any) {
+    if (isTwilioStopError(err)) {
+      await applyOptOut(uid);
+      logger.warn("[welcome] STOP detected (throw) → set inactive", { uid });
+    }
+    throw err;
+  }
 
   await userRef.set(
     { welcomed: true, welcomedAt: admin.firestore.FieldValue.serverTimestamp() },
@@ -350,7 +450,9 @@ export const triggerWelcome = onCall(
     const client = getTwilioClient(sid, token);
 
     // ✅ Ensure user is active and has default settings so scheduling works
-    await db.doc(`users/${targetUid}`).set({ active: true }, { merge: true });
+    await db
+      .doc(`users/${targetUid}`)
+      .set({ active: true, smsOptOut: false }, { merge: true });
     const settingsRef = db.doc(`users/${targetUid}/meta/settings`);
     const settingsSnap = await settingsRef.get();
     if (!settingsSnap.exists) {
@@ -372,6 +474,10 @@ export const triggerWelcome = onCall(
       logger.info("[triggerWelcome] done", { uid: targetUid, sent });
       return { ok: true, sent };
     } catch (err: any) {
+      if (isTwilioStopError(err)) {
+        await applyOptOut(targetUid);
+      }
+
       // Surface Twilio-style errors nicely
       if (err?.moreInfo || err?.code || err?.status) {
         const details = {
@@ -474,19 +580,10 @@ export const minuteCron = onSchedule(
         try {
           res = await sendSMS(client, msgParams);
         } catch (err: any) {
-          const codeStr = err?.code != null ? String(err.code) : "";
-          const stopDetected =
-            codeStr === "21610" ||
-            /21610/.test(err?.moreInfo || "") ||
-            /replied with STOP|recipient has opted out/i.test(err?.message || "");
-
-          if (stopDetected) {
-            await db.doc(`users/${uid}`).set(
-              { active: false, nextSendAt: null }, // remove smsOptOut if you don't use it
-              { merge: true }
-            );
+          if (isTwilioStopError(err)) {
+            await applyOptOut(uid);
             logger.warn("[minuteCron] STOP detected (throw) → set inactive", { uid });
-            return;
+            continue;
           }
           // rethrow to hit outer catch for other errors
           throw err;
@@ -499,20 +596,17 @@ export const minuteCron = onSchedule(
           (typeof res?.status === "string" && res.status.toLowerCase() === "failed");
 
         if (resFailed) {
-          await db.doc(`users/${uid}`).set(
-            { active: false, nextSendAt: null },
-            { merge: true }
-          );
+          await applyOptOut(uid);
           logger.warn("[minuteCron] STOP detected (message response) → set inactive", {
             uid,
             status: res?.status,
             errorCode: res?.errorCode,
           });
-          return;
+          continue;
         }
 
         // ✅ Success: reflect that the number is currently allowed (after START/UNSTOP)
-        await db.doc(`users/${uid}`).set({ active: true }, { merge: true });
+        await db.doc(`users/${uid}`).set({ active: true, smsOptOut: false }, { merge: true });
 
         logger.info("[minuteCron] sent", { uid, sid: res?.sid });
 
@@ -536,8 +630,6 @@ export const minuteCron = onSchedule(
   }
 );
 
-
-
 // ---------- ✅ auto-start scheduling when the 10th entry is added ----------
 export const onEntryCreated = onDocumentCreated(
   "users/{uid}/entries/{entryId}",
@@ -554,3 +646,79 @@ export const onEntryCreated = onDocumentCreated(
     }
   }
 );
+
+// ---------- Twilio webhooks ----------
+
+async function handleStopForPhone(phone: string) {
+  const userDoc = await findUserByPhone(phone);
+  if (!userDoc) {
+    logger.warn("[twilioWebhook] STOP received but no user matched", { phone });
+    return false;
+  }
+  await applyOptOut(userDoc.id);
+  logger.warn("[twilioWebhook] user opted out", { uid: userDoc.id, phone });
+  return true;
+}
+
+async function handleStartForPhone(phone: string) {
+  const userDoc = await findUserByPhone(phone);
+  if (!userDoc) {
+    logger.warn("[twilioWebhook] START received but no user matched", { phone });
+    return false;
+  }
+  await applyOptIn(userDoc.id);
+  logger.info("[twilioWebhook] user re-subscribed", { uid: userDoc.id, phone });
+  return true;
+}
+
+export const twilioStatusCallback = onRequest(async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).send("Method Not Allowed");
+    return;
+  }
+
+  const payload = parseTwilioPayload(req);
+  const to = (payload.To || payload.to || "").toString();
+  const errorCode = (payload.ErrorCode || payload.errorCode || "").toString();
+
+  if (errorCode === "21610" && to) {
+    await handleStopForPhone(to);
+  }
+
+  res.status(200).send("OK");
+});
+
+export const twilioInboundSms = onRequest(async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).send("Method Not Allowed");
+    return;
+  }
+
+  const payload = parseTwilioPayload(req);
+  const from = (payload.From || payload.from || "").toString();
+  const body = (payload.Body || payload.body || "").toString();
+
+  if (!from) {
+    res.status(200).set("Content-Type", "text/xml").send("<Response></Response>");
+    return;
+  }
+
+  const keyword = normalizeKeyword(body);
+  let message: string | null = null;
+  let handled = false;
+
+  if (STOP_KEYWORDS.has(keyword)) {
+    handled = await handleStopForPhone(from);
+    message = "You have been unsubscribed from ReMind messages.";
+  } else if (START_KEYWORDS.has(keyword)) {
+    handled = await handleStartForPhone(from);
+    message = "You have been re-subscribed to ReMind messages.";
+  }
+
+  const responseBody =
+    handled && message
+      ? `<Response><Message>${escapeXml(message)}</Message></Response>`
+      : "<Response></Response>";
+
+  res.status(200).set("Content-Type", "text/xml").send(responseBody);
+});
