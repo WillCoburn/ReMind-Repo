@@ -4,6 +4,7 @@
 import SwiftUI
 import UIKit
 import FirebaseAuth
+import FirebaseFunctions   // ✅ added
 
 struct OnboardingView: View {
     @EnvironmentObject private var appVM: AppViewModel
@@ -24,6 +25,9 @@ struct OnboardingView: View {
     // Spinners
     @State private var isSending = false
     @State private var isVerifying = false
+
+    // ✅ Firebase Functions client
+    private let functions = Functions.functions(region: "us-central1")
 
     private var isValidPhone: Bool { phoneDigits.count == 10 }
     private var canContinue: Bool { isValidPhone && hasConsented }
@@ -63,7 +67,6 @@ struct OnboardingView: View {
 
             Spacer()
 
-            // Bottom region: consent + button + links
             if step == .enterPhone {
                 consentAndAgreeBottom
             }
@@ -111,17 +114,13 @@ struct OnboardingView: View {
                     Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.black)
-                        .accessibilityIdentifier("ConsentCheckbox")
-                        .accessibilityLabel("Consent checkbox")
-                        .accessibilityValue(hasConsented ? "Checked" : "Unchecked")
                 }
                 .buttonStyle(.plain)
 
                 Text(consentMessage)
                     .font(.caption2)
                     .multilineTextAlignment(.leading)
-                    .foregroundColor(.black) // always black
-                    .accessibilityIdentifier("ConsentMessage")
+                    .foregroundColor(.black)
             }
 
             Button {
@@ -142,9 +141,7 @@ struct OnboardingView: View {
                 .cornerRadius(16)
             }
             .disabled(!canContinue || isSending)
-            .accessibilityIdentifier("AgreeAndContinueButton")
 
-            // Links to Terms and Privacy
             HStack {
                 Link("Privacy Policy",
                      destination: URL(string: "https://willcoburn.github.io/remind-site/privacy.html")!)
@@ -230,6 +227,15 @@ struct OnboardingView: View {
         do {
             _ = try await Auth.auth().signIn(with: credential)
             await appVM.setPhoneProfileAndLoad(phoneDigits)
+
+            // ✅ Trigger welcome message after onboarding completes
+            do {
+                let result = try await functions.httpsCallable("triggerWelcome").call([:])
+                print("✅ triggerWelcome result:", result.data)
+            } catch {
+                print("❌ triggerWelcome error:", error.localizedDescription)
+            }
+
         } catch {
             self.errorText = "Invalid or expired code. Please try again."
             print("signIn error:", error)
@@ -270,33 +276,26 @@ private struct PhoneField: UIViewRepresentable {
     final class Coordinator: NSObject, UITextFieldDelegate {
         @Binding var digits: String
 
-        init(digits: Binding<String>) {
-            _digits = digits
-        }
+        init(digits: Binding<String>) { _digits = digits }
 
         func textField(_ textField: UITextField,
                        shouldChangeCharactersIn range: NSRange,
                        replacementString string: String) -> Bool {
             let currentFormatted = textField.text ?? ""
             let currentDigits = digits
-
             let isBackspace = string.isEmpty && range.length == 1
             let charBeingDeleted: Character? = {
                 guard range.location < currentFormatted.count else { return nil }
                 let idx = currentFormatted.index(currentFormatted.startIndex, offsetBy: range.location)
                 return currentFormatted[idx]
             }()
-
             var startDigitIdx = Self.digitIndex(forFormattedIndex: range.location, in: currentFormatted)
             var endDigitIdx   = Self.digitIndex(forFormattedIndex: range.location + range.length, in: currentFormatted)
-
             if isBackspace, let ch = charBeingDeleted, !ch.isNumber {
                 startDigitIdx = max(0, startDigitIdx - 1)
                 endDigitIdx = startDigitIdx + 1
             }
-
             let replacementDigits = string.filter(\.isNumber)
-
             var newDigits = currentDigits
             let start = max(0, min(startDigitIdx, newDigits.count))
             let end   = max(0, min(endDigitIdx,   newDigits.count))
@@ -306,28 +305,20 @@ private struct PhoneField: UIViewRepresentable {
                 newDigits = String(prefix) + replacementDigits + String(suffix)
             }
             if newDigits.count > 10 { newDigits = String(newDigits.prefix(10)) }
-
             if digits != newDigits { digits = newDigits }
-
             let newFormatted = Self.format(newDigits)
-            if textField.text != newFormatted {
-                textField.text = newFormatted
-            }
-
+            if textField.text != newFormatted { textField.text = newFormatted }
             let targetDigitCaret = start + replacementDigits.count
             let caretPos = Self.formattedIndex(forDigitIndex: targetDigitCaret, in: newFormatted)
-
             if let position = textField.position(from: textField.beginningOfDocument, offset: caretPos) {
                 textField.selectedTextRange = textField.textRange(from: position, to: position)
             }
-
             return false
         }
 
         static func digitIndex(forFormattedIndex idx: Int, in formatted: String) -> Int {
             guard idx > 0 else { return 0 }
-            var count = 0
-            var i = 0
+            var count = 0; var i = 0
             for ch in formatted {
                 if i >= idx { break }
                 if ch.isNumber { count += 1 }
@@ -337,8 +328,7 @@ private struct PhoneField: UIViewRepresentable {
         }
 
         static func formattedIndex(forDigitIndex digitIndex: Int, in formatted: String) -> Int {
-            var seen = 0
-            var i = 0
+            var seen = 0; var i = 0
             for ch in formatted {
                 if ch.isNumber {
                     if seen == digitIndex { return i }
@@ -353,8 +343,7 @@ private struct PhoneField: UIViewRepresentable {
             let s = String(digits.prefix(10))
             switch s.count {
             case 0: return ""
-            case 1...3:
-                return "(\(s))"
+            case 1...3: return "(\(s))"
             case 4...6:
                 let area = s.prefix(3)
                 let mid  = s.dropFirst(3)
