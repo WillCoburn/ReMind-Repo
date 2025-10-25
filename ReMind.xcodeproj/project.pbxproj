@@ -46,6 +46,8 @@
 		D2BEC2712E7FBE47009E3698 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC2702E7FBE47009E3698 /* FirebaseCore */; };
 		D2BEC2732E7FBE47009E3698 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC2722E7FBE47009E3698 /* FirebaseFirestore */; };
 		D2BEC2752E7FBE47009E3698 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC2742E7FBE47009E3698 /* FirebaseFunctions */; };
+		D2BEC27B2EAC4F0E009E3698 /* UserSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BEC27A2EAC4F05009E3698 /* UserSettingsPanel.swift */; };
+		D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -99,6 +101,8 @@
 		D2BEC2652E7E334B009E3698 /* FirestoreDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreDataStore.swift; sourceTree = "<group>"; };
 		D2BEC2672E7E3525009E3698 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		D2BEC2692E7E37C1009E3698 /* DataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStore.swift; sourceTree = "<group>"; };
+		D2BEC27A2EAC4F05009E3698 /* UserSettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsPanel.swift; sourceTree = "<group>"; };
+		D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsSync.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -223,6 +227,7 @@
 		D22EF4772E7B2E0400810204 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */,
 				D2BEC2692E7E37C1009E3698 /* DataStore.swift */,
 				D22EF4832E7B2F5F00810204 /* MessagingService.swift */,
 				D22EF4852E7B2F7A00810204 /* ExportService.swift */,
@@ -267,6 +272,7 @@
 		D22EF4952E7B30B000810204 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				D2BEC27A2EAC4F05009E3698 /* UserSettingsPanel.swift */,
 				D22EF4962E7B30C000810204 /* HintBadge.swift */,
 				D22EF49F2E7B944700810204 /* CompletionCollapseBadge.swift */,
 			);
@@ -429,6 +435,7 @@
 				D22EF48A2E7B2FC000810204 /* MockMessagingService.swift in Sources */,
 				D22EF4802E7B2F2F00810204 /* UserProfile.swift in Sources */,
 				D22EF48C2E7B2FD200810204 /* MockExportService.swift in Sources */,
+				D2BEC27B2EAC4F0E009E3698 /* UserSettingsPanel.swift in Sources */,
 				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,
 				D2BEC2582E7E17B5009E3698 /* AppDelegate.swift in Sources */,
 				D2BEC25A2E7E1897009E3698 /* FirebasePing.swift in Sources */,
@@ -443,6 +450,7 @@
 				D22EF4922E7B303E00810204 /* OnboardingView.swift in Sources */,
 				D2BEC26A2E7E37C1009E3698 /* DataStore.swift in Sources */,
 				D22EF4972E7B30C000810204 /* HintBadge.swift in Sources */,
+				D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */,
 				D2BEC2682E7E3525009E3698 /* Haptics.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
