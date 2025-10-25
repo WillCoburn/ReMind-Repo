@@ -406,6 +406,7 @@ export const minuteCron = onSchedule(
   },
   async () => {
     logger.info("[minuteCron] boot v1");
+
     const sid = TWILIO_SID.value();
     const token = TWILIO_AUTH.value();
     const from = TWILIO_FROM.value();
@@ -414,12 +415,15 @@ export const minuteCron = onSchedule(
 
     const now = admin.firestore.Timestamp.now();
 
+    // NEW: visibility around selection
+    logger.info("[minuteCron] querying due users");
     const dueSnap = await db
       .collection("users")
       .where("active", "==", true)
       .where("nextSendAt", "<=", now)
       .limit(100)
       .get();
+    logger.info("[minuteCron] due count", { count: dueSnap.size });
 
     if (dueSnap.empty) return;
 
@@ -453,7 +457,7 @@ export const minuteCron = onSchedule(
           continue;
         }
 
-        // ===== CLEAR LOG (#3) — high-signal pre-send snapshot =====
+        // CLEAR LOG — high-signal pre-send snapshot
         const toLooksE164 = typeof to === "string" && to.startsWith("+");
         logger.info("[minuteCron] about to send", {
           uid,
@@ -462,7 +466,6 @@ export const minuteCron = onSchedule(
           toLooksE164,
           bodyLen: body.length,
         });
-        // ==========================================================
 
         const msgParams = buildMsgParams({ to, body, from, msid });
         const res = await sendSMS(client, msgParams);
@@ -471,14 +474,15 @@ export const minuteCron = onSchedule(
         // 4) Reschedule next (still respects ≥10 entries)
         await scheduleNext(uid, new Date());
       } catch (e: any) {
-        // richer error details to diagnose Twilio rejects
-        logger.error("[minuteCron] send failed", {
+        // String-only error log so the logger never throws and the summary shows details
+        const details = {
           uid,
-          message: e?.message,
-          code: e?.code,
-          status: e?.status,
-          moreInfo: e?.moreInfo,
-        });
+          message: e?.message ?? String(e),
+          code: e?.code ?? null,
+          status: e?.status ?? null,
+          moreInfo: e?.moreInfo ?? null,
+        };
+        logger.error("[minuteCron] send failed details " + JSON.stringify(details));
         await scheduleNext(uid, new Date()); // advance to avoid tight loops
       }
     }
