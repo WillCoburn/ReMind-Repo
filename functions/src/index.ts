@@ -306,13 +306,45 @@ async function sendWelcomeIfNeeded(
   return true;
 }
 
+// ---------- helper to resolve user's phone in E.164 from Firestore OR Auth ----------
+async function getUserPhoneE164(uid: string): Promise<string | null> {
+  // 1) Preferred: Firestore profile field(s)
+  const userDoc = await db.doc(`users/${uid}`).get();
+  const fsPhone =
+    (userDoc.get("phoneE164") as string | undefined) ||
+    (userDoc.get("phone") as string | undefined) ||
+    null;
+
+  if (fsPhone && /^(\+)[1-9]\d{1,14}$/.test(fsPhone)) return fsPhone;
+
+  // 2) Fallback: Firebase Auth phone number
+  try {
+    const authUser = await admin.auth().getUser(uid);
+    const authPhone = authUser.phoneNumber || null;
+    if (authPhone && /^(\+)[1-9]\d{1,14}$/.test(authPhone)) {
+      // Persist for future calls
+      await db.doc(`users/${uid}`).set({ phoneE164: authPhone }, { merge: true });
+      return authPhone;
+    }
+  } catch (e: any) {
+    logger.warn("[getUserPhoneE164] auth lookup failed", { uid, message: e?.message });
+  }
+
+  return null;
+}
+
 // ---------- triggerWelcome (callable) ----------
 // Primary (camelCase)
 export const triggerWelcome = onCall(
   { secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID], invoker: "public" },
   async (req) => {
-    const uid = req.auth?.uid;
-    if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
+    // Allow either the caller's auth uid OR an explicit data.uid for admin/testing
+    const callerUid = req.auth?.uid as string | undefined;
+    const targetUid = (req.data?.uid as string | undefined) || callerUid;
+
+    if (!targetUid) {
+      throw new HttpsError("unauthenticated", "Sign in or provide data.uid.");
+    }
 
     const sid = TWILIO_SID.value();
     const token = TWILIO_AUTH.value();
@@ -320,14 +352,37 @@ export const triggerWelcome = onCall(
     const msid = TWILIO_MSID.value();
     const client = getTwilioClient(sid, token);
 
-    const user = await db.doc(`users/${uid}`).get();
-    const to = user.get("phoneE164") as string | undefined;
-    if (!to) throw new HttpsError("failed-precondition", "No phone on file.");
+    const to = await getUserPhoneE164(targetUid);
+    if (!to) {
+      logger.error("[triggerWelcome] no phone found", { uid: targetUid });
+      throw new HttpsError("failed-precondition", "No phone on file for user.");
+    }
 
-    const sent = await sendWelcomeIfNeeded(uid, to, client, from, msid);
-    if (sent) await scheduleNext(uid, new Date()); // sets nextSendAt only if ≥10 entries
-
-    return { ok: true, sent };
+    try {
+      const sent = await sendWelcomeIfNeeded(targetUid, to, client, from, msid);
+      if (sent) await scheduleNext(targetUid, new Date()); // respects ≥10 entries
+      logger.info("[triggerWelcome] done", { uid: targetUid, sent });
+      return { ok: true, sent };
+    } catch (err: any) {
+      // Surface Twilio-style errors nicely
+      if (err?.moreInfo || err?.code || err?.status) {
+        const details = {
+          provider: "twilio",
+          status: err?.status,
+          code: err?.code,
+          moreInfo: err?.moreInfo,
+          message: err?.message,
+        };
+        logger.error("[triggerWelcome] Twilio error", details);
+        throw new HttpsError(
+          "failed-precondition",
+          `Twilio ${details.code ?? ""} ${details.message ?? "send failed"}`.trim(),
+          details
+        );
+      }
+      logger.error("[triggerWelcome] unexpected error", { message: err?.message });
+      throw new HttpsError("internal", err?.message ?? "Unknown error");
+    }
   }
 );
 
