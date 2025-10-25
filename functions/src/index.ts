@@ -415,7 +415,7 @@ export const minuteCron = onSchedule(
 
     const now = admin.firestore.Timestamp.now();
 
-    // NEW: visibility around selection
+    // visibility around selection
     logger.info("[minuteCron] querying due users");
     const dueSnap = await db
       .collection("users")
@@ -457,7 +457,7 @@ export const minuteCron = onSchedule(
           continue;
         }
 
-        // CLEAR LOG — high-signal pre-send snapshot
+        // pre-send snapshot
         const toLooksE164 = typeof to === "string" && to.startsWith("+");
         logger.info("[minuteCron] about to send", {
           uid,
@@ -468,15 +468,53 @@ export const minuteCron = onSchedule(
         });
 
         const msgParams = buildMsgParams({ to, body, from, msid });
-        const res = await sendSMS(client, msgParams);
 
-        // ✅ Success: reflect that the number is currently allowed (e.g., after START/UNSTOP)
-        await db.doc(`users/${uid}`).set(
-          { active: true, smsOptOut: false },
-          { merge: true }
-        );
+        // ⚠️ Try to send; catch STOP here too
+        let res: any;
+        try {
+          res = await sendSMS(client, msgParams);
+        } catch (err: any) {
+          const codeStr = err?.code != null ? String(err.code) : "";
+          const stopDetected =
+            codeStr === "21610" ||
+            /21610/.test(err?.moreInfo || "") ||
+            /replied with STOP|recipient has opted out/i.test(err?.message || "");
 
-        logger.info("[minuteCron] sent", { uid, sid: res.sid });
+          if (stopDetected) {
+            await db.doc(`users/${uid}`).set(
+              { active: false, nextSendAt: null }, // remove smsOptOut if you don't use it
+              { merge: true }
+            );
+            logger.warn("[minuteCron] STOP detected (throw) → set inactive", { uid });
+            return;
+          }
+          // rethrow to hit outer catch for other errors
+          throw err;
+        }
+
+        // ⚠️ If Twilio returned a Message but it’s already failed with STOP
+        const resCode = res?.errorCode != null ? String(res.errorCode) : "";
+        const resFailed =
+          resCode === "21610" ||
+          (typeof res?.status === "string" && res.status.toLowerCase() === "failed");
+
+        if (resFailed) {
+          await db.doc(`users/${uid}`).set(
+            { active: false, nextSendAt: null },
+            { merge: true }
+          );
+          logger.warn("[minuteCron] STOP detected (message response) → set inactive", {
+            uid,
+            status: res?.status,
+            errorCode: res?.errorCode,
+          });
+          return;
+        }
+
+        // ✅ Success: reflect that the number is currently allowed (after START/UNSTOP)
+        await db.doc(`users/${uid}`).set({ active: true }, { merge: true });
+
+        logger.info("[minuteCron] sent", { uid, sid: res?.sid });
 
         // 4) Reschedule next (still respects ≥10 entries)
         await scheduleNext(uid, new Date());
@@ -491,27 +529,13 @@ export const minuteCron = onSchedule(
         };
         logger.error("[minuteCron] send failed details " + JSON.stringify(details));
 
-        // 🔻 STOP detected: Twilio blocks sends with error 21610 (code can be string or number)
-        const codeStr = details.code != null ? String(details.code) : "";
-        const stopDetected =
-          codeStr === "21610" ||
-          /21610/.test(details.moreInfo || "") ||
-          /replied with STOP|recipient has opted out/i.test(details.message || "");
-
-        if (stopDetected) {
-          await db.doc(`users/${uid}`).set(
-            { active: false, nextSendAt: null, smsOptOut: true },
-            { merge: true }
-          );
-          logger.warn("[minuteCron] user opted out via STOP → set inactive", { uid });
-          return; // stop processing this user this tick
-        }
-
-        await scheduleNext(uid, new Date()); // advance to avoid tight loops
+        // advance to avoid tight loops on other errors
+        await scheduleNext(uid, new Date());
       }
     }
   }
 );
+
 
 
 // ---------- ✅ auto-start scheduling when the 10th entry is added ----------
