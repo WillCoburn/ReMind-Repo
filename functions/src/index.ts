@@ -489,9 +489,16 @@ export const minuteCron = onSchedule(
           status: e?.status ?? null,
           moreInfo: e?.moreInfo ?? null,
         };
+        logger.error("[minuteCron] send failed details " + JSON.stringify(details));
 
-        // 🔻 STOP detected: Twilio blocks sends with error 21610
-        if (details.code === 21610) {
+        // 🔻 STOP detected: Twilio blocks sends with error 21610 (code can be string or number)
+        const codeStr = details.code != null ? String(details.code) : "";
+        const stopDetected =
+          codeStr === "21610" ||
+          /21610/.test(details.moreInfo || "") ||
+          /replied with STOP|recipient has opted out/i.test(details.message || "");
+
+        if (stopDetected) {
           await db.doc(`users/${uid}`).set(
             { active: false, nextSendAt: null, smsOptOut: true },
             { merge: true }
@@ -500,7 +507,6 @@ export const minuteCron = onSchedule(
           return; // stop processing this user this tick
         }
 
-        logger.error("[minuteCron] send failed details " + JSON.stringify(details));
         await scheduleNext(uid, new Date()); // advance to avoid tight loops
       }
     }
