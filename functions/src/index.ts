@@ -500,8 +500,7 @@ export const triggerWelcome = onCall(
   }
 );
 
-// Alias (lowercase) so client calls to 'triggerwelcome' also work
-export const triggerwelcome = triggerWelcome;
+
 
 // ---------- minuteCron (scheduled sender) ----------
 export const minuteCron = onSchedule(
