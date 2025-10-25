@@ -35,9 +35,7 @@ async function sendSMS(
 ) {
   return client.messages.create(params as any);
 }
-function buildMsgParams(opts: {
-  to: string; body: string; from?: string | null; msid?: string | null;
-}) {
+function buildMsgParams(opts: { to: string; body: string; from?: string | null; msid?: string | null }) {
   const { to, body, from, msid } = opts;
   return msid ? { to, body, messagingServiceSid: msid } : { to, body, from: from! };
 }
@@ -53,7 +51,7 @@ type Settings = {
 const clampRate = (r: number) => Math.min(5, Math.max(0.1, r));
 const randExpHrs = (mean: number) => -Math.log(1 - Math.random()) * mean;
 
-/** total entries >= min (counts ANY entries, not just unsent) */
+/** ✅ total entries >= min (ANY entries, not just unsent) */
 async function hasAtLeastEntries(uid: string, min = 10): Promise<boolean> {
   const snap = await db.collection(`users/${uid}/entries`).limit(min).get();
   return snap.size >= min;
@@ -107,14 +105,15 @@ async function loadSettings(uid: string): Promise<Settings | null> {
   };
 }
 
-/** compute & write users/{uid}.nextSendAt (UTC); only if ≥10 entries */
+/** ✅ compute & write users/{uid}.nextSendAt (UTC); only if ≥10 entries */
 async function scheduleNext(uid: string, fromUtc = new Date()): Promise<void> {
   const s = await loadSettings(uid);
   if (!s) return;
 
-  // Gate: require ≥ 10 total entries
+  // ⛔ require ≥10 total entries
   if (!(await hasAtLeastEntries(uid, 10))) {
     await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
+    logger.info("[scheduleNext] threshold not met; nextSendAt=null", { uid });
     return;
   }
 
@@ -336,20 +335,20 @@ export const minuteCron = onSchedule(
       if (!to) { await scheduleNext(uid, new Date()); continue; }
 
       try {
-        // Ensure welcome is sent first (once ever)
+        // 1) Ensure welcome is sent first (once ever)
         if (doc.get("welcomed") !== true) {
           await sendWelcomeIfNeeded(uid, to, client, from, msid);
           await scheduleNext(uid, new Date()); // honors ≥10 entries
           continue; // skip entries this tick
         }
 
-        // Require ≥10 total entries before sending entries
+        // 2) Require ≥10 total entries before sending entries
         if (!(await hasAtLeastEntries(uid, 10))) {
           await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
           continue;
         }
 
-        // Send one entry
+        // 3) Send one entry
         const body = await pickEntry(uid);
         if (!body) { await scheduleNext(uid, new Date()); continue; }
 
@@ -357,7 +356,7 @@ export const minuteCron = onSchedule(
         const res = await sendSMS(client, msgParams);
         logger.info("[minuteCron] sent", { uid, sid: res.sid });
 
-        // Reschedule next (still respects ≥10 entries)
+        // 4) Reschedule next (still respects ≥10 entries)
         await scheduleNext(uid, new Date());
       } catch (e: any) {
         logger.error("[minuteCron] send failed", { uid, message: e?.message });
@@ -367,16 +366,17 @@ export const minuteCron = onSchedule(
   }
 );
 
-// ---------- NEW: auto-start scheduling when 10th entry is added ----------
+// ---------- ✅ auto-start scheduling when the 10th entry is added ----------
 export const onEntryCreated = onDocumentCreated(
   "users/{uid}/entries/{entryId}",
   async (event) => {
     const uid = event.params.uid as string;
+
     // Only act for active users
     const user = await db.doc(`users/${uid}`).get();
     if (!user.exists || user.get("active") !== true) return;
 
-    // If they just hit the threshold, schedule their first send (or next)
+    // If they just hit the threshold, schedule their first/next send
     if (await hasAtLeastEntries(uid, 10)) {
       await scheduleNext(uid, new Date());
     }
