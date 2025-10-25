@@ -4,7 +4,7 @@
 
 import * as admin from "firebase-admin";
 import { setGlobalOptions } from "firebase-functions/v2";
-import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
@@ -98,23 +98,21 @@ function nextLocalTime(
   }
 }
 
+/** ✅ Always return defaults even if settings doc doesn't exist */
 async function loadSettings(uid: string) {
   const snap = await db.doc(`users/${uid}/meta/settings`).get();
-  if (!snap.exists) return null;
-  const d = snap.data()!;
+  const d = snap.exists ? snap.data()! : {};
   return {
-    remindersPerDay: clampRate(Number(d.remindersPerDay || 1)),
-    tzIdentifier: String(d.tzIdentifier || "UTC"),
-    quietStartHour: Number(d.quietStartHour ?? 9),
-    quietEndHour: Number(d.quietEndHour ?? 22),
+    remindersPerDay: clampRate(Number(d?.remindersPerDay ?? 1)),
+    tzIdentifier: String(d?.tzIdentifier ?? "UTC"),
+    quietStartHour: Number(d?.quietStartHour ?? 9),
+    quietEndHour: Number(d?.quietEndHour ?? 22),
   };
 }
 
 /** ✅ compute & write users/{uid}.nextSendAt (UTC); only if ≥10 entries */
 async function scheduleNext(uid: string, fromUtc = new Date()) {
   const s = await loadSettings(uid);
-  if (!s) return;
-
   // ⛔ require ≥10 total entries
   if (!(await hasAtLeastEntries(uid, 10))) {
     await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
@@ -334,7 +332,6 @@ async function getUserPhoneE164(uid: string): Promise<string | null> {
 }
 
 // ---------- triggerWelcome (callable) ----------
-// Primary (camelCase)
 export const triggerWelcome = onCall(
   { secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID], invoker: "public" },
   async (req) => {
@@ -351,6 +348,17 @@ export const triggerWelcome = onCall(
     const from = TWILIO_FROM.value();
     const msid = TWILIO_MSID.value();
     const client = getTwilioClient(sid, token);
+
+    // ✅ Ensure user is active and has default settings so scheduling works
+    await db.doc(`users/${targetUid}`).set({ active: true }, { merge: true });
+    const settingsRef = db.doc(`users/${targetUid}/meta/settings`);
+    const settingsSnap = await settingsRef.get();
+    if (!settingsSnap.exists) {
+      await settingsRef.set(
+        { remindersPerDay: 1, tzIdentifier: "UTC", quietStartHour: 9, quietEndHour: 22 },
+        { merge: true }
+      );
+    }
 
     const to = await getUserPhoneE164(targetUid);
     if (!to) {
