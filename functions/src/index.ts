@@ -6,6 +6,7 @@ import * as admin from "firebase-admin";
 import { setGlobalOptions } from "firebase-functions/v2";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import twilio from "twilio";
@@ -21,7 +22,7 @@ const db = admin.firestore();
 const TWILIO_SID  = defineSecret("TWILIO_SID");   // ACxxxxxxxx...
 const TWILIO_AUTH = defineSecret("TWILIO_AUTH");  // token
 const TWILIO_FROM = defineSecret("TWILIO_FROM");  // +1XXXXXXXXXX
-const TWILIO_MSID = defineSecret("TWILIO_MSID");  // MGxxxxxxxx... (optional)
+const TWILIO_MSID = defineSecret("TWILIO_MSID");  // MGxxxxxxxx... (optional Messaging Service)
 
 // ----- Twilio helpers -----
 function getTwilioClient(sid?: string, auth?: string) {
@@ -34,24 +35,35 @@ async function sendSMS(
 ) {
   return client.messages.create(params as any);
 }
+function buildMsgParams(opts: {
+  to: string; body: string; from?: string | null; msid?: string | null;
+}) {
+  const { to, body, from, msid } = opts;
+  return msid ? { to, body, messagingServiceSid: msid } : { to, body, from: from! };
+}
 
 // ----- Scheduling helpers -----
 type Settings = {
   remindersPerDay: number;      // 0.1..5
   tzIdentifier: string;         // e.g. "America/New_York"
-  quietStartHour: number;       // 0..23 (earliest)
-  quietEndHour: number;         // 0..23 (latest)
+  quietStartHour: number;       // 0..23
+  quietEndHour: number;         // 0..23
 };
 
 const clampRate = (r: number) => Math.min(5, Math.max(0.1, r));
 const randExpHrs = (mean: number) => -Math.log(1 - Math.random()) * mean;
 
-/** compute next local time inside [start,end] window (wrap across midnight supported) */
+/** total entries >= min (counts ANY entries, not just unsent) */
+async function hasAtLeastEntries(uid: string, min = 10): Promise<boolean> {
+  const snap = await db.collection(`users/${uid}/entries`).limit(min).get();
+  return snap.size >= min;
+}
+
+/** next local time inside [start,end] (wrap across midnight supported) */
 function nextLocalTime(nowLocal: Date, s: Settings): Date {
   const meanHrs = 24 / clampRate(s.remindersPerDay);
   const candidate = new Date(nowLocal.getTime() + randExpHrs(meanHrs) * 3600_000);
 
-  const d = new Date(candidate);
   const start = s.quietStartHour;
   const end = s.quietEndHour;
 
@@ -75,6 +87,7 @@ function nextLocalTime(nowLocal: Date, s: Settings): Date {
     }
     return candidate;
   } else {
+    // window wraps midnight: allowed [0,end] U [start,24)
     const inEarly = candidate <= wEnd;
     const inLate = candidate >= wStart;
     if (inEarly || inLate) return candidate;
@@ -94,11 +107,18 @@ async function loadSettings(uid: string): Promise<Settings | null> {
   };
 }
 
-/** compute nextSendAt (UTC) from current UTC time using user TZ/window */
+/** compute & write users/{uid}.nextSendAt (UTC); only if ≥10 entries */
 async function scheduleNext(uid: string, fromUtc = new Date()): Promise<void> {
   const s = await loadSettings(uid);
   if (!s) return;
 
+  // Gate: require ≥ 10 total entries
+  if (!(await hasAtLeastEntries(uid, 10))) {
+    await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
+    return;
+  }
+
+  // Compute user's offset at 'fromUtc'
   const tzFmt = new Intl.DateTimeFormat("en-US", {
     timeZone: s.tzIdentifier,
     timeZoneName: "longOffset",
@@ -128,9 +148,8 @@ async function scheduleNext(uid: string, fromUtc = new Date()): Promise<void> {
   );
 }
 
-/** ✅ updated: pick a random UNSENT entry (sent:false) before fallback */
+/** prefer unsent entries first; fallback to any entry */
 async function pickEntry(uid: string): Promise<string | null> {
-  // 1. Prefer unsent entries
   const unsent = await db
     .collection(`users/${uid}/entries`)
     .where("sent", "==", false)
@@ -145,7 +164,6 @@ async function pickEntry(uid: string): Promise<string | null> {
     return (data.text ?? data.content ?? "").toString().trim() || null;
   }
 
-  // 2. Fallback to any entries (if all sent)
   const all = await db
     .collection(`users/${uid}/entries`)
     .orderBy("createdAt", "desc")
@@ -159,18 +177,7 @@ async function pickEntry(uid: string): Promise<string | null> {
   return (data.text ?? data.content ?? "").toString().trim() || null;
 }
 
-/** shared Twilio param builder */
-function buildMsgParams(opts: {
-  to: string;
-  body: string;
-  from?: string | null;
-  msid?: string | null;
-}) {
-  const { to, body, from, msid } = opts;
-  return msid ? { to, body, messagingServiceSid: msid } : { to, body, from: from! };
-}
-
-// ---------- sendOneNow (kept from your original) ----------
+// ---------- sendOneNow (kept) ----------
 function twilioHttpsError(err: any): HttpsError {
   const details = {
     provider: "twilio",
@@ -221,9 +228,7 @@ export const sendOneNow = onCall(
       const from = TWILIO_FROM.value();
       const msid = TWILIO_MSID.value();
 
-      logger.info("[sendOneNow] env", { sidPrefix: sid?.slice(0, 2), usingMSID: Boolean(msid) });
       const client = getTwilioClient(sid, token);
-
       const msgParams = buildMsgParams({ to, body: text, from, msid });
       const res = await sendSMS(client, msgParams);
       logger.info("[sendOneNow] sent", { messageSid: res.sid });
@@ -244,7 +249,7 @@ export const sendOneNow = onCall(
   }
 );
 
-// ---------- applyUserSettings (computes nextSendAt) ----------
+// ---------- applyUserSettings (computes nextSendAt immediately; respects ≥10 entries) ----------
 export const applyUserSettings = onCall(
   { secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID], invoker: "public" },
   async (req) => {
@@ -252,6 +257,56 @@ export const applyUserSettings = onCall(
     if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
     await scheduleNext(uid, new Date());
     return { ok: true };
+  }
+);
+
+// ---------- WELCOME-once logic ----------
+const WELCOME_TEXT = "Welcome to ReMind! Reply STOP to opt out or HELP for help.";
+
+async function sendWelcomeIfNeeded(
+  uid: string,
+  to: string,
+  client: ReturnType<typeof twilio>,
+  from?: string | null,
+  msid?: string | null
+): Promise<boolean> {
+  const userRef = db.doc(`users/${uid}`);
+  const snap = await userRef.get();
+  const already = snap.get("welcomed") === true;
+  if (already) return false; // once ever
+
+  const params = buildMsgParams({ to, body: WELCOME_TEXT, from: from ?? null, msid: msid ?? null });
+  const res = await client.messages.create(params as any);
+
+  await userRef.set(
+    { welcomed: true, welcomedAt: admin.firestore.FieldValue.serverTimestamp() },
+    { merge: true }
+  );
+
+  logger.info("[welcome] sent", { uid, sid: res.sid });
+  return true;
+}
+
+// Callable to trigger welcome right after onboarding success (iOS)
+export const triggerWelcome = onCall(
+  { secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID], invoker: "public" },
+  async (req) => {
+    const uid = req.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
+
+    const sid = TWILIO_SID.value();
+    const token = TWILIO_AUTH.value();
+    const from = TWILIO_FROM.value();
+    const msid = TWILIO_MSID.value();
+    const client = getTwilioClient(sid, token);
+
+    const user = await db.doc(`users/${uid}`).get();
+    const to = user.get("phoneE164") as string | undefined;
+    if (!to) throw new HttpsError("failed-precondition", "No phone on file.");
+
+    const sent = await sendWelcomeIfNeeded(uid, to, client, from, msid);
+    if (sent) await scheduleNext(uid, new Date()); // will set nextSendAt only if ≥10 entries
+    return { ok: true, sent };
   }
 );
 
@@ -281,6 +336,20 @@ export const minuteCron = onSchedule(
       if (!to) { await scheduleNext(uid, new Date()); continue; }
 
       try {
+        // Ensure welcome is sent first (once ever)
+        if (doc.get("welcomed") !== true) {
+          await sendWelcomeIfNeeded(uid, to, client, from, msid);
+          await scheduleNext(uid, new Date()); // honors ≥10 entries
+          continue; // skip entries this tick
+        }
+
+        // Require ≥10 total entries before sending entries
+        if (!(await hasAtLeastEntries(uid, 10))) {
+          await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
+          continue;
+        }
+
+        // Send one entry
         const body = await pickEntry(uid);
         if (!body) { await scheduleNext(uid, new Date()); continue; }
 
@@ -288,11 +357,28 @@ export const minuteCron = onSchedule(
         const res = await sendSMS(client, msgParams);
         logger.info("[minuteCron] sent", { uid, sid: res.sid });
 
+        // Reschedule next (still respects ≥10 entries)
         await scheduleNext(uid, new Date());
       } catch (e: any) {
         logger.error("[minuteCron] send failed", { uid, message: e?.message });
-        await scheduleNext(uid, new Date());
+        await scheduleNext(uid, new Date()); // advance to avoid tight loops
       }
+    }
+  }
+);
+
+// ---------- NEW: auto-start scheduling when 10th entry is added ----------
+export const onEntryCreated = onDocumentCreated(
+  "users/{uid}/entries/{entryId}",
+  async (event) => {
+    const uid = event.params.uid as string;
+    // Only act for active users
+    const user = await db.doc(`users/${uid}`).get();
+    if (!user.exists || user.get("active") !== true) return;
+
+    // If they just hit the threshold, schedule their first send (or next)
+    if (await hasAtLeastEntries(uid, 10)) {
+      await scheduleNext(uid, new Date());
     }
   }
 );
