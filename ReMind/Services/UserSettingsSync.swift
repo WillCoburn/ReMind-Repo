@@ -4,6 +4,7 @@
 import Foundation
 import FirebaseAuth
 import FirebaseFirestore
+import FirebaseFunctions
 
 struct UserSettings: Codable {
     var remindersPerDay: Double
@@ -16,14 +17,15 @@ enum UserSettingsSync {
     static func currentFromAppStorage() -> UserSettings {
         let d = UserDefaults.standard
         return .init(
-            remindersPerDay: max(0.1, min(5.0, d.double(forKey: "remindersPerDay"))),
+            remindersPerDay: max(0.1, min(5.0, d.object(forKey: "remindersPerDay") as? Double ?? 1.0)),
             tzIdentifier: d.string(forKey: "tzIdentifier") ?? TimeZone.current.identifier,
-            quietStartHour: Int(round(d.double(forKey: "quietStartHour"))),
-            quietEndHour: Int(round(d.double(forKey: "quietEndHour")))
+            quietStartHour: max(0, min(23, Int(round(d.double(forKey: "quietStartHour"))))),
+            quietEndHour:  max(0, min(23, Int(round(d.double(forKey: "quietEndHour")))))
         )
     }
 
-    /// Writes settings to Firestore at users/{uid}/settings and triggers a callable to recompute nextSendAt.
+    /// Writes settings to Firestore at users/{uid}/meta/settings
+    /// THEN calls the callable `applyUserSettings` to compute users/{uid}.nextSendAt immediately.
     static func pushAndApply(completion: ((Error?) -> Void)? = nil) {
         guard let uid = Auth.auth().currentUser?.uid else {
             completion?(NSError(domain: "UserSettingsSync", code: 401, userInfo: [NSLocalizedDescriptionKey: "Not logged in"]))
@@ -31,31 +33,34 @@ enum UserSettingsSync {
         }
 
         let db = Firestore.firestore()
-        let settings = currentFromAppStorage()
+        let s = currentFromAppStorage()
         let data: [String: Any] = [
-            "remindersPerDay": settings.remindersPerDay,
-            "tzIdentifier": settings.tzIdentifier,
-            "quietStartHour": settings.quietStartHour,
-            "quietEndHour": settings.quietEndHour,
+            "remindersPerDay": s.remindersPerDay,
+            "tzIdentifier": s.tzIdentifier,
+            "quietStartHour": s.quietStartHour,
+            "quietEndHour": s.quietEndHour,
             "updatedAt": FieldValue.serverTimestamp()
         ]
 
         let userRef = db.collection("users").document(uid)
         let settingsRef = userRef.collection("meta").document("settings")
 
-        db.runTransaction({ txn, _ -> Any? in
-            txn.setData(["active": true], forDocument: userRef, merge: true)
-            txn.setData(data, forDocument: settingsRef, merge: true)
-            return nil
-        }) { _, err in
-            if let err { completion?(err); return }
-            // Optionally call a callable function to recompute nextSendAt immediately
-            // If you already use FirebaseFunctions in the app, you can uncomment:
-            //
-            // Functions.functions().httpsCallable("applyUserSettings").call([:]) { _, _ in
-            //     completion?(nil)
-            // }
-            completion?(nil)
+        // 1) Write settings (batch)
+        let batch = db.batch()
+        batch.setData(["active": true], forDocument: userRef, merge: true)
+        batch.setData(data, forDocument: settingsRef, merge: true)
+        batch.commit { err in
+            if let err = err {
+                completion?(err)
+                return
+            }
+
+            // 2) Call backend to compute nextSendAt now (Option 1)
+            let callable = Functions.functions().httpsCallable("applyUserSettings")
+            callable.call([:]) { _, callErr in
+                // Even if the callable fails, the settings are saved; surface error if any.
+                completion?(callErr)
+            }
         }
     }
 }
