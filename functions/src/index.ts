@@ -452,6 +452,17 @@ export const minuteCron = onSchedule(
           continue;
         }
 
+        // ===== CLEAR LOG (#3) — high-signal pre-send snapshot =====
+        const toLooksE164 = typeof to === "string" && to.startsWith("+");
+        logger.info("[minuteCron] about to send", {
+          uid,
+          hasMSID: !!msid,
+          hasFROM: !!from,
+          toLooksE164,
+          bodyLen: body.length,
+        });
+        // ==========================================================
+
         const msgParams = buildMsgParams({ to, body, from, msid });
         const res = await sendSMS(client, msgParams);
         logger.info("[minuteCron] sent", { uid, sid: res.sid });
@@ -459,7 +470,14 @@ export const minuteCron = onSchedule(
         // 4) Reschedule next (still respects ≥10 entries)
         await scheduleNext(uid, new Date());
       } catch (e: any) {
-        logger.error("[minuteCron] send failed", { uid, message: e?.message });
+        // richer error details to diagnose Twilio rejects
+        logger.error("[minuteCron] send failed", {
+          uid,
+          message: e?.message,
+          code: e?.code,
+          status: e?.status,
+          moreInfo: e?.moreInfo,
+        });
         await scheduleNext(uid, new Date()); // advance to avoid tight loops
       }
     }
