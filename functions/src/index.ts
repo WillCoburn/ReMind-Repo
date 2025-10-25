@@ -469,6 +469,13 @@ export const minuteCron = onSchedule(
 
         const msgParams = buildMsgParams({ to, body, from, msid });
         const res = await sendSMS(client, msgParams);
+
+        // ✅ Success: reflect that the number is currently allowed (e.g., after START/UNSTOP)
+        await db.doc(`users/${uid}`).set(
+          { active: true, smsOptOut: false },
+          { merge: true }
+        );
+
         logger.info("[minuteCron] sent", { uid, sid: res.sid });
 
         // 4) Reschedule next (still respects ≥10 entries)
@@ -482,12 +489,24 @@ export const minuteCron = onSchedule(
           status: e?.status ?? null,
           moreInfo: e?.moreInfo ?? null,
         };
+
+        // 🔻 STOP detected: Twilio blocks sends with error 21610
+        if (details.code === 21610) {
+          await db.doc(`users/${uid}`).set(
+            { active: false, nextSendAt: null, smsOptOut: true },
+            { merge: true }
+          );
+          logger.warn("[minuteCron] user opted out via STOP → set inactive", { uid });
+          return; // stop processing this user this tick
+        }
+
         logger.error("[minuteCron] send failed details " + JSON.stringify(details));
         await scheduleNext(uid, new Date()); // advance to avoid tight loops
       }
     }
   }
 );
+
 
 // ---------- ✅ auto-start scheduling when the 10th entry is added ----------
 export const onEntryCreated = onDocumentCreated(
