@@ -405,6 +405,7 @@ export const minuteCron = onSchedule(
     secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID],
   },
   async () => {
+    logger.info("[minuteCron] boot v1");
     const sid = TWILIO_SID.value();
     const token = TWILIO_AUTH.value();
     const from = TWILIO_FROM.value();
