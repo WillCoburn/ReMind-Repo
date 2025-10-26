@@ -65,7 +65,7 @@ struct MainView: View {
                     Image(systemName: "envelope.fill")
                         .font(.title3.weight(.semibold))
                 }
-                .accessibilityLabel("Email me a PDF of my entries")
+                .accessibilityLabel("Text me a PDF of my entries")
             }
 
             // ⚡ Send one now (include the whole ToolbarItem conditionally)
