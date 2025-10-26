@@ -380,14 +380,9 @@ export const sendOneNow = onCall(
       const msid = TWILIO_MSID.value();
 
       const client = getTwilioClient(sid, token);
-      const requestedMode = req.data?.mode;
-      const mode =
-        typeof requestedMode === "string" && requestedMode.length > 0
-          ? requestedMode
-          : undefined;
-      const wantsHistoryPdf = mode?.toLowerCase() === "historypdf";
+      const mode = typeof req.data?.mode === "string" ? req.data.mode : "";
 
-      if (wantsHistoryPdf) {
+      if (mode === "historyPdf") {
         const entriesSnap = await db
           .collection(`users/${uid}/entries`)
           .orderBy("createdAt", "asc")
@@ -449,8 +444,6 @@ export const sendOneNow = onCall(
             doc.ref,
             {
               deliveredVia: "pdf",
-              sent: true,
-              sentAt: admin.firestore.FieldValue.serverTimestamp(),
             },
             { merge: true }
           );
@@ -468,10 +461,6 @@ export const sendOneNow = onCall(
           mediaUrl: signedUrl,
           expiresAt: expiresAt.toISOString(),
         };
-      }
-
-      if (mode && !wantsHistoryPdf) {
-        logger.warn("[sendOneNow] ignoring unsupported mode", { mode });
       }
 
       const qs = await db
