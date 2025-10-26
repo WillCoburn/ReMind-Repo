@@ -134,7 +134,7 @@ final class AppViewModel: ObservableObject {
 
     func sendHistoryPdf() async -> (success: Bool, mediaUrl: String?, errorMessage: String?) {
         do {
-            let result = try await functions.httpsCallable("sendOneNow").call(["mode": "historyPdf"])
+            let result = try await functions.httpsCallable("sendHistoryPdf").call([:])
             print("✅ sendHistoryPdf result:", result.data)
             await refreshAll()
 

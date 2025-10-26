@@ -39,6 +39,26 @@ async function sendSMS(client: TwilioClient, params: MsgParams) {
   return client.messages.create(params as any);
 }
 
+async function loadTwilioContext(uid: string) {
+  const userSnap = await db.doc(`users/${uid}`).get();
+  if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+
+  const to = userSnap.get("phoneE164") as string | undefined;
+  if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
+
+  const sid = TWILIO_SID.value();
+  const token = TWILIO_AUTH.value();
+  const from = TWILIO_FROM.value();
+  const msid = TWILIO_MSID.value();
+
+  return {
+    to,
+    from,
+    msid,
+    client: getTwilioClient(sid, token),
+  };
+}
+
 function parseTwilioPayload(req: any) {
   const contentType = (req.headers["content-type"] || "").toString();
 
@@ -319,7 +339,6 @@ async function pickEntry(uid: string) {
   const unsent = await db
     .collection(`users/${uid}/entries`)
     .where("sent", "==", false)
-    .orderBy("createdAt", "desc")
     .limit(50)
     .get();
 
@@ -342,6 +361,30 @@ async function pickEntry(uid: string) {
   const chosen = docs[Math.floor(Math.random() * docs.length)];
   const data = chosen.data() as any;
   return (data.text ?? data.content ?? "").toString().trim() || null;
+}
+
+async function pickEntryDoc(uid: string) {
+  const unsent = await db
+    .collection(`users/${uid}/entries`)
+    .where("sent", "==", false)
+    .limit(50)
+    .get();
+
+  if (!unsent.empty) {
+    const docs = unsent.docs;
+    return docs[Math.floor(Math.random() * docs.length)];
+  }
+
+  const all = await db
+    .collection(`users/${uid}/entries`)
+    .orderBy("createdAt", "desc")
+    .limit(25)
+    .get();
+
+  if (all.empty) return null;
+
+  const docs = all.docs;
+  return docs[Math.floor(Math.random() * docs.length)];
 }
 
 // ---------- sendOneNow (kept) ----------
@@ -368,118 +411,14 @@ export const sendOneNow = onCall(
       const uid = req.auth?.uid;
       if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
 
-      const userSnap = await db.doc(`users/${uid}`).get();
-      if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+      const { to, from, msid, client } = await loadTwilioContext(uid);
 
-      const to = userSnap.get("phoneE164") as string | undefined;
-      if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
-
-      const sid = TWILIO_SID.value();
-      const token = TWILIO_AUTH.value();
-      const from = TWILIO_FROM.value();
-      const msid = TWILIO_MSID.value();
-
-      const client = getTwilioClient(sid, token);
-      const mode = typeof req.data?.mode === "string" ? req.data.mode : "";
-
-      if (mode === "historyPdf") {
-        const entriesSnap = await db
-          .collection(`users/${uid}/entries`)
-          .orderBy("createdAt", "asc")
-          .get();
-
-        if (entriesSnap.empty)
-          throw new HttpsError("failed-precondition", "No entries available.");
-
-        const entries: HistoryEntry[] = entriesSnap.docs
-          .map((doc) => {
-            const data = doc.data() as any;
-            const createdAt = data.createdAt?.toDate?.() ?? null;
-            const text = (data.text ?? data.content ?? "").toString().trim();
-            return { text, createdAt };
-          })
-          .filter((entry) => entry.text.length > 0);
-
-        if (entries.length === 0)
-          throw new HttpsError("failed-precondition", "No entries available.");
-
-        const settings = await loadSettings(uid);
-        const pdfBuffer = await generateHistoryPdf(entries, {
-          timeZone: settings.tzIdentifier,
-          title: "Your ReMind History",
-        });
-
-        const bucket = admin.storage().bucket();
-        const now = new Date();
-        const safeTs = now.toISOString().replace(/[:.]/g, "-");
-        const filePath = `exports/${uid}/history-${safeTs}.pdf`;
-        const file = bucket.file(filePath);
-
-        await file.save(pdfBuffer, {
-          resumable: false,
-          metadata: {
-            contentType: "application/pdf",
-          },
-        });
-
-        const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 6);
-        const [signedUrl] = await file.getSignedUrl({
-          action: "read",
-          expires: expiresAt,
-        });
-
-        const msgParams = buildMsgParams({
-          to,
-          body: "Here is your ReMind history PDF.",
-          from,
-          msid,
-          mediaUrls: [signedUrl],
-        });
-
-        const res = await sendSMS(client, msgParams);
-
-        const batch = db.batch();
-        entriesSnap.docs.forEach((doc) => {
-          batch.set(
-            doc.ref,
-            {
-              deliveredVia: "pdf",
-            },
-            { merge: true }
-          );
-        });
-        await batch.commit();
-
-        logger.info("[sendOneNow] history PDF sent", {
-          messageSid: res.sid,
-          totalEntries: entries.length,
-        });
-
-        return {
-          ok: true,
-          messageSid: res.sid,
-          mediaUrl: signedUrl,
-          expiresAt: expiresAt.toISOString(),
-        };
-      }
-
-      const qs = await db
-        .collection(`users/${uid}/entries`)
-        .orderBy("createdAt", "asc")
-        .limit(25)
-        .get();
-
-      const candidate =
-        qs.docs.find((d) => {
-          const data = d.data() as any;
-          const noSentAt = !("sentAt" in data) || data.sentAt === null;
-          const notMarkedSent = data.sent !== true;
-          return noSentAt && notMarkedSent;
-        }) || qs.docs[0];
+      const candidate = await pickEntryDoc(uid);
 
       if (!candidate) throw new HttpsError("failed-precondition", "No entries available.");
 
-      const text = (candidate.get("text") as string) || "(no text)";
+      const data = candidate.data() as any;
+      const text = (data.text ?? data.content ?? "").toString().trim() || "(no text)";
 
       const msgParams = buildMsgParams({ to, body: text, from, msid });
       const res = await sendSMS(client, msgParams);
@@ -502,6 +441,101 @@ export const sendOneNow = onCall(
 
       if (err?.moreInfo || err?.code || err?.status) throw twilioHttpsError(err);
       logger.error("[sendOneNow] unexpected error", { message: err?.message });
+      throw new HttpsError("internal", err?.message ?? "Unknown error");
+    }
+  }
+);
+
+export const sendHistoryPdf = onCall(
+  { secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID], invoker: "public" },
+  async (req) => {
+    try {
+      const uid = req.auth?.uid;
+      if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
+
+      const { to, from, msid, client } = await loadTwilioContext(uid);
+
+      const entriesSnap = await db
+        .collection(`users/${uid}/entries`)
+        .orderBy("createdAt", "asc")
+        .get();
+
+      if (entriesSnap.empty)
+        throw new HttpsError("failed-precondition", "No entries available.");
+
+      const entries: HistoryEntry[] = entriesSnap.docs
+        .map((doc) => {
+          const data = doc.data() as any;
+          const createdAt = data.createdAt?.toDate?.() ?? null;
+          const text = (data.text ?? data.content ?? "").toString().trim();
+          return { text, createdAt };
+        })
+        .filter((entry) => entry.text.length > 0);
+
+      if (entries.length === 0)
+        throw new HttpsError("failed-precondition", "No entries available.");
+
+      const settings = await loadSettings(uid);
+      const pdfBuffer = await generateHistoryPdf(entries, {
+        timeZone: settings.tzIdentifier,
+        title: "Your ReMind History",
+      });
+
+      const bucket = admin.storage().bucket();
+      const now = new Date();
+      const safeTs = now.toISOString().replace(/[:.]/g, "-");
+      const filePath = `exports/${uid}/history-${safeTs}.pdf`;
+      const file = bucket.file(filePath);
+
+      await file.save(pdfBuffer, {
+        resumable: false,
+        metadata: {
+          contentType: "application/pdf",
+        },
+      });
+
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 6);
+      const [signedUrl] = await file.getSignedUrl({
+        action: "read",
+        expires: expiresAt,
+      });
+
+      const msgParams = buildMsgParams({
+        to,
+        body: "Here is your ReMind history PDF.",
+        from,
+        msid,
+        mediaUrls: [signedUrl],
+      });
+
+      const res = await sendSMS(client, msgParams);
+
+      const batch = db.batch();
+      entriesSnap.docs.forEach((doc) => {
+        batch.set(
+          doc.ref,
+          {
+            deliveredVia: "pdf",
+          },
+          { merge: true }
+        );
+      });
+      await batch.commit();
+
+      logger.info("[sendHistoryPdf] history PDF sent", {
+        messageSid: res.sid,
+        totalEntries: entries.length,
+      });
+
+      return {
+        ok: true,
+        messageSid: res.sid,
+        mediaUrl: signedUrl,
+        expiresAt: expiresAt.toISOString(),
+      };
+    } catch (err: any) {
+      if (err?.moreInfo || err?.code || err?.status) throw twilioHttpsError(err);
+      logger.error("[sendHistoryPdf] unexpected error", { message: err?.message });
       throw new HttpsError("internal", err?.message ?? "Unknown error");
     }
   }
