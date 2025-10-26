@@ -11,6 +11,14 @@ import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import Twilio, { Twilio as TwilioClient } from "twilio";
 
+// Node stdlib for PDF export
+import * as os from "node:os";
+import * as path from "node:path";
+import * as fs from "node:fs";
+
+// PDFKit (CommonJS import keeps TS happy regardless of tsconfig esModuleInterop)
+const PDFDocument = require("pdfkit");
+
 // ----- Global options (region) -----
 setGlobalOptions({ region: "us-central1" });
 
@@ -500,8 +508,6 @@ export const triggerWelcome = onCall(
   }
 );
 
-
-
 // ---------- minuteCron (scheduled sender) ----------
 export const minuteCron = onSchedule(
   {
@@ -721,3 +727,174 @@ export const twilioInboundSms = onRequest(async (req, res) => {
 
   res.status(200).set("Content-Type", "text/xml").send(responseBody);
 });
+
+// ---------------------------------------------------------------------------
+// NEW: exportEntriesPdf (callable)
+// - Pulls all users/{uid}/entries ordered asc
+// - Generates a paginated PDF (one entry per page for simplicity/legibility)
+// - Uploads to default Storage bucket under exports/{uid}/...pdf
+// - Creates a signed URL (~30 days)
+// - Texts the link to the user's phone (phoneE164) using Twilio
+// - Returns { url, count }
+// ---------------------------------------------------------------------------
+export const exportEntriesPdf = onCall(
+  { secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID], invoker: "public" },
+  async (req) => {
+    try {
+      const uid = req.auth?.uid;
+      if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
+
+      // Optional range filters: ISO strings (e.g., "2025-01-01T00:00:00Z")
+      const { dateFrom, dateTo } = (req.data as { dateFrom?: string; dateTo?: string }) ?? {};
+
+      // Resolve destination phone
+      const userSnap = await db.doc(`users/${uid}`).get();
+      if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+      const to = (userSnap.get("phoneE164") as string | undefined) || null;
+      if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
+
+      // Fetch entries
+      let q = db.collection(`users/${uid}/entries`).orderBy("createdAt", "asc");
+      if (dateFrom) q = q.where("createdAt", ">=", new Date(dateFrom));
+      if (dateTo) q = q.where("createdAt", "<=", new Date(dateTo));
+      const snap = await q.get();
+
+      const entries = snap.docs.map((d) => {
+        const data = d.data() as {
+          text?: string;
+          createdAt?: admin.firestore.Timestamp | Date | string | number;
+          sent?: boolean;
+        };
+        const created =
+          data?.createdAt instanceof admin.firestore.Timestamp
+            ? data.createdAt.toDate()
+            : data?.createdAt
+            ? new Date(data.createdAt as any)
+            : null;
+        return {
+          id: d.id,
+          text: (data.text || "").toString(),
+          createdAt: created,
+          sent: !!data.sent,
+        };
+      });
+
+      if (entries.length === 0) {
+        throw new HttpsError("not-found", "No entries to export for the selected range.");
+      }
+
+      // Create PDF in /tmp
+      const now = new Date();
+      const filename = `ReMind-Entries-${now.toISOString().slice(0, 19).replace(/[:T]/g, "-")}.pdf`;
+      const tmpPath = path.join(os.tmpdir(), filename);
+
+      await new Promise<void>((resolve, reject) => {
+        try {
+          const doc = new (PDFDocument as any)({ autoFirstPage: false });
+          const out = fs.createWriteStream(tmpPath);
+          doc.pipe(out);
+
+          const margin = 54;
+
+          // Title page
+          doc.addPage({ size: "LETTER", margins: { top: margin, bottom: margin, left: margin, right: margin } });
+          doc.fontSize(24).text("ReMind – Entry Export", { align: "center" });
+          doc.moveDown();
+          doc.fontSize(12).text(`User: ${uid}`, { align: "center" });
+          doc.text(`Exported: ${now.toLocaleString()}`, { align: "center" });
+          doc.moveDown(2);
+          doc.fontSize(10).fillColor("gray").text("This PDF contains all of your entries in chronological order.", { align: "center" });
+          doc.fillColor("black");
+
+          // Entries (one page per entry = simplest robust pagination)
+          for (const e of entries) {
+            doc.addPage({ size: "LETTER", margins: { top: margin, bottom: margin, left: margin, right: margin } });
+
+            // Header line with date/time
+            const when = e.createdAt ? e.createdAt.toLocaleString() : "Unknown date";
+            doc.fontSize(10).fillColor("gray").text(when, { align: "right" });
+            doc.moveDown(0.5).fillColor("black");
+
+            // Body
+            const body = e.text && e.text.trim().length > 0 ? e.text : "(empty)";
+            doc.fontSize(12).text(body, { align: "left" });
+
+            // Optional: mark if sent previously
+            if (e.sent) {
+              doc.moveDown(1);
+              doc.fontSize(9).fillColor("gray").text("Previously sent as a message", { align: "left" });
+              doc.fillColor("black");
+            }
+          }
+
+          doc.end();
+          out.on("finish", () => resolve());
+          out.on("error", (err) => reject(err));
+        } catch (err) {
+          reject(err);
+        }
+      });
+
+      // Upload to Storage
+      const bucket = admin.storage().bucket();
+      const destPath = `exports/${uid}/${filename}`;
+
+      await bucket.upload(tmpPath, {
+        destination: destPath,
+        metadata: {
+          contentType: "application/pdf",
+          cacheControl: "public, max-age=3600",
+        },
+      });
+
+      // Remove tmp file
+      try { fs.unlinkSync(tmpPath); } catch {}
+
+      // Signed URL (30 days)
+      const [signedUrl] = await bucket
+        .file(destPath)
+        .getSignedUrl({ action: "read", expires: Date.now() + 1000 * 60 * 60 * 24 * 30 });
+
+      // SMS link via Twilio
+      const sid = TWILIO_SID.value();
+      const token = TWILIO_AUTH.value();
+      const from = TWILIO_FROM.value();
+      const msid = TWILIO_MSID.value();
+      const client = getTwilioClient(sid, token);
+
+      const smsBody =
+        "Your ReMind entries export is ready.\n" +
+        "Tap to view/download your PDF:\n" +
+        `${signedUrl}\n\n` +
+        "If the link expires, request a fresh export from the app.";
+
+      try {
+        const params = buildMsgParams({ to, body: smsBody, from, msid });
+        await sendSMS(client, params);
+      } catch (err: any) {
+        if (isTwilioStopError(err)) {
+          await applyOptOut(uid);
+        }
+        // We still return the URL even if SMS fails
+        logger.error("[exportEntriesPdf] Twilio send failed", {
+          code: err?.code, status: err?.status, moreInfo: err?.moreInfo, message: err?.message,
+        });
+      }
+
+      // Save export metadata
+      await db.collection("users").doc(uid).collection("exports").add({
+        path: destPath,
+        url: signedUrl,
+        count: entries.length,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        range: { from: dateFrom || null, to: dateTo || null },
+      });
+
+      return { url: signedUrl, count: entries.length };
+    } catch (err: any) {
+      logger.error("[exportEntriesPdf] failed", { message: err?.message });
+      if (err instanceof HttpsError) throw err;
+      throw new HttpsError("internal", err?.message || "Export failed.");
+    }
+  }
+);
