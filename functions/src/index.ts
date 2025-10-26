@@ -462,12 +462,24 @@ export const sendOneNow = onCall(
         const filePath = `exports/${uid}/history-${safeTs}.pdf`;
         const file = bucket.file(filePath);
 
-        await file.save(pdfBuffer, {
-          resumable: false,
-          metadata: {
-            contentType: "application/pdf",
-          },
-        });
+        try {
+          await file.save(pdfBuffer, {
+            resumable: false,
+            metadata: {
+              contentType: "application/pdf",
+            },
+          });
+        } catch (err: any) {
+          logger.error("[sendOneNow] failed to store history PDF", {
+            bucket: bucket.name,
+            filePath,
+            error: err,
+          });
+          throw new HttpsError(
+            "internal",
+            "Unable to store history export. Please try again later."
+          );
+        }
 
         const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 6);
         const [signedUrl] = await file.getSignedUrl({
