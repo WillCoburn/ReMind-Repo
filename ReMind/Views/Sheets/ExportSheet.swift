@@ -17,7 +17,7 @@ struct ExportSheet: View {
             VStack(spacing: 20) {
                 Image(systemName: "doc.text.fill")
                     .font(.system(size: 48))
-                    .foregroundStyle(.accent)
+                    .foregroundStyle(Color.accentColor) // <- FIX
 
                 Text("Text a PDF of your history")
                     .font(.title3.weight(.semibold))
@@ -93,4 +93,3 @@ struct ExportSheet: View {
         }
     }
 }
-
