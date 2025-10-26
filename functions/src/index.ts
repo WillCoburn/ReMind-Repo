@@ -10,6 +10,7 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import Twilio, { Twilio as TwilioClient } from "twilio";
+import PDFDocument from "pdfkit";
 
 // ----- Global options (region) -----
 setGlobalOptions({ region: "us-central1" });
@@ -31,8 +32,8 @@ function getTwilioClient(sid: string, auth: string): TwilioClient {
 }
 
 type MsgParams =
-  | { to: string; body: string; from: string }
-  | { to: string; body: string; messagingServiceSid: string };
+  | { to: string; body: string; from: string; mediaUrl?: string[] }
+  | { to: string; body: string; messagingServiceSid: string; mediaUrl?: string[] };
 
 async function sendSMS(client: TwilioClient, params: MsgParams) {
   return client.messages.create(params as any);
@@ -63,11 +64,84 @@ function buildMsgParams(opts: {
   body: string;
   from?: string | null;
   msid?: string | null;
+  mediaUrls?: string[];
 }): MsgParams {
-  const { to, body, from, msid } = opts;
+  const { to, body, from, msid, mediaUrls } = opts;
   return msid
-    ? { to, body, messagingServiceSid: msid }
-    : { to, body, from: from as string };
+    ? { to, body, messagingServiceSid: msid, mediaUrl: mediaUrls }
+    : { to, body, from: from as string, mediaUrl: mediaUrls };
+}
+
+type HistoryEntry = {
+  text: string;
+  createdAt: Date | null;
+};
+
+function formatTimestamp(date: Date | null, timeZone: string) {
+  if (!date) return "Unknown date";
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone,
+    }).format(date);
+  } catch (err) {
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(date);
+  }
+}
+
+async function generateHistoryPdf(entries: HistoryEntry[], opts: {
+  timeZone: string;
+  title?: string;
+}): Promise<Buffer> {
+  const { timeZone, title = "ReMind History" } = opts;
+
+  const doc = new PDFDocument({ margin: 56, size: "LETTER" });
+  const buffers: Buffer[] = [];
+
+  doc.on("data", (chunk) => buffers.push(Buffer.from(chunk)));
+
+  const bufferPromise = new Promise<Buffer>((resolve, reject) => {
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+    doc.on("error", (err) => reject(err));
+  });
+
+  doc.fontSize(22).text(title, { align: "center" });
+  doc.moveDown();
+  doc
+    .fontSize(12)
+    .fillColor("#555555")
+    .text(`Generated on ${formatTimestamp(new Date(), timeZone)}`);
+  doc.moveDown(1.5);
+
+  entries.forEach((entry, index) => {
+    const timestamp = formatTimestamp(entry.createdAt, timeZone);
+
+    doc
+      .fontSize(12)
+      .fillColor("#1a1a1a")
+      .text(timestamp, { continued: false });
+
+    doc.moveDown(0.25);
+
+    doc
+      .fontSize(12)
+      .fillColor("#000000")
+      .text(entry.text || "(no text)", {
+        width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
+      });
+
+    if (index < entries.length - 1) {
+      doc.moveDown(1);
+    }
+  });
+
+  doc.end();
+
+  return bufferPromise;
 }
 
 const clampRate = (r: number) => Math.min(5, Math.max(0.1, r));
@@ -300,6 +374,95 @@ export const sendOneNow = onCall(
       const to = userSnap.get("phoneE164") as string | undefined;
       if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
 
+      const sid = TWILIO_SID.value();
+      const token = TWILIO_AUTH.value();
+      const from = TWILIO_FROM.value();
+      const msid = TWILIO_MSID.value();
+
+      const client = getTwilioClient(sid, token);
+      const mode = typeof req.data?.mode === "string" ? req.data.mode : "";
+
+      if (mode === "historyPdf") {
+        const entriesSnap = await db
+          .collection(`users/${uid}/entries`)
+          .orderBy("createdAt", "asc")
+          .get();
+
+        if (entriesSnap.empty)
+          throw new HttpsError("failed-precondition", "No entries available.");
+
+        const entries: HistoryEntry[] = entriesSnap.docs
+          .map((doc) => {
+            const data = doc.data() as any;
+            const createdAt = data.createdAt?.toDate?.() ?? null;
+            const text = (data.text ?? data.content ?? "").toString().trim();
+            return { text, createdAt };
+          })
+          .filter((entry) => entry.text.length > 0);
+
+        if (entries.length === 0)
+          throw new HttpsError("failed-precondition", "No entries available.");
+
+        const settings = await loadSettings(uid);
+        const pdfBuffer = await generateHistoryPdf(entries, {
+          timeZone: settings.tzIdentifier,
+          title: "Your ReMind History",
+        });
+
+        const bucket = admin.storage().bucket();
+        const now = new Date();
+        const safeTs = now.toISOString().replace(/[:.]/g, "-");
+        const filePath = `exports/${uid}/history-${safeTs}.pdf`;
+        const file = bucket.file(filePath);
+
+        await file.save(pdfBuffer, {
+          resumable: false,
+          metadata: {
+            contentType: "application/pdf",
+          },
+        });
+
+        const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 6);
+        const [signedUrl] = await file.getSignedUrl({
+          action: "read",
+          expires: expiresAt,
+        });
+
+        const msgParams = buildMsgParams({
+          to,
+          body: "Here is your ReMind history PDF.",
+          from,
+          msid,
+          mediaUrls: [signedUrl],
+        });
+
+        const res = await sendSMS(client, msgParams);
+
+        const batch = db.batch();
+        entriesSnap.docs.forEach((doc) => {
+          batch.set(
+            doc.ref,
+            {
+              deliveredVia: "pdf",
+            },
+            { merge: true }
+          );
+        });
+        await batch.commit();
+
+        logger.info("[sendOneNow] history PDF sent", {
+          messageSid: res.sid,
+          totalEntries: entries.length,
+        });
+
+        return {
+          ok: true,
+          messageSid: res.sid,
+          mediaUrl: signedUrl,
+          expiresAt: expiresAt.toISOString(),
+        };
+      }
+
       const qs = await db
         .collection(`users/${uid}/entries`)
         .orderBy("createdAt", "asc")
@@ -318,12 +481,6 @@ export const sendOneNow = onCall(
 
       const text = (candidate.get("text") as string) || "(no text)";
 
-      const sid = TWILIO_SID.value();
-      const token = TWILIO_AUTH.value();
-      const from = TWILIO_FROM.value();
-      const msid = TWILIO_MSID.value();
-
-      const client = getTwilioClient(sid, token);
       const msgParams = buildMsgParams({ to, body: text, from, msid });
       const res = await sendSMS(client, msgParams);
 

@@ -132,6 +132,22 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    func sendHistoryPdf() async -> (success: Bool, mediaUrl: String?, errorMessage: String?) {
+        do {
+            let result = try await functions.httpsCallable("sendOneNow").call(["mode": "historyPdf"])
+            print("✅ sendHistoryPdf result:", result.data)
+            await refreshAll()
+
+            if let payload = result.data as? [String: Any], let url = payload["mediaUrl"] as? String {
+                return (true, url, nil)
+            }
+            return (true, nil, nil)
+        } catch {
+            print("❌ sendHistoryPdf error:", error.localizedDescription)
+            return (false, nil, error.localizedDescription)
+        }
+    }
+
     // MARK: - Logout
     func logout() {
         do { try Auth.auth().signOut() } catch {
