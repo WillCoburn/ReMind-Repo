@@ -385,7 +385,7 @@ export const sendOneNow = onCall(
       if (mode === "historyPdf") {
         const entriesSnap = await db
           .collection(`users/${uid}/entries`)
-          .orderBy("createdAt", "asc")
+          .orderBy("createdAt", "desc")
           .get();
 
         if (entriesSnap.empty)
