@@ -11,13 +11,13 @@ import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import Twilio, { Twilio as TwilioClient } from "twilio";
 
+
 // Node stdlib for PDF export
 import * as os from "node:os";
 import * as path from "node:path";
 import * as fs from "node:fs";
 
-// PDFKit (CommonJS import keeps TS happy regardless of tsconfig esModuleInterop)
-const PDFDocument = require("pdfkit");
+
 
 // ----- Global options (region) -----
 setGlobalOptions({ region: "us-central1" });
@@ -729,14 +729,40 @@ export const twilioInboundSms = onRequest(async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// NEW: exportEntriesPdf (callable)
-// - Pulls all users/{uid}/entries ordered asc
-// - Generates a paginated PDF (one entry per page for simplicity/legibility)
-// - Uploads to default Storage bucket under exports/{uid}/...pdf
-// - Creates a signed URL (~30 days)
-// - Texts the link to the user's phone (phoneE164) using Twilio
-// - Returns { url, count }
+// NEW: exportEntriesPdf (callable) — lazy-load PDFKit inside handler
 // ---------------------------------------------------------------------------
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import * as logger from "firebase-functions/logger";
+import * as admin from "firebase-admin";
+import { defineSecret } from "firebase-functions/params";
+import Twilio, { Twilio as TwilioClient } from "twilio";
+
+// reuse your existing secrets/constants/helpers already defined above:
+// TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID
+// getTwilioClient, buildMsgParams, isTwilioStopError, etc.
+
+// Helper you already have above:
+async function getUserPhoneE164(uid: string): Promise<string | null> {
+  // Keep your existing implementation; include here only if it doesn't already exist.
+  const userDoc = await admin.firestore().doc(`users/${uid}`).get();
+  const fsPhone =
+    (userDoc.get("phoneE164") as string | undefined) ||
+    (userDoc.get("phone") as string | undefined) ||
+    null;
+  if (fsPhone && /^(\+)[1-9]\d{1,14}$/.test(fsPhone)) return fsPhone;
+  try {
+    const authUser = await admin.auth().getUser(uid);
+    const authPhone = authUser.phoneNumber || null;
+    if (authPhone && /^(\+)[1-9]\d{1,14}$/.test(authPhone)) {
+      await admin.firestore().doc(`users/${uid}`).set({ phoneE164: authPhone }, { merge: true });
+      return authPhone;
+    }
+  } catch (e: any) {
+    logger.warn("[getUserPhoneE164] auth lookup failed", { uid, message: e?.message });
+  }
+  return null;
+}
+
 export const exportEntriesPdf = onCall(
   { secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID], invoker: "public" },
   async (req) => {
@@ -744,17 +770,14 @@ export const exportEntriesPdf = onCall(
       const uid = req.auth?.uid;
       if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
 
-      // Optional range filters: ISO strings (e.g., "2025-01-01T00:00:00Z")
       const { dateFrom, dateTo } = (req.data as { dateFrom?: string; dateTo?: string }) ?? {};
 
-      // Resolve destination phone
-      const userSnap = await db.doc(`users/${uid}`).get();
-      if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
-      const to = (userSnap.get("phoneE164") as string | undefined) || null;
-      if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
+      // Ensure user exists
+      const userSnap = await admin.firestore().doc(`users/${uid}`).get();
+      if (!userSnap.exists) throw new HttpsError("not-found", "User not found.", { reason: "user_missing" });
 
       // Fetch entries
-      let q = db.collection(`users/${uid}/entries`).orderBy("createdAt", "asc");
+      let q = admin.firestore().collection(`users/${uid}/entries`).orderBy("createdAt", "asc");
       if (dateFrom) q = q.where("createdAt", ">=", new Date(dateFrom));
       if (dateTo) q = q.where("createdAt", "<=", new Date(dateTo));
       const snap = await q.get();
@@ -780,8 +803,12 @@ export const exportEntriesPdf = onCall(
       });
 
       if (entries.length === 0) {
-        throw new HttpsError("not-found", "No entries to export for the selected range.");
+        throw new HttpsError("not-found", "No entries to export for the selected range.", { reason: "no_entries" });
       }
+
+      // ✅ Lazy-load pdfkit inside the handler to avoid deploy analyzer timeouts
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const PDFDocument = require("pdfkit");
 
       // Create PDF in /tmp
       const now = new Date();
@@ -790,7 +817,7 @@ export const exportEntriesPdf = onCall(
 
       await new Promise<void>((resolve, reject) => {
         try {
-          const doc = new (PDFDocument as any)({ autoFirstPage: false });
+          const doc = new PDFDocument({ autoFirstPage: false });
           const out = fs.createWriteStream(tmpPath);
           doc.pipe(out);
 
@@ -803,23 +830,17 @@ export const exportEntriesPdf = onCall(
           doc.fontSize(12).text(`User: ${uid}`, { align: "center" });
           doc.text(`Exported: ${now.toLocaleString()}`, { align: "center" });
           doc.moveDown(2);
-          doc.fontSize(10).fillColor("gray").text("This PDF contains all of your entries in chronological order.", { align: "center" });
+          doc.fontSize(10).fillColor("gray").text("This PDF contains your entries in chronological order.", { align: "center" });
           doc.fillColor("black");
 
-          // Entries (one page per entry = simplest robust pagination)
+          // Entries
           for (const e of entries) {
             doc.addPage({ size: "LETTER", margins: { top: margin, bottom: margin, left: margin, right: margin } });
-
-            // Header line with date/time
             const when = e.createdAt ? e.createdAt.toLocaleString() : "Unknown date";
             doc.fontSize(10).fillColor("gray").text(when, { align: "right" });
             doc.moveDown(0.5).fillColor("black");
-
-            // Body
             const body = e.text && e.text.trim().length > 0 ? e.text : "(empty)";
             doc.fontSize(12).text(body, { align: "left" });
-
-            // Optional: mark if sent previously
             if (e.sent) {
               doc.moveDown(1);
               doc.fontSize(9).fillColor("gray").text("Previously sent as a message", { align: "left" });
@@ -838,63 +859,54 @@ export const exportEntriesPdf = onCall(
       // Upload to Storage
       const bucket = admin.storage().bucket();
       const destPath = `exports/${uid}/${filename}`;
-
       await bucket.upload(tmpPath, {
         destination: destPath,
-        metadata: {
-          contentType: "application/pdf",
-          cacheControl: "public, max-age=3600",
-        },
+        metadata: { contentType: "application/pdf", cacheControl: "public, max-age=3600" },
       });
-
-      // Remove tmp file
       try { fs.unlinkSync(tmpPath); } catch {}
 
       // Signed URL (30 days)
-      const [signedUrl] = await bucket
-        .file(destPath)
+      const [signedUrl] = await bucket.file(destPath)
         .getSignedUrl({ action: "read", expires: Date.now() + 1000 * 60 * 60 * 24 * 30 });
 
-      // SMS link via Twilio
-      const sid = TWILIO_SID.value();
-      const token = TWILIO_AUTH.value();
-      const from = TWILIO_FROM.value();
-      const msid = TWILIO_MSID.value();
-      const client = getTwilioClient(sid, token);
-
-      const smsBody =
-        "Your ReMind entries export is ready.\n" +
-        "Tap to view/download your PDF:\n" +
-        `${signedUrl}\n\n` +
-        "If the link expires, request a fresh export from the app.";
-
-      try {
-        const params = buildMsgParams({ to, body: smsBody, from, msid });
-        await sendSMS(client, params);
-      } catch (err: any) {
-        if (isTwilioStopError(err)) {
-          await applyOptOut(uid);
+      // Try to SMS the link; don't fail export if phone missing or SMS fails
+      const to = await getUserPhoneE164(uid);
+      let smsSent = false;
+      if (to) {
+        const sid = TWILIO_SID.value();
+        const token = TWILIO_AUTH.value();
+        const from = TWILIO_FROM.value();
+        const msid = TWILIO_MSID.value();
+        const client = getTwilioClient(sid, token);
+        const smsBody = `Your ReMind entries export is ready.\n${signedUrl}\n\nIf the link expires, request a fresh export from the app.`;
+        try {
+          const params = buildMsgParams({ to, body: smsBody, from, msid });
+          await client.messages.create(params as any);
+          smsSent = true;
+        } catch (err: any) {
+          if (isTwilioStopError(err)) await admin.firestore().doc(`users/${uid}`).set({ active: false, smsOptOut: true }, { merge: true });
+          logger.error("[exportEntriesPdf] Twilio send failed", {
+            code: err?.code, status: err?.status, moreInfo: err?.moreInfo, message: err?.message,
+          });
         }
-        // We still return the URL even if SMS fails
-        logger.error("[exportEntriesPdf] Twilio send failed", {
-          code: err?.code, status: err?.status, moreInfo: err?.moreInfo, message: err?.message,
-        });
+      } else {
+        logger.warn("[exportEntriesPdf] no phone found for user; skipping SMS", { uid });
       }
 
-      // Save export metadata
-      await db.collection("users").doc(uid).collection("exports").add({
+      await admin.firestore().collection("users").doc(uid).collection("exports").add({
         path: destPath,
         url: signedUrl,
         count: entries.length,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         range: { from: dateFrom || null, to: dateTo || null },
+        smsSent,
       });
 
-      return { url: signedUrl, count: entries.length };
+      return { url: signedUrl, count: entries.length, smsSent };
     } catch (err: any) {
       logger.error("[exportEntriesPdf] failed", { message: err?.message });
       if (err instanceof HttpsError) throw err;
-      throw new HttpsError("internal", err?.message || "Export failed.");
+      throw new HttpsError("internal", err?.message || "Export failed.", { reason: "internal_error" });
     }
   }
 );
