@@ -100,24 +100,32 @@ struct ExportSheet: View {
     }
 }
 
-// Simple toast view modifier (lightweight)
-fileprivate struct Toast<Content: View>: ViewModifier {
+// Simple toast view modifier (fixed)
+fileprivate struct ToastOverlay<ToastView: View>: ViewModifier {
     @Binding var isPresented: Bool
-    let content: () -> Content
-    func body(content base: ContentOf<Self>) -> some View {
+    let overlay: () -> ToastView
+
+    func body(content: Content) -> some View {
         ZStack {
-            base
+            content
             if isPresented {
-                VStack { self.content(); Spacer().frame(height: 0) }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                    .animation(.easeInOut(duration: 0.25), value: isPresented)
+                VStack {
+                    overlay()
+                    Spacer().frame(height: 0)
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+                .animation(.easeInOut(duration: 0.25), value: isPresented)
             }
         }
     }
 }
 
 fileprivate extension View {
-    func toast<Content: View>(isPresented: Binding<Bool>, @ViewBuilder _ content: @escaping () -> Content) -> some View {
-        self.modifier(Toast(isPresented: isPresented, content: content))
+    func toast<ToastView: View>(
+        isPresented: Binding<Bool>,
+        @ViewBuilder _ overlay: @escaping () -> ToastView
+    ) -> some View {
+        modifier(ToastOverlay(isPresented: isPresented, overlay: overlay))
     }
 }
+
