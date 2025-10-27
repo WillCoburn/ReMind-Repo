@@ -878,3 +878,4 @@ export const twilioInboundSms = onRequest(async (req, res) => {
 
   res.status(200).set("Content-Type", "text/xml").send(responseBody);
 });
+export { exportHistoryPdf } from "./exports/http/exportHistory";

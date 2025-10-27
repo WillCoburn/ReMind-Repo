@@ -132,19 +132,24 @@ final class AppViewModel: ObservableObject {
         }
     }
 
-    func sendHistoryPdf() async -> (success: Bool, mediaUrl: String?, errorMessage: String?) {
+    func sendHistoryPdf() async -> ExportResult {
         do {
-            let result = try await functions.httpsCallable("sendOneNow").call(["mode": "historyPdf"])
-            print("✅ sendHistoryPdf result:", result.data)
-            await refreshAll()
+            let callable = functions.httpsCallable("exportHistoryPdf")
+            let result = try await callable.call([:])
 
-            if let payload = result.data as? [String: Any], let url = payload["mediaUrl"] as? String {
-                return (true, url, nil)
+            guard let payload = result.data as? [String: Any], let success = payload["success"] as? Bool else {
+                return ExportResult(success: false, mediaUrl: nil, errorMessage: "Unexpected server response.")
             }
-            return (true, nil, nil)
+
+            if success {
+                let url = payload["mediaUrl"] as? String
+                return ExportResult(success: true, mediaUrl: url, errorMessage: nil)
+            } else {
+                let message = payload["errorMessage"] as? String ?? "Unable to export your history right now."
+                return ExportResult(success: false, mediaUrl: nil, errorMessage: message)
+            }
         } catch {
-            print("❌ sendHistoryPdf error:", error.localizedDescription)
-            return (false, nil, error.localizedDescription)
+            return ExportResult(success: false, mediaUrl: nil, errorMessage: error.localizedDescription)
         }
     }
 
