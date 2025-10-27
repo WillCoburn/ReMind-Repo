@@ -151,8 +151,10 @@ async function generateHistoryPdf(entries: HistoryEntry[], opts: {
 }
 
 const HISTORY_EXPORT_BUCKET = process.env.HISTORY_EXPORT_BUCKET?.trim();
+const HISTORY_EXPORT_BUCKET_LOCATION =
+  process.env.HISTORY_EXPORT_BUCKET_LOCATION?.trim() || "us-central1";
 
-function getHistoryExportBucket() {
+async function ensureHistoryExportBucket() {
   const defaultBucket =
     admin.app().options.storageBucket ||
     (process.env.GCLOUD_PROJECT
@@ -168,7 +170,31 @@ function getHistoryExportBucket() {
     );
   }
 
-  return admin.storage().bucket(bucketName);
+  const bucket = admin.storage().bucket(bucketName);
+  const [exists] = await bucket.exists();
+
+  if (!exists) {
+    try {
+      await bucket.create({
+        location: HISTORY_EXPORT_BUCKET_LOCATION,
+        uniformBucketLevelAccess: true,
+      });
+      logger.info("[historyPdf] created storage bucket", { bucket: bucketName });
+    } catch (err: any) {
+      if (err?.code !== 409) {
+        logger.error("[historyPdf] failed to ensure storage bucket", {
+          bucket: bucketName,
+          error: err,
+        });
+        throw new HttpsError(
+          "internal",
+          "Unable to prepare storage for history export."
+        );
+      }
+    }
+  }
+
+  return bucket;
 }
 
 const clampRate = (r: number) => Math.min(5, Math.max(0.1, r));
@@ -436,7 +462,7 @@ export const sendOneNow = onCall(
           title: "Your ReMind History",
         });
 
-        const bucket = getHistoryExportBucket();
+        const bucket = await ensureHistoryExportBucket();
         const now = new Date();
         const safeTs = now.toISOString().replace(/[:.]/g, "-");
         const filePath = `exports/${uid}/history-${safeTs}.pdf`;
