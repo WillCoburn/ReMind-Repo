@@ -721,3 +721,88 @@ export const twilioInboundSms = onRequest(async (req, res) => {
 
   res.status(200).set("Content-Type", "text/xml").send(responseBody);
 });
+
+
+// ===== Export helpers =====
+const TWILIO_ACCOUNT_SID = defineSecret("TWILIO_ACCOUNT_SID");
+const TWILIO_AUTH_TOKEN = defineSecret("TWILIO_AUTH_TOKEN");
+const TWILIO_MESSAGING_SERVICE_SID = defineSecret("TWILIO_MESSAGING_SERVICE_SID");
+const TWILIO_FROM_NUMBER = defineSecret("TWILIO_FROM_NUMBER");
+
+// Returns a signed URL allowing the client to PUT a PDF to a Storage path.
+export const getExportUploadUrl = onCall({ secrets: [TWILIO_ACCOUNT_SID] }, async (req) => {
+  // (Twilio secret listed just to enforce that secrets are configured; unused here.)
+  const uid = req.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Signin required");
+  const path = String((req.data?.path ?? "")).trim();
+  const contentType = String((req.data?.contentType ?? "application/pdf"));
+  if (!path || !path.startsWith(`users/${uid}/exports/`)) {
+    throw new HttpsError("invalid-argument", "Invalid path");
+  }
+  const bucket = admin.storage().bucket();
+  const file = bucket.file(path);
+  // 15 minutes to upload
+  const [url] = await file.getSignedUrl({ action: "write", expires: Date.now() + 15 * 60 * 1000, contentType });
+  return { uploadUrl: url, path };
+});
+
+// Generates a (preferably) 7‑day signed READ URL and sends it via Twilio to the user's phone
+export const sendExportLink = onCall({ secrets: [TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_MESSAGING_SERVICE_SID, TWILIO_FROM_NUMBER] }, async (req) => {
+  const uid = req.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Signin required");
+  const path = String((req.data?.path ?? "")).trim();
+  if (!path || !path.startsWith(`users/${uid}/exports/`)) {
+    throw new HttpsError("invalid-argument", "Invalid path");
+  }
+
+  const bucket = admin.storage().bucket();
+  const file = bucket.file(path);
+
+  // Prefer a 7-day signed URL
+  let link: string | null = null;
+  try {
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    const [signed] = await file.getSignedUrl({ action: "read", expires: Date.now() + sevenDays });
+    link = signed;
+  } catch (e) {
+    logger.warn("Signed URL generation failed, falling back to token", e as Error);
+  }
+
+  if (!link) {
+    // Fallback to token URL
+    const [metadata] = await file.getMetadata().catch(() => [{ metadata: {} } as any]);
+    let token = metadata.metadata?.firebaseStorageDownloadTokens as string | undefined;
+    if (!token) {
+      token = crypto.randomUUID();
+      await file.setMetadata({ metadata: { firebaseStorageDownloadTokens: token } });
+    }
+    const encodedPath = encodeURIComponent(path);
+    const bucketName = bucket.name;
+    link = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodedPath}?alt=media&token=${token}`;
+  }
+
+  // Look up user's phone from Auth
+  const user = await admin.auth().getUser(uid);
+  const to = user.phoneNumber;
+  if (!to) throw new HttpsError("failed-precondition", "No phone on file");
+
+  const sid = TWILIO_ACCOUNT_SID.value();
+  const auth = TWILIO_AUTH_TOKEN.value();
+  const msid = TWILIO_MESSAGING_SERVICE_SID.value();
+  const from = TWILIO_FROM_NUMBER.value();
+
+  const client: TwilioClient = Twilio(sid, auth);
+  const body = `Here’s your ReMind PDF export: ${link} (expires in 7 days).`;
+  const payload: any = { to, body };
+  if (msid) payload.messagingServiceSid = msid; else if (from) payload.from = from;
+
+  try {
+    const msg = await client.messages.create(payload);
+    logger.info("Export SMS queued", { sid: msg.sid, to: to.slice(-4) });
+  } catch (e) {
+    logger.warn("Twilio send failed", e as Error);
+    // We still return the link so the client can show "Copy link" even if SMS fails.
+  }
+
+  return { link };
+});
