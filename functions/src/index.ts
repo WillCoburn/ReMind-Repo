@@ -67,9 +67,15 @@ function buildMsgParams(opts: {
   mediaUrls?: string[];
 }): MsgParams {
   const { to, body, from, msid, mediaUrls } = opts;
-  return msid
-    ? { to, body, messagingServiceSid: msid, mediaUrl: mediaUrls }
-    : { to, body, from: from as string, mediaUrl: mediaUrls };
+  const base = msid
+    ? { to, body, messagingServiceSid: msid }
+    : { to, body, from: from as string };
+
+  if (mediaUrls && mediaUrls.length > 0) {
+    (base as any).mediaUrl = mediaUrls;
+  }
+
+  return base as MsgParams;
 }
 
 type HistoryEntry = {
@@ -487,12 +493,13 @@ export const sendOneNow = onCall(
           expires: expiresAt,
         });
 
+        const smsBody = `Here is your ReMind history PDF:\n${signedUrl}\n\nThis private link will expire in about 6 hours.`;
+
         const msgParams = buildMsgParams({
           to,
-          body: "Here is your ReMind history PDF.",
+          body: smsBody,
           from,
           msid,
-          mediaUrls: [signedUrl],
         });
 
         const res = await sendSMS(client, msgParams);
@@ -518,6 +525,7 @@ export const sendOneNow = onCall(
           ok: true,
           messageSid: res.sid,
           mediaUrl: signedUrl,
+          downloadUrl: signedUrl,
           expiresAt: expiresAt.toISOString(),
         };
       }

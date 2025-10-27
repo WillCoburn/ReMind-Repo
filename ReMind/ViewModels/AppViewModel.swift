@@ -138,8 +138,11 @@ final class AppViewModel: ObservableObject {
             print("✅ sendHistoryPdf result:", result.data)
             await refreshAll()
 
-            if let payload = result.data as? [String: Any], let url = payload["mediaUrl"] as? String {
-                return (true, url, nil)
+            if let payload = result.data as? [String: Any] {
+                let url = payload["downloadUrl"] as? String ?? payload["mediaUrl"] as? String
+                if let url {
+                    return (true, url, nil)
+                }
             }
             return (true, nil, nil)
         } catch {
