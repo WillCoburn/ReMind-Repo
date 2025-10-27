@@ -11,6 +11,7 @@ import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import Twilio, { Twilio as TwilioClient } from "twilio";
 import PDFDocument from "pdfkit";
+import { exportHistoryPdf as exportHistoryPdfImpl } from "./exports/http/exportHistory";
 
 // ----- Global options (region) -----
 setGlobalOptions({ region: "us-central1" });
@@ -878,3 +879,4 @@ export const twilioInboundSms = onRequest(async (req, res) => {
 
   res.status(200).set("Content-Type", "text/xml").send(responseBody);
 });
+export const exportHistoryPdf = exportHistoryPdfImpl;
