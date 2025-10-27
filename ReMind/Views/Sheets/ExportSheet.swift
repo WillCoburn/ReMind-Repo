@@ -11,6 +11,7 @@ struct ExportSheet: View {
     @State private var isSending = false
     @State private var successUrl: String?
     @State private var errorMessage: String?
+    @State private var showConfirmationDialog = false
 
     var body: some View {
         NavigationView {
@@ -51,7 +52,7 @@ struct ExportSheet: View {
                 }
 
                 Button {
-                    Task { await sendExport() }
+                    showConfirmationDialog = true
                 } label: {
                     HStack {
                         if isSending { ProgressView().tint(.white) }
@@ -62,6 +63,17 @@ struct ExportSheet: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(isSending)
+                .confirmationDialog(
+                    "Send your history as a PDF?",
+                    isPresented: $showConfirmationDialog
+                ) {
+                    Button("Yes, text it to me", role: .none) {
+                        Task { await sendExport() }
+                    }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    Text("We’ll generate a PDF with all of your entries, sorted by most recent first, and text it to your saved phone number.")
+                }
 
                 Spacer()
             }

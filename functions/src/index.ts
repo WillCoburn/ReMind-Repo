@@ -67,9 +67,15 @@ function buildMsgParams(opts: {
   mediaUrls?: string[];
 }): MsgParams {
   const { to, body, from, msid, mediaUrls } = opts;
-  return msid
-    ? { to, body, messagingServiceSid: msid, mediaUrl: mediaUrls }
-    : { to, body, from: from as string, mediaUrl: mediaUrls };
+  const base = msid
+    ? { to, body, messagingServiceSid: msid }
+    : { to, body, from: from as string };
+
+  if (mediaUrls && mediaUrls.length > 0) {
+    (base as any).mediaUrl = mediaUrls;
+  }
+
+  return base as MsgParams;
 }
 
 type HistoryEntry = {
@@ -142,6 +148,27 @@ async function generateHistoryPdf(entries: HistoryEntry[], opts: {
   doc.end();
 
   return bufferPromise;
+}
+
+const HISTORY_EXPORT_BUCKET = process.env.HISTORY_EXPORT_BUCKET?.trim();
+
+function getHistoryExportBucket() {
+  const defaultBucket =
+    admin.app().options.storageBucket ||
+    (process.env.GCLOUD_PROJECT
+      ? `${process.env.GCLOUD_PROJECT}.appspot.com`
+      : null);
+
+  const bucketName = HISTORY_EXPORT_BUCKET || defaultBucket;
+
+  if (!bucketName) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Storage bucket not configured for history exports."
+    );
+  }
+
+  return admin.storage().bucket(bucketName);
 }
 
 const clampRate = (r: number) => Math.min(5, Math.max(0.1, r));
@@ -385,7 +412,7 @@ export const sendOneNow = onCall(
       if (mode === "historyPdf") {
         const entriesSnap = await db
           .collection(`users/${uid}/entries`)
-          .orderBy("createdAt", "asc")
+          .orderBy("createdAt", "desc")
           .get();
 
         if (entriesSnap.empty)
@@ -409,18 +436,30 @@ export const sendOneNow = onCall(
           title: "Your ReMind History",
         });
 
-        const bucket = admin.storage().bucket();
+        const bucket = getHistoryExportBucket();
         const now = new Date();
         const safeTs = now.toISOString().replace(/[:.]/g, "-");
         const filePath = `exports/${uid}/history-${safeTs}.pdf`;
         const file = bucket.file(filePath);
 
-        await file.save(pdfBuffer, {
-          resumable: false,
-          metadata: {
-            contentType: "application/pdf",
-          },
-        });
+        try {
+          await file.save(pdfBuffer, {
+            resumable: false,
+            metadata: {
+              contentType: "application/pdf",
+            },
+          });
+        } catch (err: any) {
+          logger.error("[sendOneNow] failed to store history PDF", {
+            bucket: bucket.name,
+            filePath,
+            error: err,
+          });
+          throw new HttpsError(
+            "internal",
+            "Unable to store history export. Please try again later."
+          );
+        }
 
         const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 6);
         const [signedUrl] = await file.getSignedUrl({
@@ -428,12 +467,13 @@ export const sendOneNow = onCall(
           expires: expiresAt,
         });
 
+        const smsBody = `Here is your ReMind history PDF:\n${signedUrl}\n\nThis private link will expire in about 6 hours.`;
+
         const msgParams = buildMsgParams({
           to,
-          body: "Here is your ReMind history PDF.",
+          body: smsBody,
           from,
           msid,
-          mediaUrls: [signedUrl],
         });
 
         const res = await sendSMS(client, msgParams);
@@ -459,6 +499,7 @@ export const sendOneNow = onCall(
           ok: true,
           messageSid: res.sid,
           mediaUrl: signedUrl,
+          downloadUrl: signedUrl,
           expiresAt: expiresAt.toISOString(),
         };
       }
