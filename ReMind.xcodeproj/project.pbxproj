@@ -23,8 +23,9 @@
 		D22EF48E2E7B2FEE00810204 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF48D2E7B2FEE00810204 /* AppViewModel.swift */; };
 		D22EF4902E7B302900810204 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF48F2E7B302900810204 /* RootView.swift */; };
 		D22EF4922E7B303E00810204 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4912E7B303E00810204 /* OnboardingView.swift */; };
-		D22EF4942E7B308B00810204 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4932E7B308B00810204 /* MainView.swift */; };
-		D22EF4972E7B30C000810204 /* HintBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4962E7B30C000810204 /* HintBadge.swift */; };
+                D22EF4942E7B308B00810204 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4932E7B308B00810204 /* MainView.swift */; };
+                D2BEC27F2EB54A3D009E3698 /* ExportResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BEC27E2EB54A3D009E3698 /* ExportResult.swift */; };
+                D22EF4972E7B30C000810204 /* HintBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4962E7B30C000810204 /* HintBadge.swift */; };
 		D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4992E7B30E700810204 /* ExportSheet.swift */; };
 		D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF49B2E7B312B00810204 /* RandomDeliveryWindow.swift */; };
 		D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF49D2E7B314100810204 /* Design+Utils.swift */; };
@@ -82,9 +83,10 @@
 		D22EF47D2E7B2F1300810204 /* Affirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Affirmation.swift; sourceTree = "<group>"; };
 		D22EF47F2E7B2F2F00810204 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		D22EF4832E7B2F5F00810204 /* MessagingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingService.swift; sourceTree = "<group>"; };
-		D22EF4852E7B2F7A00810204 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
-		D22EF4892E7B2FC000810204 /* MockMessagingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMessagingService.swift; sourceTree = "<group>"; };
-		D22EF48B2E7B2FD200810204 /* MockExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockExportService.swift; sourceTree = "<group>"; };
+                D22EF4852E7B2F7A00810204 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
+                D22EF4892E7B2FC000810204 /* MockMessagingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMessagingService.swift; sourceTree = "<group>"; };
+                D2BEC27E2EB54A3D009E3698 /* ExportResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportResult.swift; sourceTree = "<group>"; };
+                D22EF48B2E7B2FD200810204 /* MockExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockExportService.swift; sourceTree = "<group>"; };
 		D22EF48D2E7B2FEE00810204 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
 		D22EF48F2E7B302900810204 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		D22EF4912E7B303E00810204 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -215,15 +217,16 @@
 			path = App;
 			sourceTree = "<group>";
 		};
-		D22EF4762E7B2DDE00810204 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				D22EF47D2E7B2F1300810204 /* Affirmation.swift */,
-				D22EF47F2E7B2F2F00810204 /* UserProfile.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
+                D22EF4762E7B2DDE00810204 /* Models */ = {
+                        isa = PBXGroup;
+                        children = (
+                                D22EF47D2E7B2F1300810204 /* Affirmation.swift */,
+                                D22EF47F2E7B2F2F00810204 /* UserProfile.swift */,
+                                D2BEC27E2EB54A3D009E3698 /* ExportResult.swift */,
+                        );
+                        path = Models;
+                        sourceTree = "<group>";
+                };
 		D22EF4772E7B2E0400810204 /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -438,10 +441,11 @@
 				D2BEC27B2EAC4F0E009E3698 /* UserSettingsPanel.swift in Sources */,
 				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,
 				D2BEC2582E7E17B5009E3698 /* AppDelegate.swift in Sources */,
-				D2BEC25A2E7E1897009E3698 /* FirebasePing.swift in Sources */,
-				D22EF4862E7B2F7A00810204 /* ExportService.swift in Sources */,
-				D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */,
-				D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */,
+                                D2BEC25A2E7E1897009E3698 /* FirebasePing.swift in Sources */,
+                                D22EF4862E7B2F7A00810204 /* ExportService.swift in Sources */,
+                                D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */,
+                                D2BEC27F2EB54A3D009E3698 /* ExportResult.swift in Sources */,
+                                D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */,
 				D2BEC2662E7E334B009E3698 /* FirestoreDataStore.swift in Sources */,
 				D22EF47E2E7B2F1300810204 /* Affirmation.swift in Sources */,
 				D22EF4902E7B302900810204 /* RootView.swift in Sources */,
