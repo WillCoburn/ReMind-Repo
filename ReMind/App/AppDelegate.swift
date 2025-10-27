@@ -8,7 +8,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         FirebaseApp.configure()
-
+        UserDefaults.standard.set(true, forKey: "FIRDebugEnabled")
+                print("🔥 Firebase Functions debug logging enabled")
+        
         // Safe to call; no permission alert. Needed so Firebase can try APNs verification.
         application.registerForRemoteNotifications()
 
