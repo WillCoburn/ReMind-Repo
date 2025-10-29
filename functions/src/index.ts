@@ -2,11 +2,10 @@
 // File: functions/src/index.ts
 // ============================
 
-/**
- * Barrel export file for Firebase Functions.
- * All functionality is modularized by feature area.
- */
+// 👇 Ensure Admin SDK + globals are initialized exactly once
+import "./config/options";
 
+// Re-export the handlers you want deployed
 export { sendOneNow } from "./user/sendOneNow";
 export { applyUserSettings } from "./user/applyUserSettings";
 export { triggerWelcome } from "./onboarding/triggerWelcome";
