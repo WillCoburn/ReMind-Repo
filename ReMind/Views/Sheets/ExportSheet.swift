@@ -8,14 +8,14 @@ import FirebaseAuth
 struct ExportSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appVM: AppViewModel
-    
+
     @State private var isExporting = false
     @State private var link: URL? = nil
     @State private var error: String? = nil
     @State private var showToast = false
-    
+
     private let exporter: ExportService = FirebaseExportService()
-    
+
     var body: some View {
         NavigationView {
             VStack(spacing: 16) {
@@ -28,7 +28,7 @@ struct ExportSheet: View {
                         .font(.system(size: 40, weight: .semibold))
                         .padding(.top, 8)
                 }
-                
+
                 if let error {
                     Text(error)
                         .font(.subheadline)
@@ -42,32 +42,34 @@ struct ExportSheet: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                 }
-                
+
                 if let link {
-                    // Success actions
                     VStack(spacing: 10) {
                         Button("Copy link") {
                             UIPasteboard.general.string = link.absoluteString
                         }
                         .buttonStyle(.bordered)
-                        
+
                         Link("Open link", destination: link)
                             .buttonStyle(.bordered)
                     }
                     .padding(.top, 4)
                 }
-                
+
                 Spacer()
-                
+
                 Button {
-                    Task { await runExport() }
+                    print("🧭 Export button tapped") // ✅ Step 3: start log
+                    Task {
+                        await runExport()
+                    }
                 } label: {
                     Text("Export & Text Me")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(isExporting)
-                
+
                 Button("Close") { dismiss() }
                     .buttonStyle(.plain)
                     .padding(.top, 2)
@@ -84,23 +86,26 @@ struct ExportSheet: View {
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
     }
-    
+
     private func runExport() async {
+        print("🚀 Starting runExport()") // ✅ New log
         error = nil
         isExporting = true
         defer { isExporting = false }
+
         do {
             let url = try await exporter.exportAndSend(entries: appVM.entries)
+            print("✅ exportAndSend returned:", url)
             self.link = url
             self.showToast = true
         } catch {
-            self.error = (error as NSError).localizedDescription
-            // Allow manual copy if we still got a link somehow (unlikely here).
+            print("❌ Export failed:", error.localizedDescription)
+            self.error = error.localizedDescription
         }
     }
 }
 
-// Simple toast view modifier (fixed)
+// Simple toast view modifier
 fileprivate struct ToastOverlay<ToastView: View>: ViewModifier {
     @Binding var isPresented: Bool
     let overlay: () -> ToastView
@@ -128,4 +133,3 @@ fileprivate extension View {
         modifier(ToastOverlay(isPresented: isPresented, overlay: overlay))
     }
 }
-
