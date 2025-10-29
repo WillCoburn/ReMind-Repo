@@ -2,6 +2,8 @@
 // File: exports/getExportUploadUrl.ts
 // ============================
 
+import "../config/options"; // 👈 ensures admin.initializeApp() + global options are applied
+
 import * as admin from "firebase-admin";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
@@ -14,19 +16,34 @@ export const getExportUploadUrl = onCall({}, async (req) => {
 
   logger.info("getExportUploadUrl start", { uid, path, contentType });
 
-  if (!uid) throw new HttpsError("unauthenticated", "Signin required");
-  if (!path.startsWith(`users/${uid}/exports/`))
-    throw new HttpsError("invalid-argument", "Invalid path");
+  try {
+    if (!uid) throw new HttpsError("unauthenticated", "Signin required");
+    if (!path || !path.startsWith(`users/${uid}/exports/`)) {
+      throw new HttpsError("invalid-argument", "Invalid path");
+    }
 
-  const bucket = admin.storage().bucket();
-  const file = bucket.file(path);
-  const [url] = await file.getSignedUrl({
-    version: "v4",
-    action: "write",
-    expires: Date.now() + 15 * 60 * 1000,
-    contentType,
-  });
+    const bucket = admin.storage().bucket(); // requires admin.initializeApp() to have run
+    const file = bucket.file(path);
 
-  logger.info("getExportUploadUrl success", { uid, path });
-  return { uploadUrl: url, path };
+    // 15 minutes to upload
+    const [url] = await file.getSignedUrl({
+      version: "v4",
+      action: "write",
+      expires: Date.now() + 15 * 60 * 1000,
+      contentType,
+    });
+
+    logger.info("getExportUploadUrl success", { uid, path });
+    return { uploadUrl: url, path };
+  } catch (e: any) {
+    logger.error("getExportUploadUrl failed", {
+      uid,
+      path,
+      err: e?.message ?? String(e),
+      stack: e?.stack,
+    });
+    // If caller sent a typed HttpsError (e.g., invalid-argument), preserve it; else wrap as internal
+    if (e instanceof HttpsError) throw e;
+    throw new HttpsError("internal", e?.message ?? "internal");
+  }
 });
