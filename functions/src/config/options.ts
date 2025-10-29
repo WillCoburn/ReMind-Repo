@@ -150,27 +150,21 @@ function isTwilioStopError(err: any) {
   );
 }
 
-/**
- * pickEntry(uid, opts)
- * Chooses one entry to send, preferring unsent entries older than the cutoff.
- * If none exist, falls back to older sent entries.
- * If still none and allowRecentFallback is true, picks from recent unsent ones.
- */
 type PickOpts = {
-  cutoffDays?: number;
-  allowRecentFallback?: boolean;
+  cutoffDays?: number;           // default 10 (or 7 if you changed it)
+  allowRecentFallback?: boolean; // default false
   now?: Date;
 };
 
 async function pickEntry(uid: string, opts: PickOpts = {}) {
-  const cutoffDays = opts.cutoffDays ?? 5;
+  const cutoffDays = opts.cutoffDays ?? 10;
   const allowRecentFallback = opts.allowRecentFallback ?? false;
   const now = opts.now ?? new Date();
 
   const cutoffMs = now.getTime() - cutoffDays * 24 * 60 * 60 * 1000;
   const cutoffTS = admin.firestore.Timestamp.fromMillis(cutoffMs);
 
-  // 1) Prefer unsent entries older than cutoff
+  // 1) Prefer UNSENT older than cutoff
   let qs = await db
     .collection(`users/${uid}/entries`)
     .where("sent", "==", false)
@@ -186,7 +180,7 @@ async function pickEntry(uid: string, opts: PickOpts = {}) {
     return (data.text ?? data.content ?? "").toString().trim() || null;
   }
 
-  // 2) Any entries older than cutoff (even if already sent)
+  // 2) Any entries older than cutoff (even if sent)
   qs = await db
     .collection(`users/${uid}/entries`)
     .where("createdAt", "<=", cutoffTS)
@@ -201,7 +195,7 @@ async function pickEntry(uid: string, opts: PickOpts = {}) {
     return (data.text ?? data.content ?? "").toString().trim() || null;
   }
 
-  // 3) Optional fallback: allow recent unsent entries (e.g., for new users)
+  // 3) Optional: recent UNSENT (for new/active users)
   if (allowRecentFallback) {
     qs = await db
       .collection(`users/${uid}/entries`)
@@ -218,9 +212,24 @@ async function pickEntry(uid: string, opts: PickOpts = {}) {
     }
   }
 
-  // 4) Nothing eligible
+  // 4) FINAL FALLBACK: pick ANY entry (even recent & already sent)
+  qs = await db
+    .collection(`users/${uid}/entries`)
+    .orderBy("createdAt", "desc")
+    .limit(50)
+    .get();
+
+  if (!qs.empty) {
+    const docs = qs.docs;
+    const chosen = docs[Math.floor(Math.random() * docs.length)];
+    const data = chosen.data() as any;
+    return (data.text ?? data.content ?? "").toString().trim() || null;
+  }
+
+  // No entries at all
   return null;
 }
+
 
 export {
   admin,
