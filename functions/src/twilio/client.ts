@@ -1,27 +1,27 @@
 // ============================
-// File: twilio/client.ts
+// File: functions/src/twilio/client.ts
 // ============================
-
 import Twilio, { Twilio as TwilioClient } from "twilio";
 
-/** Creates and returns a Twilio client */
+export type MsgParams =
+  | { to: string; body: string; from: string }
+  | { to: string; body: string; messagingServiceSid: string };
+
 export function getTwilioClient(sid: string, auth: string): TwilioClient {
   if (!sid || !auth) throw new Error("Twilio secrets not set.");
   return Twilio(sid, auth);
 }
 
-/** Send an SMS via Twilio */
-export async function sendSMS(client: TwilioClient, params: any) {
+export async function sendSMS(client: TwilioClient, params: MsgParams) {
   return client.messages.create(params as any);
 }
 
-/** Build message parameters from provided options */
 export function buildMsgParams(opts: {
   to: string;
   body: string;
   from?: string | null;
   msid?: string | null;
-}) {
+}): MsgParams {
   const { to, body, from, msid } = opts;
   return msid
     ? { to, body, messagingServiceSid: msid }

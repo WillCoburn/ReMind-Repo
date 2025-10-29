@@ -2,15 +2,25 @@
 // File: functions/src/index.ts
 // ============================
 
-// 👇 Ensure Admin SDK + globals are initialized exactly once
+// ensure global options + admin init + secrets are registered
 import "./config/options";
 
-// Re-export the handlers you want deployed
+// callables (user)
 export { sendOneNow } from "./user/sendOneNow";
 export { applyUserSettings } from "./user/applyUserSettings";
+
+// onboarding
 export { triggerWelcome } from "./onboarding/triggerWelcome";
+
+// scheduler
 export { minuteCron } from "./scheduler/minuteCron";
+
+// firestore triggers
 export { onEntryCreated } from "./entries/onEntryCreated";
-export { twilioStatusCallback, twilioInboundSms } from "./twilio/webhooks";
-export { getExportUploadUrl } from "./exports/getExportUploadUrl";
-export { sendExportLink } from "./exports/sendExportLink";
+
+// twilio webhooks
+export { twilioInboundSms, twilioStatusCallback } from "./twilio/webhooks";
+
+// (exports features are defined in their own files)
+// export { getExportUploadUrl } from "./exports/getExportUploadUrl";
+// export { sendExportLink } from "./exports/sendExportLink";

@@ -1,14 +1,15 @@
 // ============================
-// File: user/applyUserSettings.ts
+// File: functions/src/user/applyUserSettings.ts
 // ============================
-
-import { onCall } from "firebase-functions/v2/https";
-import { TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID } from "../config/options";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { scheduleNext, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID, TWILIO_SID } from "../config/options";
 
 export const applyUserSettings = onCall(
-  { secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID] },
+  { secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID], invoker: "public" },
   async (req) => {
-    // Logic preserved from index.ts (omitted for brevity)
+    const uid = req.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
+    await scheduleNext(uid, new Date());
     return { ok: true };
   }
 );
