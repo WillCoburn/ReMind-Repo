@@ -150,33 +150,76 @@ function isTwilioStopError(err: any) {
   );
 }
 
-async function pickEntry(uid: string) {
-  const unsent = await db
+/**
+ * pickEntry(uid, opts)
+ * Chooses one entry to send, preferring unsent entries older than the cutoff.
+ * If none exist, falls back to older sent entries.
+ * If still none and allowRecentFallback is true, picks from recent unsent ones.
+ */
+type PickOpts = {
+  cutoffDays?: number;
+  allowRecentFallback?: boolean;
+  now?: Date;
+};
+
+async function pickEntry(uid: string, opts: PickOpts = {}) {
+  const cutoffDays = opts.cutoffDays ?? 5;
+  const allowRecentFallback = opts.allowRecentFallback ?? false;
+  const now = opts.now ?? new Date();
+
+  const cutoffMs = now.getTime() - cutoffDays * 24 * 60 * 60 * 1000;
+  const cutoffTS = admin.firestore.Timestamp.fromMillis(cutoffMs);
+
+  // 1) Prefer unsent entries older than cutoff
+  let qs = await db
     .collection(`users/${uid}/entries`)
     .where("sent", "==", false)
+    .where("createdAt", "<=", cutoffTS)
     .orderBy("createdAt", "desc")
     .limit(50)
     .get();
 
-  if (!unsent.empty) {
-    const docs = unsent.docs;
+  if (!qs.empty) {
+    const docs = qs.docs;
     const chosen = docs[Math.floor(Math.random() * docs.length)];
     const data = chosen.data() as any;
     return (data.text ?? data.content ?? "").toString().trim() || null;
   }
 
-  const all = await db
+  // 2) Any entries older than cutoff (even if already sent)
+  qs = await db
     .collection(`users/${uid}/entries`)
+    .where("createdAt", "<=", cutoffTS)
     .orderBy("createdAt", "desc")
-    .limit(25)
+    .limit(50)
     .get();
 
-  if (all.empty) return null;
+  if (!qs.empty) {
+    const docs = qs.docs;
+    const chosen = docs[Math.floor(Math.random() * docs.length)];
+    const data = chosen.data() as any;
+    return (data.text ?? data.content ?? "").toString().trim() || null;
+  }
 
-  const docs = all.docs;
-  const chosen = docs[Math.floor(Math.random() * docs.length)];
-  const data = chosen.data() as any;
-  return (data.text ?? data.content ?? "").toString().trim() || null;
+  // 3) Optional fallback: allow recent unsent entries (e.g., for new users)
+  if (allowRecentFallback) {
+    qs = await db
+      .collection(`users/${uid}/entries`)
+      .where("sent", "==", false)
+      .orderBy("createdAt", "desc")
+      .limit(50)
+      .get();
+
+    if (!qs.empty) {
+      const docs = qs.docs;
+      const chosen = docs[Math.floor(Math.random() * docs.length)];
+      const data = chosen.data() as any;
+      return (data.text ?? data.content ?? "").toString().trim() || null;
+    }
+  }
+
+  // 4) Nothing eligible
+  return null;
 }
 
 export {
