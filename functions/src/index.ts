@@ -21,6 +21,8 @@ export { onEntryCreated } from "./entries/onEntryCreated";
 // twilio webhooks
 export { twilioInboundSms, twilioStatusCallback } from "./twilio/webhooks";
 
-// (exports features are defined in their own files)
-// export { getExportUploadUrl } from "./exports/getExportUploadUrl";
-// export { sendExportLink } from "./exports/sendExportLink";
+// export - get URl
+export { getExportUploadUrl } from "./exports/getExportUploadUrl";
+
+//export - send link 
+export { sendExportLink } from "./exports/sendExportLink";
