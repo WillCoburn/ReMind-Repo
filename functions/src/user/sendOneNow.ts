@@ -7,6 +7,7 @@ import {
   logger,
   applyOptOut,
   isTwilioStopError,
+  pickEntry,                // 👈 use the shared randomized picker
   TWILIO_SID,
   TWILIO_AUTH,
   TWILIO_FROM,
@@ -37,49 +38,54 @@ export const sendOneNow = onCall(
       const uid = req.auth?.uid;
       if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
 
+      // Get recipient phone
       const userSnap = await db.doc(`users/${uid}`).get();
       if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
-
       const to = userSnap.get("phoneE164") as string | undefined;
       if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
 
-      const qs = await db
-        .collection(`users/${uid}/entries`)
-        .orderBy("createdAt", "asc")
-        .limit(25)
-        .get();
+      // 👇 Randomized pick that considers all entries (unsent preferred; fallback to any)
+      const body = await pickEntry(uid);
+      if (!body) throw new HttpsError("failed-precondition", "No entries available.");
 
-      const candidate =
-        qs.docs.find((d) => {
-          const data = d.data() as any;
-          const noSentAt = !("sentAt" in data) || data.sentAt === null;
-          const notMarkedSent = data.sent !== true;
-          return noSentAt && notMarkedSent;
-        }) || qs.docs[0];
-
-      if (!candidate) throw new HttpsError("failed-precondition", "No entries available.");
-
-      const text = (candidate.get("text") as string) || "(no text)";
-
+      // Send via Twilio (Messaging Service SID if present, else From number)
       const sid = TWILIO_SID.value();
       const token = TWILIO_AUTH.value();
       const from = TWILIO_FROM.value();
       const msid = TWILIO_MSID.value();
-
       const client = getTwilioClient(sid, token);
-      const msgParams = buildMsgParams({ to, body: text, from, msid });
-      const res = await sendSMS(client, msgParams);
 
+      const params = buildMsgParams({ to, body, from, msid });
+      const res = await sendSMS(client, params);
       logger.info("[sendOneNow] sent", { messageSid: res.sid });
 
-      await candidate.ref.update({
-        sent: true,
-        sentAt: (await import("firebase-admin")).firestore.FieldValue.serverTimestamp(),
-        deliveredVia: "sms",
-        scheduledFor: null,
-      });
+      // ✅ Best-effort: mark the most recent UNSENT entry with the same text as sent
+      // (If your entry schema uses a different field than "text", adjust here.)
+      try {
+        const match = await db
+          .collection(`users/${uid}/entries`)
+          .where("text", "==", body)
+          .where("sent", "==", false)
+          .orderBy("createdAt", "desc")
+          .limit(1)
+          .get();
 
-      return { ok: true, entryId: candidate.id, messageSid: res.sid };
+        if (!match.empty) {
+          await match.docs[0].ref.update({
+            sent: true,
+            sentAt: (await import("firebase-admin")).firestore.FieldValue.serverTimestamp(),
+            deliveredVia: "sms",
+            scheduledFor: null,
+          });
+        } else {
+          // Nothing matched (maybe already marked, or text stored under a different key) — just log.
+          logger.info("[sendOneNow] no matching unsent entry to mark as sent", { uid });
+        }
+      } catch (markErr: any) {
+        logger.warn("[sendOneNow] failed to mark entry sent", { uid, message: markErr?.message });
+      }
+
+      return { ok: true, messageSid: res.sid };
     } catch (err: any) {
       if (isTwilioStopError(err)) {
         const uid = req.auth?.uid as string | undefined;
