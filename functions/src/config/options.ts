@@ -151,13 +151,13 @@ function isTwilioStopError(err: any) {
 }
 
 type PickOpts = {
-  cutoffDays?: number;           // default 10 (or 7 if you changed it)
+  cutoffDays?: number;           // default 7 
   allowRecentFallback?: boolean; // default false
   now?: Date;
 };
 
 async function pickEntry(uid: string, opts: PickOpts = {}) {
-  const cutoffDays = opts.cutoffDays ?? 10;
+  const cutoffDays = opts.cutoffDays ?? 7;
   const allowRecentFallback = opts.allowRecentFallback ?? false;
   const now = opts.now ?? new Date();
 
