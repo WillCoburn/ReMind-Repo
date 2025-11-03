@@ -8,24 +8,87 @@ import FirebaseFunctions
 
 @MainActor
 final class AppViewModel: ObservableObject {
-    // MARK: - Published state
     @Published var user: UserProfile?
     @Published var entries: [Entry] = []
     @Published var isLoading = false
 
-    // MARK: - Services
+    // Current SMS opt-out state for the signed-in user
+    @Published var smsOptOut: Bool = false
+
     private let db = Firestore.firestore()
     private lazy var functions = Functions.functions()
 
-    // Optional convenience if your views want it:
+    // Live user listener (keeps smsOptOut in sync while the app runs)
+    private var userListener: ListenerRegistration?
+
     var isOnboarded: Bool { user != nil }
 
-    // MARK: - Init
     init() {
-        // Observe auth state and refresh when it changes
         Auth.auth().addStateDidChangeListener { [weak self] _, user in
             guard let self = self else { return }
             Task { await self.loadUserAndEntries(user?.uid) }
+        }
+    }
+
+    // MARK: - Live user doc listener
+    private func attachUserListener(_ uid: String) {
+        userListener?.remove()
+        userListener = db.collection("users").document(uid)
+            .addSnapshotListener { [weak self] snap, _ in
+                guard let self = self, let data = snap?.data() else { return }
+                let phone = data["phoneE164"] as? String ?? self.user?.phoneE164 ?? ""
+                self.user = UserProfile(uid: uid, phoneE164: phone)
+                self.smsOptOut = data["smsOptOut"] as? Bool ?? false
+            }
+    }
+
+    private func detachUserListener() {
+        userListener?.remove()
+        userListener = nil
+    }
+
+    // MARK: - Initial load
+    private func loadUserAndEntries(_ uid: String?) async {
+        guard let uid = uid else {
+            detachUserListener()
+            self.user = nil
+            self.entries = []
+            self.smsOptOut = false
+            return
+        }
+
+        // One-time fetch so UI has something immediately
+        do {
+            let snap = try await db.collection("users").document(uid).getDocument()
+            let phone = snap.get("phoneE164") as? String ?? ""
+            self.user = UserProfile(uid: uid, phoneE164: phone)
+            self.smsOptOut = snap.get("smsOptOut") as? Bool ?? false
+        } catch {
+            print("❌ load user error:", error.localizedDescription)
+            if self.user == nil { self.user = UserProfile(uid: uid, phoneE164: "") }
+            self.smsOptOut = false
+        }
+
+        attachUserListener(uid)
+        await refreshAll()
+    }
+
+    // MARK: - On-demand fresh read (used on every toolbar tap)
+    /// Re-reads users/{uid}.smsOptOut and updates `smsOptOut`.
+    /// Returns the fresh value (false if missing or signed out).
+    func reloadSmsOptOut() async -> Bool {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            self.smsOptOut = false
+            return false
+        }
+        do {
+            let snap = try await db.collection("users").document(uid).getDocument()
+            let fresh = snap.get("smsOptOut") as? Bool ?? false
+            self.smsOptOut = fresh
+            return fresh
+        } catch {
+            print("❌ reloadSmsOptOut error:", error.localizedDescription)
+            return self.smsOptOut
         }
     }
 
@@ -47,28 +110,7 @@ final class AppViewModel: ObservableObject {
             print("❌ setPhoneProfileAndLoad error:", error.localizedDescription)
         }
     }
-
-    private func loadUserAndEntries(_ uid: String?) async {
-        guard let uid = uid else {
-            self.user = nil
-            self.entries = []
-            return
-        }
-        // Load minimal profile (phone may already be set)
-        do {
-            let snap = try await db.collection("users").document(uid).getDocument()
-            if snap.exists {
-                let phone = snap.get("phoneE164") as? String ?? ""
-                self.user = UserProfile(uid: uid, phoneE164: phone)
-            } else {
-                self.user = UserProfile(uid: uid, phoneE164: "")
-            }
-        } catch {
-            print("❌ load user error:", error.localizedDescription)
-        }
-        await refreshAll()
-    }
-
+    
     // MARK: - Entries
     func submit(text: String) async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
@@ -76,7 +118,6 @@ final class AppViewModel: ObservableObject {
         guard !trimmed.isEmpty else { return }
 
         do {
-            // Write straight to Firestore; no need to construct local model first
             try await db.collection("users")
                 .document(uid)
                 .collection("entries")
@@ -107,12 +148,7 @@ final class AppViewModel: ObservableObject {
                 let data = doc.data()
                 guard let text = data["text"] as? String else { return nil }
                 let ts = (data["createdAt"] as? Timestamp)?.dateValue()
-                // Construct with required id
-                return Entry(
-                    id: doc.documentID,
-                    text: text,
-                    createdAt: ts
-                )
+                return Entry(id: doc.documentID, text: text, createdAt: ts)
             }
         } catch {
             print("❌ refreshAll error:", error.localizedDescription)
@@ -137,7 +173,9 @@ final class AppViewModel: ObservableObject {
         do { try Auth.auth().signOut() } catch {
             print("❌ signOut error:", error.localizedDescription)
         }
+        detachUserListener()
         self.user = nil
         self.entries = []
+        self.smsOptOut = false
     }
 }

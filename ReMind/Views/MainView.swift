@@ -10,22 +10,19 @@ struct MainView: View {
     @State private var showExportSheet = false
     @State private var showSuccessMessage = false
 
-    // Alert plumbing (for the “need 10 entries” message)
+    // Alerts
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
 
-    // Goal for unlocking actions
     private let goal: Int = 10
 
     var body: some View {
-        // Snapshot values (avoid EnvironmentObject wrapper diagnostics)
-        let count = appVM.entries.count
+        let count = appVM.entries.count   // current entry count
 
         VStack(spacing: 20) {
             Spacer(minLength: 32)
 
-            // Success toast above input
             if showSuccessMessage {
                 Text("✅ Successfully stored!")
                     .font(.footnote)
@@ -34,7 +31,6 @@ struct MainView: View {
                     .animation(.easeInOut(duration: 0.3), value: showSuccessMessage)
             }
 
-            // Input row
             HStack(alignment: .center, spacing: 12) {
                 TextField("Type an entry…", text: $input, axis: .vertical)
                     .lineLimit(3...5)
@@ -56,7 +52,6 @@ struct MainView: View {
             }
             .padding(.horizontal)
 
-            // Progress / hint badge
             HintBadge(count: count, goal: goal)
                 .padding(.horizontal)
 
@@ -64,14 +59,21 @@ struct MainView: View {
         }
         .navigationTitle("ReMind")
         .toolbar {
-            // iOS 15+ safe placement; group both icons
             ToolbarItemGroup(placement: .navigationBarTrailing) {
 
-                // 📩 Export — always visible; “locked” until goal
+                // 📩 Export — always visible; requires >=10 and NOT opted-out
                 Button {
-                    if count < goal {
-                        presentLockedAlert(feature: "Export PDF")
-                    } else {
+                    Task {
+                        if count < goal {
+                            presentLockedAlert(feature: "Export PDF")
+                            return
+                        }
+                        // Fresh read on tap
+                        let freshOptOut = await appVM.reloadSmsOptOut()
+                        if freshOptOut {
+                            presentOptOutAlert()
+                            return
+                        }
                         showExportSheet = true
                     }
                 } label: {
@@ -83,14 +85,20 @@ struct MainView: View {
                 .accessibilityHint(
                     count < goal
                     ? "Unlocks after you have at least \(goal) entries."
-                    : "Opens export options."
+                    : (appVM.smsOptOut ? "Blocked because SMS is opted out." : "Opens export options.")
                 )
 
-                // ⚡ Send now — always visible; “locked” until goal
+                // ⚡ Send now — always visible; requires >=10 and NOT opted-out
                 Button {
                     Task {
                         if count < goal {
                             presentLockedAlert(feature: "Send One Now")
+                            return
+                        }
+                        // Fresh read on tap
+                        let freshOptOut = await appVM.reloadSmsOptOut()
+                        if freshOptOut {
+                            presentOptOutAlert()
                             return
                         }
                         let ok = await appVM.sendOneNow()
@@ -105,7 +113,7 @@ struct MainView: View {
                 .accessibilityHint(
                     count < goal
                     ? "Unlocks after you have at least \(goal) entries."
-                    : "Sends a reminder immediately."
+                    : (appVM.smsOptOut ? "Blocked because SMS is opted out." : "Sends a reminder immediately.")
                 )
             }
         }
@@ -129,10 +137,21 @@ struct MainView: View {
         }
     }
 
-    // MARK: - Alert helper
+    // MARK: - Alerts
     private func presentLockedAlert(feature: String) {
         alertTitle = "Keep going!"
         alertMessage = "You need at least \(goal) entries to use “\(feature)”. Add more entries to unlock this feature."
+        showAlert = true
+    }
+
+    private func presentOptOutAlert() {
+        alertTitle = "SMS Sending Is Blocked"
+        alertMessage =
+        """
+        It looks like you’ve opted out of SMS for this number, so texts can’t be delivered.
+
+        To re-enable messages, reply START or UNSTOP to the last ReMind text. After that, try again.
+        """
         showAlert = true
     }
 }

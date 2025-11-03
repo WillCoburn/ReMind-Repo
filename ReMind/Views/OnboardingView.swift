@@ -4,7 +4,7 @@
 import SwiftUI
 import UIKit
 import FirebaseAuth
-import FirebaseFunctions   // ✅ added
+import FirebaseFunctions
 
 struct OnboardingView: View {
     @EnvironmentObject private var appVM: AppViewModel
