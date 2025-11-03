@@ -10,13 +10,18 @@ struct MainView: View {
     @State private var showExportSheet = false
     @State private var showSuccessMessage = false
 
-    // Current number of entries
-    private var count: Int { appVM.entries.count }   
+    // Alert plumbing (for the “need 10 entries” message)
+    @State private var showAlert = false
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
 
-    // When to show the ⚡ button
+    // Goal for unlocking actions
     private let goal: Int = 10
 
     var body: some View {
+        // Snapshot values (avoid EnvironmentObject wrapper diagnostics)
+        let count = appVM.entries.count
+
         VStack(spacing: 20) {
             Spacer(minLength: 32)
 
@@ -59,35 +64,55 @@ struct MainView: View {
         }
         .navigationTitle("ReMind")
         .toolbar {
-            // 📩 Export (always visible)
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { showExportSheet = true } label: {
+            // iOS 15+ safe placement; group both icons
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+
+                // 📩 Export — always visible; “locked” until goal
+                Button {
+                    if count < goal {
+                        presentLockedAlert(feature: "Export PDF")
+                    } else {
+                        showExportSheet = true
+                    }
+                } label: {
                     Image(systemName: "envelope.fill")
                         .font(.title3.weight(.semibold))
                 }
+                .opacity(count < goal ? 0.35 : 1.0)
                 .accessibilityLabel("Email me a PDF of my entries")
-            }
+                .accessibilityHint(
+                    count < goal
+                    ? "Unlocks after you have at least \(goal) entries."
+                    : "Opens export options."
+                )
 
-            // ⚡ Send one now (include the whole ToolbarItem conditionally)
-            if count >= goal {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        Task {
-                            let ok = await appVM.sendOneNow()
-                            if ok { UIImpactFeedbackGenerator(style: .rigid).impactOccurred() }
+                // ⚡ Send now — always visible; “locked” until goal
+                Button {
+                    Task {
+                        if count < goal {
+                            presentLockedAlert(feature: "Send One Now")
+                            return
                         }
-                    } label: {
-                        Image(systemName: "bolt.fill")
-                            .font(.title3.weight(.semibold))
+                        let ok = await appVM.sendOneNow()
+                        if ok { UIImpactFeedbackGenerator(style: .rigid).impactOccurred() }
                     }
-                    .accessibilityLabel("Send one now")
+                } label: {
+                    Image(systemName: "bolt.fill")
+                        .font(.title3.weight(.semibold))
                 }
+                .opacity(count < goal ? 0.35 : 1.0)
+                .accessibilityLabel("Send one now")
+                .accessibilityHint(
+                    count < goal
+                    ? "Unlocks after you have at least \(goal) entries."
+                    : "Sends a reminder immediately."
+                )
             }
         }
-        .sheet(isPresented: $showExportSheet) {
-            // Replace with your actual export UI if different
-            ExportSheet()
-        }
+        .sheet(isPresented: $showExportSheet) { ExportSheet() }
+        .alert(alertTitle, isPresented: $showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: { Text(alertMessage) }
     }
 
     // MARK: - Actions
@@ -98,13 +123,16 @@ struct MainView: View {
         await appVM.submit(text: text)
         input = ""
 
-        withAnimation(.easeInOut(duration: 0.2)) {
-            showSuccessMessage = true
-        }
+        withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showSuccessMessage = false
-            }
+            withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = false }
         }
+    }
+
+    // MARK: - Alert helper
+    private func presentLockedAlert(feature: String) {
+        alertTitle = "Keep going!"
+        alertMessage = "You need at least \(goal) entries to use “\(feature)”. Add more entries to unlock this feature."
+        showAlert = true
     }
 }
