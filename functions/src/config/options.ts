@@ -231,6 +231,22 @@ async function pickEntry(uid: string, opts: PickOpts = {}) {
 }
 
 
+
+// ---- Trial / entitlement helpers ----
+function isTrialActive(user: FirebaseFirestore.DocumentSnapshot, now = new Date()) {
+  const trialEndsAt = user.get("trialEndsAt") as FirebaseFirestore.Timestamp | null;
+  if (!trialEndsAt) return false;
+  return trialEndsAt.toDate().getTime() > now.getTime();
+}
+
+function computeActive(user: FirebaseFirestore.DocumentSnapshot, now = new Date()) {
+  const entitlementActive = user.get("entitlement.active") === true;
+  return entitlementActive || isTrialActive(user, now);
+}
+
+
+
+
 export {
   admin,
   db,
@@ -251,4 +267,7 @@ export {
   applyOptOut,
   applyOptIn,
   isTwilioStopError,
+  //trial tracking
+  isTrialActive,
+  computeActive,
 };
