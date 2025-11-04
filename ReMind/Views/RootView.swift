@@ -102,6 +102,8 @@ struct RootView: View {
             Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
                 .overlay(.black.opacity(0.15)) // subtle contrast for readability
         } else {
             Color(UIColor.systemBackground)

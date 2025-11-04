@@ -18,8 +18,6 @@
 		D22EF4802E7B2F2F00810204 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF47F2E7B2F2F00810204 /* UserProfile.swift */; };
 		D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4832E7B2F5F00810204 /* MessagingService.swift */; };
 		D22EF4862E7B2F7A00810204 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4852E7B2F7A00810204 /* ExportService.swift */; };
-		D22EF48A2E7B2FC000810204 /* MockMessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4892E7B2FC000810204 /* MockMessagingService.swift */; };
-		D22EF48C2E7B2FD200810204 /* MockExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF48B2E7B2FD200810204 /* MockExportService.swift */; };
 		D22EF48E2E7B2FEE00810204 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF48D2E7B2FEE00810204 /* AppViewModel.swift */; };
 		D22EF4902E7B302900810204 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF48F2E7B302900810204 /* RootView.swift */; };
 		D22EF4922E7B303E00810204 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4912E7B303E00810204 /* OnboardingView.swift */; };
@@ -84,8 +82,6 @@
 		D22EF47F2E7B2F2F00810204 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		D22EF4832E7B2F5F00810204 /* MessagingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagingService.swift; sourceTree = "<group>"; };
 		D22EF4852E7B2F7A00810204 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
-		D22EF4892E7B2FC000810204 /* MockMessagingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMessagingService.swift; sourceTree = "<group>"; };
-		D22EF48B2E7B2FD200810204 /* MockExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockExportService.swift; sourceTree = "<group>"; };
 		D22EF48D2E7B2FEE00810204 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
 		D22EF48F2E7B302900810204 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		D22EF4912E7B303E00810204 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -234,8 +230,6 @@
 				D2BEC2692E7E37C1009E3698 /* DataStore.swift */,
 				D22EF4832E7B2F5F00810204 /* MessagingService.swift */,
 				D22EF4852E7B2F7A00810204 /* ExportService.swift */,
-				D22EF4892E7B2FC000810204 /* MockMessagingService.swift */,
-				D22EF48B2E7B2FD200810204 /* MockExportService.swift */,
 				D2BEC2592E7E1897009E3698 /* FirebasePing.swift */,
 				D2BEC2652E7E334B009E3698 /* FirestoreDataStore.swift */,
 			);
@@ -436,9 +430,7 @@
 				D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
 				D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
 				D22EF4942E7B308B00810204 /* MainView.swift in Sources */,
-				D22EF48A2E7B2FC000810204 /* MockMessagingService.swift in Sources */,
 				D22EF4802E7B2F2F00810204 /* UserProfile.swift in Sources */,
-				D22EF48C2E7B2FD200810204 /* MockExportService.swift in Sources */,
 				D2BEC27B2EAC4F0E009E3698 /* UserSettingsPanel.swift in Sources */,
 				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,
 				D2BEC2582E7E17B5009E3698 /* AppDelegate.swift in Sources */,
