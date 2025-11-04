@@ -84,6 +84,20 @@ struct RootView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                             .zIndex(1)
                         }
+                        
+                        if appVM.showFeatureTour {
+                            FeatureTourOverlay(
+                                step: appVM.featureTourStep,
+                                onNext: {
+                                    Task { await appVM.advanceFeatureTour() }
+                                },
+                                onSkip: {
+                                    Task { await appVM.skipFeatureTour() }
+                                }
+                            )
+                            .transition(.opacity)
+                            .zIndex(2)
+                        }
                     }
                 }
             } else {
@@ -92,6 +106,8 @@ struct RootView: View {
         }
         // animate when user logs in/out
         .animation(.default, value: appVM.user != nil)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: appVM.featureTourStep)
+        .animation(.easeInOut(duration: 0.25), value: appVM.showFeatureTour)
     }
 
     // MARK: - Background renderer

@@ -15,6 +15,17 @@ final class AppViewModel: ObservableObject {
     // Current SMS opt-out state for the signed-in user
     @Published var smsOptOut: Bool = false
 
+    // MARK: - Feature tour state
+    enum FeatureTourStep: Int, CaseIterable {
+        case settings, export, sendNow
+
+        var index: Int { rawValue + 1 }
+    }
+
+    @Published var showFeatureTour: Bool = false
+    @Published var featureTourStep: FeatureTourStep = .settings
+    @Published private(set) var hasSeenFeatureTour: Bool = false
+    
     private let db = Firestore.firestore()
     private lazy var functions = Functions.functions()
 
@@ -39,6 +50,8 @@ final class AppViewModel: ObservableObject {
                 let phone = data["phoneE164"] as? String ?? self.user?.phoneE164 ?? ""
                 self.user = UserProfile(uid: uid, phoneE164: phone)
                 self.smsOptOut = data["smsOptOut"] as? Bool ?? false
+                let hasSeenTour = data["hasSeenFeatureTour"] as? Bool ?? false
+                self.applyFeatureTourFlag(hasSeenTour)
             }
     }
 
@@ -54,6 +67,9 @@ final class AppViewModel: ObservableObject {
             self.user = nil
             self.entries = []
             self.smsOptOut = false
+            self.hasSeenFeatureTour = false
+            self.featureTourStep = .settings
+            self.showFeatureTour = false
             return
         }
 
@@ -63,10 +79,13 @@ final class AppViewModel: ObservableObject {
             let phone = snap.get("phoneE164") as? String ?? ""
             self.user = UserProfile(uid: uid, phoneE164: phone)
             self.smsOptOut = snap.get("smsOptOut") as? Bool ?? false
+            let hasSeenTour = snap.get("hasSeenFeatureTour") as? Bool ?? false
+            applyFeatureTourFlag(hasSeenTour)
         } catch {
             print("❌ load user error:", error.localizedDescription)
             if self.user == nil { self.user = UserProfile(uid: uid, phoneE164: "") }
             self.smsOptOut = false
+            applyFeatureTourFlag(false)
         }
 
         attachUserListener(uid)
@@ -177,5 +196,52 @@ final class AppViewModel: ObservableObject {
         self.user = nil
         self.entries = []
         self.smsOptOut = false
+        self.hasSeenFeatureTour = false
+                self.featureTourStep = .settings
+                self.showFeatureTour = false
+            }
+
+            // MARK: - Feature tour helpers
+            func advanceFeatureTour() async {
+                switch featureTourStep {
+                case .settings:
+                    featureTourStep = .export
+                case .export:
+                    featureTourStep = .sendNow
+                case .sendNow:
+                    await completeFeatureTour(markAsSeen: true)
+                }
+            }
+
+            func skipFeatureTour() async {
+                await completeFeatureTour(markAsSeen: true)
+            }
+
+            private func applyFeatureTourFlag(_ hasSeen: Bool) {
+                hasSeenFeatureTour = hasSeen
+                if hasSeen {
+                    showFeatureTour = false
+                } else if user != nil && !showFeatureTour {
+                    featureTourStep = .settings
+                    showFeatureTour = true
+                }
+            }
+
+            private func completeFeatureTour(markAsSeen: Bool) async {
+                showFeatureTour = false
+                featureTourStep = .settings
+
+                guard markAsSeen else { return }
+                hasSeenFeatureTour = true
+
+                guard let uid = Auth.auth().currentUser?.uid else { return }
+                do {
+                    try await db.collection("users").document(uid).setData([
+                        "hasSeenFeatureTour": true,
+                        "updatedAt": FieldValue.serverTimestamp()
+                    ], merge: true)
+                } catch {
+                    print("❌ completeFeatureTour error:", error.localizedDescription)
+                }
     }
 }

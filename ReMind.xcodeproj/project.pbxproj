@@ -47,6 +47,7 @@
 		D2BEC27B2EAC4F0E009E3698 /* UserSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BEC27A2EAC4F05009E3698 /* UserSettingsPanel.swift */; };
 		D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */; };
 		D2BEC27F2EB039E0009E3698 /* PDFKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D2BEC27E2EB039E0009E3698 /* PDFKit.framework */; };
+		D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,6 +102,7 @@
 		D2BEC27A2EAC4F05009E3698 /* UserSettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsPanel.swift; sourceTree = "<group>"; };
 		D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsSync.swift; sourceTree = "<group>"; };
 		D2BEC27E2EB039E0009E3698 /* PDFKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PDFKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/PDFKit.framework; sourceTree = DEVELOPER_DIR; };
+		D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureTourOverlay.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -250,6 +252,7 @@
 				D22EF4982E7B30D800810204 /* Sheets */,
 				D22EF4952E7B30B000810204 /* Components */,
 				D22EF48F2E7B302900810204 /* RootView.swift */,
+				D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */,
 				D22EF4912E7B303E00810204 /* OnboardingView.swift */,
 				D22EF4932E7B308B00810204 /* MainView.swift */,
 			);
@@ -431,6 +434,7 @@
 				D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
 				D22EF4942E7B308B00810204 /* MainView.swift in Sources */,
 				D22EF4802E7B2F2F00810204 /* UserProfile.swift in Sources */,
+				D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */,
 				D2BEC27B2EAC4F0E009E3698 /* UserSettingsPanel.swift in Sources */,
 				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,
 				D2BEC2582E7E17B5009E3698 /* AppDelegate.swift in Sources */,
