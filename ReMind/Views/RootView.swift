@@ -98,15 +98,27 @@ struct RootView: View {
 
     @ViewBuilder
     private var backgroundLayer: some View {
-        if let uiImage = decodeBase64ToImage(bgImageBase64) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-                .overlay(.black.opacity(0.15)) // subtle contrast for readability
-        } else {
-            Color(UIColor.systemBackground)
+        GeometryReader { proxy in
+                    if let uiImage = decodeBase64ToImage(bgImageBase64) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            // GeometryReader gives us the actual container bounds, so we can
+                            // pin the rendered bitmap to the NavigationView's real size instead
+                            // of letting the photo's native pixel dimensions define an "ideal"
+                            // width/height. Without this clamp, a panoramic image reports a
+                            // multi-thousand point ideal width, the navigation stack expands to
+                            // satisfy it, and MainView's entry bubble slides outside the
+                            // visible viewport.
+                            .frame(width: max(proxy.size.width, 1),
+                                   height: max(proxy.size.height, 1))
+                            .clipped()
+                            .overlay(.black.opacity(0.15)) // subtle contrast for readability
+                    } else {
+                        Color(UIColor.systemBackground)
+                            .frame(width: max(proxy.size.width, 1),
+                                   height: max(proxy.size.height, 1))
+                    }
         }
     }
 

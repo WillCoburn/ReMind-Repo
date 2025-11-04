@@ -118,7 +118,8 @@ export const twilioInboundSms = onRequest(async (req, res) => {
     message = "You have been unsubscribed from ReMind messages.";
   } else if (START_KEYWORDS.has(keyword)) {
     handled = await handleStartForPhone(from);
-    message = "You have been re-subscribed to ReMind messages.";
+    //Twilio already handles this
+    //message = "You have been re-subscribed to ReMind messages.";
   }
 
   const responseBody =
