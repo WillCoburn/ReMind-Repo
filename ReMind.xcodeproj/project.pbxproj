@@ -48,6 +48,16 @@
 		D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */; };
 		D2BEC27F2EB039E0009E3698 /* PDFKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D2BEC27E2EB039E0009E3698 /* PDFKit.framework */; };
 		D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */; };
+		D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BC82EBC170D0078BAB0 /* PhoneEntrySection.swift */; };
+		D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */; };
+		D2D07BCD2EBC17470078BAB0 /* CodeEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCC2EBC17420078BAB0 /* CodeEntrySection.swift */; };
+		D2D07BCF2EBC175C0078BAB0 /* PhoneField.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCE2EBC17570078BAB0 /* PhoneField.swift */; };
+		D2D07BD32EBC18C30078BAB0 /* AppViewModel+RealTimeUserListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD22EBC18B80078BAB0 /* AppViewModel+RealTimeUserListener.swift */; };
+		D2D07BD52EBC18F60078BAB0 /* AppViewModel+InitialLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD42EBC18EE0078BAB0 /* AppViewModel+InitialLoad.swift */; };
+		D2D07BD72EBC19100078BAB0 /* AppViewModel+UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD62EBC190A0078BAB0 /* AppViewModel+UserProfile.swift */; };
+		D2D07BD92EBC19290078BAB0 /* AppViewModel+Entries.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD82EBC19230078BAB0 /* AppViewModel+Entries.swift */; };
+		D2D07BDB2EBC193E0078BAB0 /* AppViewModel+Functions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BDA2EBC19370078BAB0 /* AppViewModel+Functions.swift */; };
+		D2D07BDD2EBC19530078BAB0 /* AppViewModel+FeatureTour.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BDC2EBC194A0078BAB0 /* AppViewModel+FeatureTour.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -103,6 +113,16 @@
 		D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsSync.swift; sourceTree = "<group>"; };
 		D2BEC27E2EB039E0009E3698 /* PDFKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PDFKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/PDFKit.framework; sourceTree = DEVELOPER_DIR; };
 		D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureTourOverlay.swift; sourceTree = "<group>"; };
+		D2D07BC82EBC170D0078BAB0 /* PhoneEntrySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEntrySection.swift; sourceTree = "<group>"; };
+		D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentAndAgreeBottom.swift; sourceTree = "<group>"; };
+		D2D07BCC2EBC17420078BAB0 /* CodeEntrySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeEntrySection.swift; sourceTree = "<group>"; };
+		D2D07BCE2EBC17570078BAB0 /* PhoneField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneField.swift; sourceTree = "<group>"; };
+		D2D07BD22EBC18B80078BAB0 /* AppViewModel+RealTimeUserListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+RealTimeUserListener.swift"; sourceTree = "<group>"; };
+		D2D07BD42EBC18EE0078BAB0 /* AppViewModel+InitialLoad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+InitialLoad.swift"; sourceTree = "<group>"; };
+		D2D07BD62EBC190A0078BAB0 /* AppViewModel+UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+UserProfile.swift"; sourceTree = "<group>"; };
+		D2D07BD82EBC19230078BAB0 /* AppViewModel+Entries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+Entries.swift"; sourceTree = "<group>"; };
+		D2D07BDA2EBC19370078BAB0 /* AppViewModel+Functions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+Functions.swift"; sourceTree = "<group>"; };
+		D2D07BDC2EBC194A0078BAB0 /* AppViewModel+FeatureTour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+FeatureTour.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -241,7 +261,7 @@
 		D22EF4782E7B2E8700810204 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				D22EF48D2E7B2FEE00810204 /* AppViewModel.swift */,
+				D2D07BD02EBC18970078BAB0 /* AppViewModel */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -249,11 +269,11 @@
 		D22EF4792E7B2E9900810204 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				D2D07BC32EBC16C90078BAB0 /* Onboarding */,
 				D22EF4982E7B30D800810204 /* Sheets */,
 				D22EF4952E7B30B000810204 /* Components */,
 				D22EF48F2E7B302900810204 /* RootView.swift */,
 				D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */,
-				D22EF4912E7B303E00810204 /* OnboardingView.swift */,
 				D22EF4932E7B308B00810204 /* MainView.swift */,
 			);
 			path = Views;
@@ -293,6 +313,32 @@
 				D2BEC27E2EB039E0009E3698 /* PDFKit.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D2D07BC32EBC16C90078BAB0 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				D2D07BCE2EBC17570078BAB0 /* PhoneField.swift */,
+				D2D07BCC2EBC17420078BAB0 /* CodeEntrySection.swift */,
+				D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */,
+				D2D07BC82EBC170D0078BAB0 /* PhoneEntrySection.swift */,
+				D22EF4912E7B303E00810204 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		D2D07BD02EBC18970078BAB0 /* AppViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				D2D07BDC2EBC194A0078BAB0 /* AppViewModel+FeatureTour.swift */,
+				D2D07BDA2EBC19370078BAB0 /* AppViewModel+Functions.swift */,
+				D2D07BD82EBC19230078BAB0 /* AppViewModel+Entries.swift */,
+				D2D07BD62EBC190A0078BAB0 /* AppViewModel+UserProfile.swift */,
+				D2D07BD42EBC18EE0078BAB0 /* AppViewModel+InitialLoad.swift */,
+				D2D07BD22EBC18B80078BAB0 /* AppViewModel+RealTimeUserListener.swift */,
+				D22EF48D2E7B2FEE00810204 /* AppViewModel.swift */,
+			);
+			path = AppViewModel;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -430,18 +476,26 @@
 			buildActionMask = 2147483647;
 			files = (
 				D22EF4A02E7B944700810204 /* CompletionCollapseBadge.swift in Sources */,
+				D2D07BD52EBC18F60078BAB0 /* AppViewModel+InitialLoad.swift in Sources */,
 				D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
 				D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
+				D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */,
 				D22EF4942E7B308B00810204 /* MainView.swift in Sources */,
 				D22EF4802E7B2F2F00810204 /* UserProfile.swift in Sources */,
+				D2D07BD32EBC18C30078BAB0 /* AppViewModel+RealTimeUserListener.swift in Sources */,
+				D2D07BDD2EBC19530078BAB0 /* AppViewModel+FeatureTour.swift in Sources */,
+				D2D07BDB2EBC193E0078BAB0 /* AppViewModel+Functions.swift in Sources */,
 				D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */,
 				D2BEC27B2EAC4F0E009E3698 /* UserSettingsPanel.swift in Sources */,
 				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,
+				D2D07BCD2EBC17470078BAB0 /* CodeEntrySection.swift in Sources */,
 				D2BEC2582E7E17B5009E3698 /* AppDelegate.swift in Sources */,
 				D2BEC25A2E7E1897009E3698 /* FirebasePing.swift in Sources */,
 				D22EF4862E7B2F7A00810204 /* ExportService.swift in Sources */,
+				D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */,
 				D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */,
 				D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */,
+				D2D07BD92EBC19290078BAB0 /* AppViewModel+Entries.swift in Sources */,
 				D2BEC2662E7E334B009E3698 /* FirestoreDataStore.swift in Sources */,
 				D22EF47E2E7B2F1300810204 /* Affirmation.swift in Sources */,
 				D22EF4902E7B302900810204 /* RootView.swift in Sources */,
@@ -450,8 +504,10 @@
 				D22EF4922E7B303E00810204 /* OnboardingView.swift in Sources */,
 				D2BEC26A2E7E37C1009E3698 /* DataStore.swift in Sources */,
 				D22EF4972E7B30C000810204 /* HintBadge.swift in Sources */,
+				D2D07BCF2EBC175C0078BAB0 /* PhoneField.swift in Sources */,
 				D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */,
 				D2BEC2682E7E3525009E3698 /* Haptics.swift in Sources */,
+				D2D07BD72EBC19100078BAB0 /* AppViewModel+UserProfile.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -43,14 +43,4 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         return .noData
     }
 
-    // If you prefer the non-async signature, use this instead:
-    // func application(_ application: UIApplication,
-    //                  didReceiveRemoteNotification userInfo: [AnyHashable : Any],
-    //                  fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-    //     if Auth.auth().canHandleNotification(userInfo) {
-    //         completionHandler(.noData)
-    //         return
-    //     }
-    //     completionHandler(.noData)
-    // }
 }

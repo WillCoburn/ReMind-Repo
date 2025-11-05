@@ -1,0 +1,21 @@
+// ============================
+// File: App/ViewModels/AppViewModel/AppViewModel+Functions.swift
+// ============================
+import Foundation
+import FirebaseFunctions
+
+@MainActor
+extension AppViewModel {
+    // MARK: - Send One Now (Cloud Function)
+    func sendOneNow() async -> Bool {
+        do {
+            let result = try await functions.httpsCallable("sendOneNow").call([:])
+            print("✅ sendOneNow result:", result.data)
+            await refreshAll()
+            return true
+        } catch {
+            print("❌ sendOneNow error:", error.localizedDescription)
+            return false
+        }
+    }
+}
