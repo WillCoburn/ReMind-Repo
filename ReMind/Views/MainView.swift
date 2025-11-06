@@ -5,6 +5,7 @@ import SwiftUI
 
 struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @EnvironmentObject private var net: NetworkMonitor   // 👈 network state
 
     @State private var input: String = ""
     @State private var showExportSheet = false
@@ -18,7 +19,8 @@ struct MainView: View {
     private let goal: Int = 10
 
     var body: some View {
-        let count = appVM.entries.count   // current entry count
+        let count = appVM.entries.count
+        let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         VStack(spacing: 20) {
             Spacer(minLength: 32)
@@ -47,8 +49,15 @@ struct MainView: View {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 32))
                 }
-                .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                // 🔒 Disable when input empty OR offline
+                .disabled(inputIsEmpty || !net.isConnected)
+                .opacity((inputIsEmpty || !net.isConnected) ? 0.4 : 1.0)
                 .accessibilityLabel("Submit entry")
+                .accessibilityHint(
+                    !net.isConnected
+                    ? "Unavailable while offline."
+                    : (inputIsEmpty ? "Type something to enable." : "Saves your entry.")
+                )
             }
             .padding(.horizontal)
 
@@ -61,14 +70,17 @@ struct MainView: View {
         .toolbar {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
 
-                // 📩 Export — always visible; requires >=10 and NOT opted-out
+                // 📩 Export — requires online, >=10, and NOT opted-out
                 Button {
                     Task {
+                        guard net.isConnected else {
+                            presentOfflineAlert()
+                            return
+                        }
                         if count < goal {
                             presentLockedAlert(feature: "Export PDF")
                             return
                         }
-                        // Fresh read on tap
                         let freshOptOut = await appVM.reloadSmsOptOut()
                         if freshOptOut {
                             presentOptOutAlert()
@@ -80,22 +92,28 @@ struct MainView: View {
                     Image(systemName: "envelope.fill")
                         .font(.title3.weight(.semibold))
                 }
-                .opacity(count < goal ? 0.35 : 1.0)
+                .disabled(!net.isConnected || count < goal)
+                .opacity(!net.isConnected ? 0.35 : (count < goal ? 0.35 : 1.0))
                 .accessibilityLabel("Email me a PDF of my entries")
                 .accessibilityHint(
-                    count < goal
-                    ? "Unlocks after you have at least \(goal) entries."
-                    : (appVM.smsOptOut ? "Blocked because SMS is opted out." : "Opens export options.")
+                    !net.isConnected
+                    ? "Unavailable while offline."
+                    : (count < goal
+                       ? "Unlocks after you have at least \(goal) entries."
+                       : (appVM.smsOptOut ? "Blocked because SMS is opted out." : "Opens export options."))
                 )
 
-                // ⚡ Send now — always visible; requires >=10 and NOT opted-out
+                // ⚡ Send now — requires online, >=10, and NOT opted-out
                 Button {
                     Task {
+                        guard net.isConnected else {
+                            presentOfflineAlert()
+                            return
+                        }
                         if count < goal {
                             presentLockedAlert(feature: "Send One Now")
                             return
                         }
-                        // Fresh read on tap
                         let freshOptOut = await appVM.reloadSmsOptOut()
                         if freshOptOut {
                             presentOptOutAlert()
@@ -108,12 +126,15 @@ struct MainView: View {
                     Image(systemName: "bolt.fill")
                         .font(.title3.weight(.semibold))
                 }
-                .opacity(count < goal ? 0.35 : 1.0)
+                .disabled(!net.isConnected || count < goal)
+                .opacity(!net.isConnected ? 0.35 : (count < goal ? 0.35 : 1.0))
                 .accessibilityLabel("Send one now")
                 .accessibilityHint(
-                    count < goal
-                    ? "Unlocks after you have at least \(goal) entries."
-                    : (appVM.smsOptOut ? "Blocked because SMS is opted out." : "Sends a reminder immediately.")
+                    !net.isConnected
+                    ? "Unavailable while offline."
+                    : (count < goal
+                       ? "Unlocks after you have at least \(goal) entries."
+                       : (appVM.smsOptOut ? "Blocked because SMS is opted out." : "Sends a reminder immediately."))
                 )
             }
         }
@@ -121,10 +142,30 @@ struct MainView: View {
         .alert(alertTitle, isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
         } message: { Text(alertMessage) }
+
+        // ✅ Center-screen offline popup overlay and input blocking
+        .overlay(alignment: .center) {
+            if !net.isConnected {
+                OfflineBanner()
+                    .transition(.opacity)
+                    .zIndex(999)
+            }
+        }
+        .allowsHitTesting(net.isConnected)
+
+        // Optional: debug the flips right on this screen
+        .onChange(of: net.isConnected) { value in
+            print("🔄 net.isConnected (MainView) ->", value)
+        }
     }
 
     // MARK: - Actions
     private func sendEntry() async {
+        guard net.isConnected else {
+            presentOfflineAlert()
+            return
+        }
+
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
@@ -152,6 +193,12 @@ struct MainView: View {
 
         To re-enable messages, reply START or UNSTOP to the last ReMind text. After that, try again.
         """
+        showAlert = true
+    }
+
+    private func presentOfflineAlert() {
+        alertTitle = "No Internet Connection"
+        alertMessage = "Please reconnect to the internet to use this feature."
         showAlert = true
     }
 }

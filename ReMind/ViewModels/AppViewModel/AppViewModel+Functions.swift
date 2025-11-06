@@ -7,7 +7,13 @@ import FirebaseFunctions
 @MainActor
 extension AppViewModel {
     // MARK: - Send One Now (Cloud Function)
-    func sendOneNow() async -> Bool {
+    /// Returns false immediately if offline.
+    func sendOneNow(isOnline: Bool = NetworkMonitor.shared.isConnected) async -> Bool {
+        guard isOnline else {
+            print("⏸️ sendOneNow skipped: offline")
+            return false
+        }
+
         do {
             let result = try await functions.httpsCallable("sendOneNow").call([:])
             print("✅ sendOneNow result:", result.data)

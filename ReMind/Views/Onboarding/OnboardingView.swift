@@ -8,6 +8,7 @@ import FirebaseFunctions
 
 struct OnboardingView: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @EnvironmentObject private var net: NetworkMonitor   // 👈 network state
 
     enum Step { case enterPhone, enterCode }
     @State private var step: Step = .enterPhone
@@ -30,7 +31,8 @@ struct OnboardingView: View {
     private let functions = Functions.functions(region: "us-central1")
 
     private var isValidPhone: Bool { phoneDigits.count == 10 }
-    private var canContinue: Bool { isValidPhone && hasConsented }
+    private var canContinueBase: Bool { isValidPhone && hasConsented }
+    private var canContinueOnline: Bool { canContinueBase && net.isConnected } // 👈 disable when offline
 
     private let consentMessage =
     """
@@ -81,7 +83,8 @@ struct OnboardingView: View {
                     .font(.footnote)
                     .foregroundColor(.red)
                     .padding(.horizontal)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .transition(.opacity
+                        .combined(with: .move(edge: .top)))
             }
 
             Spacer()
@@ -90,7 +93,7 @@ struct OnboardingView: View {
                 ConsentAndAgreeBottom(
                     hasConsented: $hasConsented,
                     consentMessage: consentMessage,
-                    canContinue: canContinue,
+                    canContinue: canContinueOnline, // 👈 pass online-aware flag
                     isSending: isSending,
                     onAgreeAndContinue: {
                         Task { await sendCode() }
@@ -102,12 +105,21 @@ struct OnboardingView: View {
         .animation(.default, value: step)
         .animation(.default, value: errorText)
         .animation(.easeInOut, value: isValidPhone)
+        .networkAware() // 👈 center popup while offline
+        .onChange(of: net.isConnected) { value in
+            print("🔄 net.isConnected ->", value)
+        }
     }
 
     // MARK: - Actions
 
     private func sendCode() async {
-        guard canContinue else { return }
+        guard canContinueBase else { return }
+        guard net.isConnected else {                 // 👈 offline guard
+            errorText = "No internet connection. Please reconnect and try again."
+            return
+        }
+
         errorText = ""
         isSending = true
         defer { isSending = false }
@@ -126,6 +138,11 @@ struct OnboardingView: View {
 
     private func verifyCode() async {
         guard let verID = verificationID else { return }
+        guard net.isConnected else {                 // 👈 offline guard
+            errorText = "No internet connection. Please reconnect and try again."
+            return
+        }
+
         errorText = ""
         isVerifying = true
         defer { isVerifying = false }

@@ -8,7 +8,12 @@ import FirebaseFirestore
 @MainActor
 extension AppViewModel {
     // MARK: - Entries
-    func submit(text: String) async {
+    func submit(text: String, isOnline: Bool = NetworkMonitor.shared.isConnected) async {
+        guard isOnline else {
+            print("⏸️ submit skipped: offline")
+            return
+        }
+
         guard let uid = Auth.auth().currentUser?.uid else { return }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
