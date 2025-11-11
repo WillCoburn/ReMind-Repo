@@ -9,15 +9,23 @@ public struct UserProfile: Codable, Sendable, Equatable {
     public var createdAt: Date?     // First created timestamp
     public var updatedAt: Date?     // Last updated timestamp
 
+    // 🔽 Added for payment/trial UX & backend gating
+    public var trialEndsAt: Date?   // End of in-app 30-day free period
+    public var active: Bool?        // Convenience flag for backend send gating
+
     public init(
         uid: String,
         phoneE164: String,
         createdAt: Date? = nil,
-        updatedAt: Date? = nil
+        updatedAt: Date? = nil,
+        trialEndsAt: Date? = nil,
+        active: Bool? = nil
     ) {
         self.uid = uid
         self.phoneE164 = phoneE164
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.trialEndsAt = trialEndsAt
+        self.active = active
     }
 }

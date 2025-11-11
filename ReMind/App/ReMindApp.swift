@@ -16,10 +16,16 @@ struct ReMindApp: App {
             RootView()
                 .environmentObject(appVM)
                 .environmentObject(net)
+                // 🧩 Initialize RevenueCat once UI is up (after Firebase init in AppDelegate)
+                .onAppear {
+                    RevenueCatManager.shared.configure()
+                }
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active {
                 NetworkMonitor.shared.forceRefresh()
+                // 🔁 Recompute `active` when app comes to foreground (handles trial rollovers)
+                RevenueCatManager.shared.recomputeAndPersistActive()
             }
         }
     }

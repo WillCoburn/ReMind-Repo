@@ -10,6 +10,7 @@ struct MainView: View {
     @State private var input: String = ""
     @State private var showExportSheet = false
     @State private var showSuccessMessage = false
+    @State private var showPaywall = false
 
     // Alerts
     @State private var showAlert = false
@@ -18,12 +19,24 @@ struct MainView: View {
 
     private let goal: Int = 10
 
+    private func isActive(trialEndsAt: Date?) -> Bool {
+        let entitled = RevenueCatManager.shared.entitlementActive
+        let onTrial = trialEndsAt.map { Date() < $0 } ?? false
+        return entitled || onTrial
+    }
+
     var body: some View {
         let count = appVM.entries.count
         let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
 
         VStack(spacing: 20) {
             Spacer(minLength: 32)
+
+            if !active {
+                TrialBanner { showPaywall = true }
+                    .padding(.horizontal)
+            }
 
             if showSuccessMessage {
                 Text("✅ Successfully stored!")
@@ -49,14 +62,14 @@ struct MainView: View {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 32))
                 }
-                // 🔒 Disable when input empty OR offline
-                .disabled(inputIsEmpty || !net.isConnected)
-                .opacity((inputIsEmpty || !net.isConnected) ? 0.4 : 1.0)
+                .disabled(inputIsEmpty || !net.isConnected || !active)
+                .opacity((inputIsEmpty || !net.isConnected || !active) ? 0.4 : 1.0)
                 .accessibilityLabel("Submit entry")
                 .accessibilityHint(
                     !net.isConnected
                     ? "Unavailable while offline."
-                    : (inputIsEmpty ? "Type something to enable." : "Saves your entry.")
+                    : (!active ? "Start a subscription to continue after your free trial."
+                       : (inputIsEmpty ? "Type something to enable." : "Saves your entry."))
                 )
             }
             .padding(.horizontal)
@@ -94,16 +107,8 @@ struct MainView: View {
                 }
                 .disabled(!net.isConnected || count < goal)
                 .opacity(!net.isConnected ? 0.35 : (count < goal ? 0.35 : 1.0))
-                .accessibilityLabel("Email me a PDF of my entries")
-                .accessibilityHint(
-                    !net.isConnected
-                    ? "Unavailable while offline."
-                    : (count < goal
-                       ? "Unlocks after you have at least \(goal) entries."
-                       : (appVM.smsOptOut ? "Blocked because SMS is opted out." : "Opens export options."))
-                )
 
-                // ⚡ Send now — requires online, >=10, and NOT opted-out
+                // ⚡ Send now — requires online, >=10, NOT opted-out, AND active
                 Button {
                     Task {
                         guard net.isConnected else {
@@ -119,6 +124,12 @@ struct MainView: View {
                             presentOptOutAlert()
                             return
                         }
+                        guard active else {
+                            alertTitle = "Subscribe to Continue"
+                            alertMessage = "Your free trial has ended. Start a subscription to send reminders."
+                            showAlert = true
+                            return
+                        }
                         let ok = await appVM.sendOneNow()
                         if ok { UIImpactFeedbackGenerator(style: .rigid).impactOccurred() }
                     }
@@ -126,24 +137,15 @@ struct MainView: View {
                     Image(systemName: "bolt.fill")
                         .font(.title3.weight(.semibold))
                 }
-                .disabled(!net.isConnected || count < goal)
-                .opacity(!net.isConnected ? 0.35 : (count < goal ? 0.35 : 1.0))
-                .accessibilityLabel("Send one now")
-                .accessibilityHint(
-                    !net.isConnected
-                    ? "Unavailable while offline."
-                    : (count < goal
-                       ? "Unlocks after you have at least \(goal) entries."
-                       : (appVM.smsOptOut ? "Blocked because SMS is opted out." : "Sends a reminder immediately."))
-                )
+                .disabled(!net.isConnected || count < goal || !active)
+                .opacity(!net.isConnected ? 0.35 : ((count < goal || !active) ? 0.35 : 1.0))
             }
         }
         .sheet(isPresented: $showExportSheet) { ExportSheet() }
+        .sheet(isPresented: $showPaywall) { SubscriptionSheet() }
         .alert(alertTitle, isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
         } message: { Text(alertMessage) }
-
-        // ✅ Center-screen offline popup overlay and input blocking
         .overlay(alignment: .center) {
             if !net.isConnected {
                 OfflineBanner()
@@ -152,10 +154,11 @@ struct MainView: View {
             }
         }
         .allowsHitTesting(net.isConnected)
-
-        // Optional: debug the flips right on this screen
         .onChange(of: net.isConnected) { value in
             print("🔄 net.isConnected (MainView) ->", value)
+        }
+        .onAppear {
+            RevenueCatManager.shared.recomputeAndPersistActive()
         }
     }
 
@@ -165,13 +168,10 @@ struct MainView: View {
             presentOfflineAlert()
             return
         }
-
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-
         await appVM.submit(text: text)
         input = ""
-
         withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = false }
@@ -200,5 +200,23 @@ struct MainView: View {
         alertTitle = "No Internet Connection"
         alertMessage = "Please reconnect to the internet to use this feature."
         showAlert = true
+    }
+}
+
+// Inline banner so this file compiles even if you don’t add Payment/TrialExpiryBanner.swift
+private struct TrialBanner: View {
+    var onTap: () -> Void
+    var body: some View {
+        VStack(spacing: 8) {
+            Text("Your 30-day free trial has ended.")
+                .font(.subheadline).bold()
+            Text("Start your subscription to resume reminders.")
+                .font(.footnote).foregroundStyle(.secondary)
+            Button("Start Subscription") { onTap() }
+                .buttonStyle(.borderedProminent)
+        }
+        .padding()
+        .background(Color.yellow.opacity(0.18))
+        .cornerRadius(12)
     }
 }

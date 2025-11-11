@@ -3,8 +3,11 @@
 // =====================================
 import SwiftUI
 import PhotosUI
+import MessageUI
 
 struct UserSettingsPanel: View {
+    @EnvironmentObject private var appVM: AppViewModel
+
     @Binding var remindersPerDay: Double
     @Binding var tzIdentifier: String
     @Binding var quietStartHour: Double
@@ -15,6 +18,14 @@ struct UserSettingsPanel: View {
 
     @State private var photoItem: PhotosPickerItem?
     @State private var loadError: String?
+
+    // Mail compose state
+    @State private var showMailSheet = false
+    @State private var mailError: String?
+
+    // Paywall state
+    @State private var showPaywall = false
+    @State private var restoreMessage: String?
 
     // Updated range constants
     private let minReminders: Double = 0.1
@@ -62,7 +73,7 @@ struct UserSettingsPanel: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
 
-                    // Updated: 0.1–5.0/day slider
+                    // 0.1–5.0/day slider
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Reminders per day")
@@ -149,7 +160,7 @@ struct UserSettingsPanel: View {
 
                     Divider()
 
-                    // Background selector (unchanged)
+                    // Background selector
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Background")
                             .font(.subheadline.weight(.semibold))
@@ -201,6 +212,73 @@ struct UserSettingsPanel: View {
                             .foregroundStyle(.secondary)
                     }
 
+                    Divider()
+
+                    // 📨 Contact Support
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Feedback & Support")
+                            .font(.subheadline.weight(.semibold))
+
+                        Text("Have feedback, questions, or concerns?")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+
+                        Button {
+                            openSupport()
+                        } label: {
+                            Label("Contact Us", systemImage: "envelope.fill")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.accentColor)
+                        }
+
+                        if let mailError {
+                            Text(mailError)
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                        }
+                    }
+
+                    Divider()
+
+                    // 💳 Subscription section
+                    VStack(alignment: .leading, spacing: 8) {
+                        if let end = appVM.user?.trialEndsAt {
+                            let dateString = DateFormatter.localizedString(
+                                from: end,
+                                dateStyle: .medium,
+                                timeStyle: .short
+                            )
+                            Text("Free trial ends: \(dateString)")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Button("Start Subscription") { showPaywall = true }
+                            .buttonStyle(.borderedProminent)
+
+                        Button("Manage Subscription") {
+                            if let url = RevenueCatManager.shared.managementURL {
+                                UIApplication.shared.open(url)
+                            } else if let url = URL(string: "itms-apps://apps.apple.com/account/subscriptions") {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Restore Purchases") {
+                            RevenueCatManager.shared.restore { ok, err in
+                                restoreMessage = err ?? (ok ? "Restored." : "Nothing to restore.")
+                            }
+                        }
+                        .buttonStyle(.bordered)
+
+                        if let msg = restoreMessage {
+                            Text(msg).font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.top, 4)
+                    .sheet(isPresented: $showPaywall) { SubscriptionSheet() }
+
                     Spacer(minLength: 8)
                 }
                 .padding(16)
@@ -214,13 +292,35 @@ struct UserSettingsPanel: View {
         .frame(maxWidth: .infinity)
         .background(.clear)
         .padding(.top, 8)
+        .sheet(isPresented: $showMailSheet) {
+            MailView(
+                recipients: ["remindapphelp@gmail.com"],
+                subject: "Re[Mind] Feedback"
+            )
+        }
+        .onAppear { RevenueCatManager.shared.recomputeAndPersistActive() }
     }
 
-    // MARK: Helpers
-
-    private func remindersDisplay(_ value: Double) -> String {
-        String(format: "%.1f", value)
+    // MARK: - Helpers (support + image import) — unchanged
+    private func openSupport() { /* same as your version */
+        mailError = nil
+        if MFMailComposeViewController.canSendMail() {
+            showMailSheet = true
+            return
+        }
+        let addr = "remindapphelp@gmail.com"
+        let subject = "Re[Mind] Feedback"
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "Feedback"
+        if let url = URL(string: "mailto:\(addr)?subject=\(encodedSubject)") {
+            UIApplication.shared.open(url) { success in
+                if !success { mailError = "Couldn’t open Mail. Please email us at \(addr)." }
+            }
+        } else {
+            mailError = "Couldn’t create email link. Please email us at \(addr)."
+        }
     }
+
+    private func remindersDisplay(_ value: Double) -> String { String(format: "%.1f", value) }
 
     private func hourLabel(_ value: Double) -> String {
         let h = Int(round(value)) % 24
@@ -267,14 +367,40 @@ struct UserSettingsPanel: View {
     }
 }
 
+// MARK: - Mail bridge + UIImage resize (unchanged from your version)
+private struct MailView: UIViewControllerRepresentable {
+    var recipients: [String]
+    var subject: String
+    var body: String? = nil
+
+    func makeUIViewController(context: Context) -> MFMailComposeViewController {
+        let vc = MFMailComposeViewController()
+        vc.mailComposeDelegate = context.coordinator
+        vc.setToRecipients(recipients)
+        vc.setSubject(subject)
+        if let body { vc.setMessageBody(body, isHTML: false) }
+        return vc
+    }
+
+    func updateUIViewController(_ uiViewController: MFMailComposeViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator: NSObject, MFMailComposeViewControllerDelegate {
+        func mailComposeController(_ controller: MFMailComposeViewController,
+                                   didFinishWith result: MFMailComposeResult,
+                                   error: Error?) {
+            controller.dismiss(animated: true)
+        }
+    }
+}
+
 private extension UIImage {
     func resized(maxDimension: CGFloat) -> UIImage {
         let maxSide = max(size.width, size.height)
         guard maxSide > maxDimension else { return self }
-
         let scale = maxDimension / maxSide
         let newSize = CGSize(width: size.width * scale, height: size.height * scale)
-
         UIGraphicsBeginImageContextWithOptions(newSize, true, 1.0)
         defer { UIGraphicsEndImageContext() }
         draw(in: CGRect(origin: .zero, size: newSize))

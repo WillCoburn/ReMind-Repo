@@ -13,9 +13,26 @@ extension AppViewModel {
         userListener = db.collection("users").document(uid)
             .addSnapshotListener { [weak self] snap, _ in
                 guard let self = self, let data = snap?.data() else { return }
+
                 let phone = data["phoneE164"] as? String ?? self.user?.phoneE164 ?? ""
-                self.user = UserProfile(uid: uid, phoneE164: phone)
+                let createdAt = (data["createdAt"] as? Timestamp)?.dateValue()
+                let updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue()
+                let trialEndsAt = (data["trialEndsAt"] as? Timestamp)?.dateValue()
+                let active = data["active"] as? Bool
+
+                // Build updated profile
+                let updatedProfile = UserProfile(
+                    uid: uid,
+                    phoneE164: phone,
+                    createdAt: createdAt,
+                    updatedAt: updatedAt,
+                    trialEndsAt: trialEndsAt,
+                    active: active
+                )
+
+                self.user = updatedProfile
                 self.smsOptOut = data["smsOptOut"] as? Bool ?? false
+
                 let hasSeenTour = data["hasSeenFeatureTour"] as? Bool ?? false
                 self.applyFeatureTourFlag(hasSeenTour)
             }

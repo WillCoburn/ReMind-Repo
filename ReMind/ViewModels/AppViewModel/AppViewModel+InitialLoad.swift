@@ -23,11 +23,50 @@ extension AppViewModel {
         // One-time fetch so UI has something immediately
         do {
             let snap = try await db.collection("users").document(uid).getDocument()
+
+            // Base identity
             let phone = snap.get("phoneE164") as? String ?? ""
-            self.user = UserProfile(uid: uid, phoneE164: phone)
+
+            // Optional timestamps
+            let createdAtTS = snap.get("createdAt") as? Timestamp
+            let updatedAtTS = snap.get("updatedAt") as? Timestamp
+            let trialEndsAtTS = snap.get("trialEndsAt") as? Timestamp
+
+            // Active flag (backend gating)
+            let active = snap.get("active") as? Bool
+
+            // Build model
+            var profile = UserProfile(
+                uid: uid,
+                phoneE164: phone,
+                createdAt: createdAtTS?.dateValue(),
+                updatedAt: updatedAtTS?.dateValue(),
+                trialEndsAt: trialEndsAtTS?.dateValue(),
+                active: active
+            )
+
+            self.user = profile
+
+            // Ancillary flags
             self.smsOptOut = snap.get("smsOptOut") as? Bool ?? false
             let hasSeenTour = snap.get("hasSeenFeatureTour") as? Bool ?? false
             applyFeatureTourFlag(hasSeenTour)
+
+            // If trial was never seeded (older users), seed a trial now to avoid nil UI
+            if profile.trialEndsAt == nil {
+                let trialEnd = Calendar.current.date(byAdding: .day, value: 30, to: Date())!
+                do {
+                    try await db.collection("users").document(uid).setData([
+                        "trialEndsAt": Timestamp(date: trialEnd),
+                        "active": true
+                    ], merge: true)
+                    profile.trialEndsAt = trialEnd
+                    profile.active = true
+                    self.user = profile
+                } catch {
+                    print("⚠️ failed to backfill trialEndsAt:", error.localizedDescription)
+                }
+            }
         } catch {
             print("❌ load user error:", error.localizedDescription)
             if self.user == nil { self.user = UserProfile(uid: uid, phoneE164: "") }

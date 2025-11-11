@@ -61,6 +61,12 @@
 		D2D07BDF2EBC1C7F0078BAB0 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BDE2EBC1C760078BAB0 /* NetworkMonitor.swift */; };
 		D2D07BE32EBC1CD70078BAB0 /* OfflineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BE22EBC1CD30078BAB0 /* OfflineBanner.swift */; };
 		D2D07BE52EBC1D2E0078BAB0 /* NetworkAwareModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BE42EBC1D290078BAB0 /* NetworkAwareModifier.swift */; };
+		D2D07BE82EC3F42F0078BAB0 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = D2D07BE72EC3F42F0078BAB0 /* RevenueCat */; };
+		D2D07BEA2EC3F42F0078BAB0 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = D2D07BE92EC3F42F0078BAB0 /* RevenueCatUI */; };
+		D2D07BEE2EC3F6730078BAB0 /* PaywallConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BED2EC3F66C0078BAB0 /* PaywallConfig.swift */; };
+		D2D07BF02EC3F6A50078BAB0 /* RevenueCatManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BEF2EC3F69D0078BAB0 /* RevenueCatManager.swift */; };
+		D2D07BF22EC3F6D20078BAB0 /* SubscriptionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BF12EC3F6CB0078BAB0 /* SubscriptionSheet.swift */; };
+		D2D07BF42EC3F6E90078BAB0 /* TrialExpiryBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -129,6 +135,10 @@
 		D2D07BDE2EBC1C760078BAB0 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		D2D07BE22EBC1CD30078BAB0 /* OfflineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineBanner.swift; sourceTree = "<group>"; };
 		D2D07BE42EBC1D290078BAB0 /* NetworkAwareModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkAwareModifier.swift; sourceTree = "<group>"; };
+		D2D07BED2EC3F66C0078BAB0 /* PaywallConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallConfig.swift; sourceTree = "<group>"; };
+		D2D07BEF2EC3F69D0078BAB0 /* RevenueCatManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueCatManager.swift; sourceTree = "<group>"; };
+		D2D07BF12EC3F6CB0078BAB0 /* SubscriptionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSheet.swift; sourceTree = "<group>"; };
+		D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialExpiryBanner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,6 +148,7 @@
 			files = (
 				D2BEC26D2E7FBE47009E3698 /* FirebaseAnalytics in Frameworks */,
 				D2BEC2542E7E16AD009E3698 /* FirebaseDatabase in Frameworks */,
+				D2D07BEA2EC3F42F0078BAB0 /* RevenueCatUI in Frameworks */,
 				D2BEC24C2E7E16AD009E3698 /* FirebaseAnalytics in Frameworks */,
 				D2BEC2732E7FBE47009E3698 /* FirebaseFirestore in Frameworks */,
 				D2BEC2522E7E16AD009E3698 /* FirebaseCrashlytics in Frameworks */,
@@ -145,6 +156,7 @@
 				D2BEC24E2E7E16AD009E3698 /* FirebaseAuth in Frameworks */,
 				D2BEC25D2E7E19EA009E3698 /* FirebaseFirestore in Frameworks */,
 				D2BEC2712E7FBE47009E3698 /* FirebaseCore in Frameworks */,
+				D2D07BE82EC3F42F0078BAB0 /* RevenueCat in Frameworks */,
 				D2BEC2752E7FBE47009E3698 /* FirebaseFunctions in Frameworks */,
 				D2BEC27F2EB039E0009E3698 /* PDFKit.framework in Frameworks */,
 				D2BEC26F2E7FBE47009E3698 /* FirebaseAuth in Frameworks */,
@@ -194,6 +206,7 @@
 			isa = PBXGroup;
 			children = (
 				D2BEC2622E7E2D8F009E3698 /* Info.plist */,
+				D2D07BEC2EC3F6600078BAB0 /* Payment */,
 				D22EF47A2E7B2EA100810204 /* Utils */,
 				D22EF4792E7B2E9900810204 /* Views */,
 				D22EF4782E7B2E8700810204 /* ViewModels */,
@@ -350,6 +363,17 @@
 			path = AppViewModel;
 			sourceTree = "<group>";
 		};
+		D2D07BEC2EC3F6600078BAB0 /* Payment */ = {
+			isa = PBXGroup;
+			children = (
+				D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */,
+				D2D07BF12EC3F6CB0078BAB0 /* SubscriptionSheet.swift */,
+				D2D07BEF2EC3F69D0078BAB0 /* RevenueCatManager.swift */,
+				D2D07BED2EC3F66C0078BAB0 /* PaywallConfig.swift */,
+			);
+			path = Payment;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -440,6 +464,7 @@
 			mainGroup = D22EF43E2E78EA0700810204;
 			packageReferences = (
 				D2BEC24A2E7E16AD009E3698 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				D2D07BE62EC3F42F0078BAB0 /* XCRemoteSwiftPackageReference "purchases-ios" */,
 			);
 			productRefGroup = D22EF4482E78EA0700810204 /* Products */;
 			projectDirPath = "";
@@ -495,14 +520,17 @@
 				D2D07BDD2EBC19530078BAB0 /* AppViewModel+FeatureTour.swift in Sources */,
 				D2D07BDB2EBC193E0078BAB0 /* AppViewModel+Functions.swift in Sources */,
 				D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */,
+				D2D07BEE2EC3F6730078BAB0 /* PaywallConfig.swift in Sources */,
 				D2BEC27B2EAC4F0E009E3698 /* UserSettingsPanel.swift in Sources */,
 				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,
 				D2D07BE32EBC1CD70078BAB0 /* OfflineBanner.swift in Sources */,
+				D2D07BF02EC3F6A50078BAB0 /* RevenueCatManager.swift in Sources */,
 				D2D07BE52EBC1D2E0078BAB0 /* NetworkAwareModifier.swift in Sources */,
 				D2D07BCD2EBC17470078BAB0 /* CodeEntrySection.swift in Sources */,
 				D2BEC2582E7E17B5009E3698 /* AppDelegate.swift in Sources */,
 				D2BEC25A2E7E1897009E3698 /* FirebasePing.swift in Sources */,
 				D22EF4862E7B2F7A00810204 /* ExportService.swift in Sources */,
+				D2D07BF22EC3F6D20078BAB0 /* SubscriptionSheet.swift in Sources */,
 				D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */,
 				D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */,
 				D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */,
@@ -510,6 +538,7 @@
 				D2BEC2662E7E334B009E3698 /* FirestoreDataStore.swift in Sources */,
 				D22EF47E2E7B2F1300810204 /* Affirmation.swift in Sources */,
 				D22EF4902E7B302900810204 /* RootView.swift in Sources */,
+				D2D07BF42EC3F6E90078BAB0 /* TrialExpiryBanner.swift in Sources */,
 				D22EF48E2E7B2FEE00810204 /* AppViewModel.swift in Sources */,
 				D2D07BDF2EBC1C7F0078BAB0 /* NetworkMonitor.swift in Sources */,
 				D22EF44B2E78EA0700810204 /* ReMindApp.swift in Sources */,
@@ -887,6 +916,14 @@
 				minimumVersion = 12.3.0;
 			};
 		};
+		D2D07BE62EC3F42F0078BAB0 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.47.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -944,6 +981,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D2BEC24A2E7E16AD009E3698 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFunctions;
+		};
+		D2D07BE72EC3F42F0078BAB0 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D2D07BE62EC3F42F0078BAB0 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
+		D2D07BE92EC3F42F0078BAB0 /* RevenueCatUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D2D07BE62EC3F42F0078BAB0 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCatUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
