@@ -21,7 +21,9 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if appVM.user != nil {
+            if appVM.shouldShowOnboarding {
+                OnboardingView()
+            } else {
                 NavigationView {
                     ZStack(alignment: .top) {
                         // Background layer (custom image or system background color)
@@ -61,7 +63,6 @@ struct RootView: View {
                                     UserSettingsSync.pushAndApply { err in
                                         print("pushAndApply ->", err?.localizedDescription ?? "OK")
                                     }
-
                                 }
 
                             UserSettingsPanel(
@@ -78,13 +79,12 @@ struct RootView: View {
                                     UserSettingsSync.pushAndApply { err in
                                         print("pushAndApply ->", err?.localizedDescription ?? "OK")
                                     }
-
                                 }
                             )
                             .transition(.move(edge: .top).combined(with: .opacity))
                             .zIndex(1)
                         }
-                        
+
                         if appVM.showFeatureTour {
                             FeatureTourOverlay(
                                 step: appVM.featureTourStep,
@@ -100,12 +100,10 @@ struct RootView: View {
                         }
                     }
                 }
-            } else {
-                OnboardingView()
             }
         }
-        // animate when user logs in/out
-        .animation(.default, value: appVM.user != nil)
+        // Animate when the onboarding gate flips
+        .animation(.default, value: appVM.shouldShowOnboarding)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: appVM.featureTourStep)
         .animation(.easeInOut(duration: 0.25), value: appVM.showFeatureTour)
     }
@@ -115,26 +113,20 @@ struct RootView: View {
     @ViewBuilder
     private var backgroundLayer: some View {
         GeometryReader { proxy in
-                    if let uiImage = decodeBase64ToImage(bgImageBase64) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            // GeometryReader gives us the actual container bounds, so we can
-                            // pin the rendered bitmap to the NavigationView's real size instead
-                            // of letting the photo's native pixel dimensions define an "ideal"
-                            // width/height. Without this clamp, a panoramic image reports a
-                            // multi-thousand point ideal width, the navigation stack expands to
-                            // satisfy it, and MainView's entry bubble slides outside the
-                            // visible viewport.
-                            .frame(width: max(proxy.size.width, 1),
-                                   height: max(proxy.size.height, 1))
-                            .clipped()
-                            .overlay(.black.opacity(0.15)) // subtle contrast for readability
-                    } else {
-                        Color(UIColor.systemBackground)
-                            .frame(width: max(proxy.size.width, 1),
-                                   height: max(proxy.size.height, 1))
-                    }
+            if let uiImage = decodeBase64ToImage(bgImageBase64) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    // Clamp to the actual container bounds to avoid oversized ideal sizes
+                    .frame(width: max(proxy.size.width, 1),
+                           height: max(proxy.size.height, 1))
+                    .clipped()
+                    .overlay(.black.opacity(0.15)) // subtle contrast for readability
+            } else {
+                Color(UIColor.systemBackground)
+                    .frame(width: max(proxy.size.width, 1),
+                           height: max(proxy.size.height, 1))
+            }
         }
     }
 

@@ -1,15 +1,14 @@
-// ReMind/Payment/RevenueCatManager.swift
+// ============================
+// File: ReMind/Payment/RevenueCatManager.swift
+// ============================
 import Foundation
 import RevenueCat
 import FirebaseAuth
 import FirebaseFirestore
 
 /// Client-side subscription state manager.
-/// - Initializes RevenueCat
-/// - Links RC identity to Firebase UID
-/// - Tracks entitlement state
-/// - Mirrors a lightweight rc.* payload into Firestore
-/// - Computes & persists `active = (now < trialEndsAt) || entitlementActive`
+/// Lazily configures RevenueCat on first identify/restore to prevent early writes.
+/// Defers ALL Firestore writes until we've explicitly identified with Firebase UID.
 final class RevenueCatManager: NSObject, ObservableObject {
     static let shared = RevenueCatManager()
     private override init() { super.init() }
@@ -21,37 +20,39 @@ final class RevenueCatManager: NSObject, ObservableObject {
     private let db = Firestore.firestore()
     private var activeCheckTimer: Timer?
 
-    // MARK: - Bootstrap
+    /// Gate: becomes true ONLY after `logIn(uid)` succeeds.
+    private var isIdentified = false
 
-    func configure() {
+    /// Track whether the SDK has been configured.
+    private var isConfigured = false
+
+    // MARK: - Lazy configure
+
+    private func ensureConfigured() {
+        guard !isConfigured else { return }
         Purchases.configure(withAPIKey: PaywallConfig.rcPublicSDKKey)
-
-        // Delegate gives us live updates across SDK versions
         Purchases.shared.delegate = self
+        isConfigured = true
 
-        // Initial status
-        Purchases.shared.getCustomerInfo { [weak self] info, _ in
-            self?.apply(info)
-        }
-
-        // Attach to Firebase identity if already signed in
-        identifyIfPossible()
-
-        // Periodic recompute so trials flip without relaunch
+        // Periodic recompute (only acts when identified)
         scheduleActiveRecomputeTimer()
     }
 
-    /// Call this right after Firebase sign-in completes.
+    // MARK: - Identify (call this after user doc exists)
     func identifyIfPossible() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
+        ensureConfigured()
         Purchases.shared.logIn(uid) { [weak self] info, _, _ in
-            self?.apply(info)
+            guard let self else { return }
+            self.isIdentified = true
+            self.apply(info)
         }
     }
 
-    // MARK: - Restore (RCUI handles purchase automatically)
+    // MARK: - Restore
 
     func restore(completion: @escaping (Bool, String?) -> Void) {
+        ensureConfigured()
         Purchases.shared.restorePurchases { info, err in
             if let err = err { completion(false, err.localizedDescription); return }
             completion(info?.entitlements[PaywallConfig.entitlementId]?.isActive == true, nil)
@@ -62,15 +63,23 @@ final class RevenueCatManager: NSObject, ObservableObject {
 
     private func apply(_ info: CustomerInfo?) {
         guard let info else { return }
+
         lastCustomerInfo = info
         managementURL = info.managementURL
         entitlementActive = info.entitlements[PaywallConfig.entitlementId]?.isActive == true
-        syncToFirestore(info: info)
+
+        // 🔒 Hard gate: do nothing until we've explicitly identified.
+        guard isIdentified else { return }
+
+        // Safety: require identity match.
+        guard let uid = Auth.auth().currentUser?.uid,
+              Purchases.shared.appUserID == uid else { return }
+
+        syncToFirestore(info: info, uid: uid)
     }
 
-    /// Mirror essential RC state into Firestore and recompute `active`.
-    private func syncToFirestore(info: CustomerInfo) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+    /// Mirror essential RC state into Firestore and recompute `active` + `subscriptionStatus`.
+    private func syncToFirestore(info: CustomerInfo, uid: String) {
         let ent = info.entitlements[PaywallConfig.entitlementId]
 
         let rcPayload: [String: Any?] = [
@@ -82,12 +91,18 @@ final class RevenueCatManager: NSObject, ObservableObject {
             "lastSyncedAt": Date().timeIntervalSince1970
         ]
 
-        db.collection("users").document(uid).setData(["rc": rcPayload], merge: true) { _ in
-            self.recomputeAndPersistActive(uid: uid, entitlement: ent?.isActive ?? false)
+        let userRef = db.collection("users").document(uid)
+        // Extra guard: only write if base doc exists (prevents creating doc from RC alone)
+        userRef.getDocument { snap, _ in
+            guard snap?.exists == true else { return }
+            userRef.setData(["rc": rcPayload], merge: true) { _ in
+                self.recomputeAndPersistActive(uid: uid, entitlement: ent?.isActive ?? false)
+            }
         }
     }
 
-    /// Compute `active = trialNotOver || entitlementActive`, and write it.
+    /// `active` = (Date() < trialEndsAt) || entitlementActive
+    /// `subscriptionStatus` = "subscribed" if entitlementActive else "unsubscribed"
     func recomputeAndPersistActive(uid: String? = nil, entitlement: Bool? = nil) {
         let uidValue: String
         if let u = uid { uidValue = u }
@@ -97,18 +112,39 @@ final class RevenueCatManager: NSObject, ObservableObject {
         let docRef = db.collection("users").document(uidValue)
         docRef.getDocument { snap, _ in
             guard let data = snap?.data() else { return }
+
             let ts = (data["trialEndsAt"] as? Timestamp)?.dateValue()
             let onTrial = ts.map { Date() < $0 } ?? false
-            let entitled = entitlement ?? ((data["rc"] as? [String: Any])?["entitlementActive"] as? Bool ?? false)
-            let active = onTrial || entitled
-            docRef.setData(["active": active], merge: true)
+
+            let entitled: Bool
+            if let entitlement = entitlement {
+                entitled = entitlement
+            } else if
+                let rc = data["rc"] as? [String: Any],
+                let activeFromRC = rc["entitlementActive"] as? Bool {
+                entitled = activeFromRC
+            } else {
+                entitled = false
+            }
+
+            // If neither trial nor entitlement is known/true yet, avoid writing a misleading `active`.
+            if ts == nil && !entitled { return }
+
+            let isActive = onTrial || entitled
+            let subscriptionStatus = entitled ? "subscribed" : "unsubscribed"
+
+            docRef.setData([
+                "active": isActive,
+                "subscriptionStatus": subscriptionStatus
+            ], merge: true)
         }
     }
 
     private func scheduleActiveRecomputeTimer() {
         activeCheckTimer?.invalidate()
         activeCheckTimer = Timer.scheduledTimer(withTimeInterval: 60 * 10, repeats: true) { [weak self] _ in
-            self?.recomputeAndPersistActive()
+            guard let self, self.isIdentified else { return }
+            self.recomputeAndPersistActive()
         }
     }
 }

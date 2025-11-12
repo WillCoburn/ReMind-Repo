@@ -33,13 +33,45 @@ final class AppViewModel: ObservableObject {
     // Live user listener (keeps smsOptOut in sync while the app runs)
     var userListener: ListenerRegistration?
 
+    // Keep a handle so we can remove the auth listener & avoid warnings.
+    private var authHandle: AuthStateDidChangeListenerHandle?
+
+    /// Legacy convenience; true when a profile is loaded.
     var isOnboarded: Bool { user != nil }
 
-    // MARK: - Init
+    /// Onboarding gate:
+    /// - Show onboarding if there is NO Firebase session
+    /// - Or if we don’t yet have a phone number in the loaded profile
+    var shouldShowOnboarding: Bool {
+        // If Firebase has no user, we must show onboarding.
+        guard Auth.auth().currentUser != nil else { return true }
+
+        // Firebase has a session. Require a loaded profile with a phone number.
+        let hasPhone = !(user?.phoneE164 ?? "").isEmpty
+        return !hasPhone
+    }
+
+    // MARK: - Init / Deinit
     init() {
-        Auth.auth().addStateDidChangeListener { [weak self] _, user in
+        authHandle = Auth.auth().addStateDidChangeListener { [weak self] _, authUser in
             guard let self = self else { return }
-            Task { await self.loadUserAndEntries(user?.uid) }
+            Task {
+                // Load user profile and entries for this auth state.
+                await self.loadUserAndEntries(authUser?.uid)
+
+                // ✅ Only identify/configure RevenueCat AFTER the base user profile is loaded.
+                // This ensures no RC config/writes occur before the Firestore user doc exists.
+                let hasPhone = !(self.user?.phoneE164 ?? "").isEmpty
+                if hasPhone {
+                    RevenueCatManager.shared.identifyIfPossible()
+                }
+            }
+        }
+    }
+
+    deinit {
+        if let handle = authHandle {
+            Auth.auth().removeStateDidChangeListener(handle)
         }
     }
 }
