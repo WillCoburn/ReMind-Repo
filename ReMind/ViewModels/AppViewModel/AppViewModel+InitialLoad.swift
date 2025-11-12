@@ -23,6 +23,7 @@ extension AppViewModel {
         // One-time fetch so UI has something immediately
         do {
             let snap = try await db.collection("users").document(uid).getDocument()
+            let documentExists = snap.exists
 
             // Base identity
             let phone = snap.get("phoneE164") as? String ?? ""
@@ -53,7 +54,7 @@ extension AppViewModel {
             applyFeatureTourFlag(hasSeenTour)
 
             // If trial was never seeded (older users), seed a trial now to avoid nil UI
-            if profile.trialEndsAt == nil {
+            if documentExists && profile.trialEndsAt == nil {
                 let trialEnd = Calendar.current.date(byAdding: .day, value: 30, to: Date())!
                 do {
                     try await db.collection("users").document(uid).setData([

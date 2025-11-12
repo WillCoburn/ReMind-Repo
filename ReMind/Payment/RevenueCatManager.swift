@@ -19,6 +19,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
 
     private let db = Firestore.firestore()
     private var activeCheckTimer: Timer?
+    private var trialExpiryTimer: Timer?
 
     /// Gate: becomes true ONLY after `logIn(uid)` succeeds.
     private var isIdentified = false
@@ -41,11 +42,23 @@ final class RevenueCatManager: NSObject, ObservableObject {
     // MARK: - Identify (call this after user doc exists)
     func identifyIfPossible() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
-        ensureConfigured()
-        Purchases.shared.logIn(uid) { [weak self] info, _, _ in
-            guard let self else { return }
-            self.isIdentified = true
-            self.apply(info)
+
+        let docRef = db.collection("users").document(uid)
+        docRef.getDocument { [weak self] snap, _ in
+            guard
+                let self,
+                let phone = snap?.get("phoneE164") as? String,
+                !phone.isEmpty
+            else {
+                return
+            }
+
+            self.ensureConfigured()
+            Purchases.shared.logIn(uid) { [weak self] info, _, _ in
+                guard let self else { return }
+                self.isIdentified = true
+                self.apply(info)
+            }
         }
     }
 
@@ -110,12 +123,17 @@ final class RevenueCatManager: NSObject, ObservableObject {
         else { return }
 
         let docRef = db.collection("users").document(uidValue)
-        docRef.getDocument { snap, _ in
-            guard let data = snap?.data() else { return }
-
+        docRef.getDocument { [weak self] snap, _ in
+            guard let self else { return }
+            guard let data = snap?.data() else {
+                self.scheduleTrialExpiryTimer(trialEndsAt: nil)
+                return
+            }
             let ts = (data["trialEndsAt"] as? Timestamp)?.dateValue()
             let onTrial = ts.map { Date() < $0 } ?? false
 
+            self.scheduleTrialExpiryTimer(trialEndsAt: ts)
+            
             let entitled: Bool
             if let entitlement = entitlement {
                 entitled = entitlement
@@ -147,6 +165,23 @@ final class RevenueCatManager: NSObject, ObservableObject {
             self.recomputeAndPersistActive()
         }
     }
+    
+    private func scheduleTrialExpiryTimer(trialEndsAt: Date?) {
+        DispatchQueue.main.async {
+            self.trialExpiryTimer?.invalidate()
+            self.trialExpiryTimer = nil
+
+            guard let trialEndsAt else { return }
+
+            let interval = trialEndsAt.timeIntervalSinceNow
+            guard interval > 0 else { return }
+
+            self.trialExpiryTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+                self?.recomputeAndPersistActive()
+            }
+        }
+    }
+    
 }
 
 // MARK: - PurchasesDelegate
