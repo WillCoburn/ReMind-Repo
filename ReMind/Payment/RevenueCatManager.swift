@@ -16,6 +16,8 @@ final class RevenueCatManager: NSObject, ObservableObject {
 
     // UI-observable bits
     @Published var entitlementActive: Bool = false
+    @Published var entitlementWillRenew: Bool = false
+    @Published var entitlementExpirationDate: Date?
     @Published var managementURL: URL?
     @Published var lastCustomerInfo: CustomerInfo?
 
@@ -83,7 +85,11 @@ final class RevenueCatManager: NSObject, ObservableObject {
         // Update local/UI state
         lastCustomerInfo = info
         managementURL = info.managementURL
-        entitlementActive = info.entitlements[PaywallConfig.entitlementId]?.isActive == true
+
+        let entitlement = info.entitlements[PaywallConfig.entitlementId]
+        entitlementActive = entitlement?.isActive == true
+        entitlementWillRenew = entitlement?.willRenew ?? false
+        entitlementExpirationDate = entitlement?.expirationDate
 
         // 🔒 Hard gates before any Firestore writes
         guard isIdentified else { return }

@@ -101,6 +101,11 @@ struct OnboardingView: View {
                 )
             }
         }
+        
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.white)
+        .ignoresSafeArea()
+        
         .padding(.horizontal)
         .animation(.default, value: step)
         .animation(.default, value: errorText)

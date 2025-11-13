@@ -247,22 +247,39 @@ struct UserSettingsPanel: View {
                     // 💳 Subscription section
                     VStack(alignment: .leading, spacing: 8) {
                         let isSubscribed = revenueCat.entitlementActive
+                        let willRenew = revenueCat.entitlementWillRenew
+                        let showSubscribeCTA = !isSubscribed || !willRenew
 
-                                                if !isSubscribed {
-                                                    if let end = appVM.user?.trialEndsAt {
-                                                        let dateString = DateFormatter.localizedString(
-                                                            from: end,
-                                                            dateStyle: .medium,
-                                                            timeStyle: .short
-                                                        )
-                                                        Text("Free trial ends: \(dateString)")
-                                                            .font(.footnote)
-                                                            .foregroundStyle(.secondary)
-                                                    }
+                        if showSubscribeCTA {
+                            if !isSubscribed {
+                                if let end = appVM.user?.trialEndsAt {
+                                    let dateString = DateFormatter.localizedString(
+                                        from: end,
+                                        dateStyle: .medium,
+                                        timeStyle: .short
+                                    )
+                                    Text("Free trial ends: \(dateString)")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } else if !willRenew, let expiration = revenueCat.entitlementExpirationDate {
+                                let dateString = DateFormatter.localizedString(
+                                    from: expiration,
+                                    dateStyle: .medium,
+                                    timeStyle: .short
+                                )
+                                Text("Subscription ends: \(dateString)")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
 
-                                                    Button("Start Subscription (99¢/mo)") { showPaywall = true }
-                                                        .buttonStyle(.borderedProminent)
-                                                }
+                            let subscribeLabel = (isSubscribed && !willRenew)
+                                ? "Resume Subscription"
+                                : "Start Subscription"
+                            
+                            Button(subscribeLabel) { showPaywall = true }
+                                .buttonStyle(.borderedProminent)
+                        }
 
                         Button("Manage Subscription") {
                             if let url = RevenueCatManager.shared.managementURL {
