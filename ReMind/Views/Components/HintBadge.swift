@@ -5,9 +5,16 @@ struct HintBadge: View {
     let count: Int
     let goal: Int
 
-    @State private var show: Bool = true           // controls collapse
+    @State private var show: Bool                  // controls collapse
     @State private var flash: Bool = false         // single flash when reaching goal
 
+    init(count: Int, goal: Int) {
+        self.count = count
+        self.goal = goal
+        _show = State(initialValue: count < goal)
+    }
+    
+    
     private var progress: Double {
         min(Double(count) / Double(goal), 1.0)
     }
@@ -52,13 +59,16 @@ struct HintBadge: View {
                                         removal: .opacity.combined(with: .scale)))
                 .onChange(of: count) { newValue in
                     // When the user *reaches* the goal, flash once and collapse.
-                    if newValue >= goal {
+                    if newValue >= goal && show {
                         Haptics.success()
                         flash = true
                         // Collapse after a short delay so the flash is visible.
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                                 show = false
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                                flash = false
                             }
                         }
                     }

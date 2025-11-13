@@ -12,6 +12,7 @@ struct MainView: View {
     @State private var showSuccessMessage = false
     @State private var showPaywall = false
     @State private var isSubmitting = false
+    
 
     // Alerts
     @State private var showAlert = false
