@@ -12,7 +12,7 @@ struct UserSettingsPanel: View {
     @EnvironmentObject private var appVM: AppViewModel
     @ObservedObject private var revenueCat = RevenueCatManager.shared
 
-    @Binding var remindersPerDay: Double
+    @Binding var remindersPerWeek: Double
     @Binding var tzIdentifier: String
     @Binding var quietStartHour: Double
     @Binding var quietEndHour: Double
@@ -32,9 +32,9 @@ struct UserSettingsPanel: View {
     @State private var restoreMessage: String?
 
     // Updated range constants
-    private let minReminders: Double = 0.1
-    private let maxReminders: Double = 5.0
-    private let stepReminders: Double = 0.1
+    private let minReminders: Double = 0
+    private let maxReminders: Double = 20
+    private let stepReminders: Double = 1
 
     private let usTimeZones: [String] = {
         var ids = TimeZone.knownTimeZoneIdentifiers.filter {
@@ -77,22 +77,22 @@ struct UserSettingsPanel: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
 
-                    // 0.1–5.0/day slider
+                    // 1-20/week slider
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Reminders per day")
+                            Text("Reminders per week")
                                 .font(.subheadline.weight(.semibold))
                             Spacer()
-                            Text("\(remindersDisplay(remindersPerDay)) / day")
+                            Text("\(remindersDisplay(remindersPerWeek)) / week")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
 
-                        Slider(value: $remindersPerDay,
+                        Slider(value: $remindersPerWeek,
                                in: minReminders...maxReminders,
                                step: stepReminders)
 
-                        Text("Choose how many reminders to receive each day (in tenths). For example, 0.1 = about once every 10 days.")
+                        Text("How many ReMinders do you want to receive each week?")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -358,7 +358,7 @@ struct UserSettingsPanel: View {
         }
     }
 
-    private func remindersDisplay(_ value: Double) -> String { String(format: "%.1f", value) }
+    private func remindersDisplay(_ value: Double) -> String { String(format: "%.0f", value) }
 
     private func hourLabel(_ value: Double) -> String {
         let h = Int(round(value)) % 24

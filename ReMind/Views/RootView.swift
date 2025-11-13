@@ -11,7 +11,7 @@ struct RootView: View {
     @State private var showSettings = false
 
     // Persisted settings (simple local storage for now)
-    @AppStorage("remindersPerDay") private var remindersPerDay: Double = 1.0 // 0.1...5
+    @AppStorage("remindersPerWeek") private var remindersPerWeek: Double = 7.0 // 1...20
     @AppStorage("tzIdentifier")    private var tzIdentifier: String = TimeZone.current.identifier
     @AppStorage("quietStartHour")  private var quietStartHour: Double = 9     // 0...23
     @AppStorage("quietEndHour")    private var quietEndHour: Double = 22      // 0...23
@@ -69,7 +69,7 @@ struct RootView: View {
                                 }
 
                             UserSettingsPanel(
-                                remindersPerDay: $remindersPerDay,
+                                remindersPerWeek: $remindersPerWeek,
                                 tzIdentifier: $tzIdentifier,
                                 quietStartHour: $quietStartHour,
                                 quietEndHour: $quietEndHour,

@@ -7,7 +7,7 @@ import FirebaseFirestore
 import FirebaseFunctions
 
 struct UserSettings: Codable {
-    var remindersPerDay: Double
+    var remindersPerWeek: Double
     var tzIdentifier: String
     var quietStartHour: Int    // 0...23
     var quietEndHour: Int      // 0...23
@@ -16,8 +16,17 @@ struct UserSettings: Codable {
 enum UserSettingsSync {
     static func currentFromAppStorage() -> UserSettings {
         let d = UserDefaults.standard
+        let storedWeekly = d.object(forKey: "remindersPerWeek") as? Double
+        let legacyDaily = d.object(forKey: "remindersPerDay") as? Double
+        var weekly = storedWeekly ?? ((legacyDaily != nil) ? (legacyDaily! * 7.0) : nil) ?? 7.0
+        weekly = max(1.0, min(20.0, weekly))
+        if storedWeekly == nil {
+            d.set(weekly, forKey: "remindersPerWeek")
+        }
+
+        
         return .init(
-            remindersPerDay: max(0.1, min(5.0, d.object(forKey: "remindersPerDay") as? Double ?? 1.0)),
+            remindersPerWeek: weekly,
             tzIdentifier: d.string(forKey: "tzIdentifier") ?? TimeZone.current.identifier,
             quietStartHour: max(0, min(23, Int(round(d.double(forKey: "quietStartHour"))))),
             quietEndHour:  max(0, min(23, Int(round(d.double(forKey: "quietEndHour")))))
@@ -44,7 +53,7 @@ enum UserSettingsSync {
 
         // Prepare settings payload
         let settingsData: [String: Any] = [
-            "remindersPerDay": s.remindersPerDay,
+            "remindersPerWeek": s.remindersPerWeek,
             "tzIdentifier": s.tzIdentifier,
             "quietStartHour": s.quietStartHour,
             "quietEndHour": s.quietEndHour,

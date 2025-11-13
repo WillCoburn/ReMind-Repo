@@ -3,6 +3,9 @@
 // ============================
 import Foundation
 
+
+
+
 public struct UserProfile: Codable, Sendable, Equatable {
     public let uid: String          // Firebase Auth UID
     public var phoneE164: String    // e.g. "+15551234567"
