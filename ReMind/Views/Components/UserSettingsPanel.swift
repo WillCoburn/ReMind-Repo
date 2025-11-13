@@ -109,7 +109,8 @@ struct UserSettingsPanel: View {
                                 Text(prettyTimeZone(id)).tag(id)
                             }
                         }
-                        .pickerStyle(.wheel)
+                        .pickerStyle(.menu)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
                         Text("Used for scheduling sends at the right local time.")
                             .font(.footnote)
@@ -248,37 +249,31 @@ struct UserSettingsPanel: View {
                     VStack(alignment: .leading, spacing: 8) {
                         let isSubscribed = revenueCat.entitlementActive
                         let willRenew = revenueCat.entitlementWillRenew
-                        let showSubscribeCTA = !isSubscribed || !willRenew
 
-                        if showSubscribeCTA {
-                            if !isSubscribed {
-                                if let end = appVM.user?.trialEndsAt {
-                                    let dateString = DateFormatter.localizedString(
-                                        from: end,
-                                        dateStyle: .medium,
-                                        timeStyle: .short
-                                    )
-                                    Text("Free trial ends: \(dateString)")
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
-                                }
-                            } else if !willRenew, let expiration = revenueCat.entitlementExpirationDate {
+                        
+                        if !isSubscribed {
+                            if let end = appVM.user?.trialEndsAt {
                                 let dateString = DateFormatter.localizedString(
-                                    from: expiration,
+                                    from: end,
                                     dateStyle: .medium,
                                     timeStyle: .short
                                 )
-                                Text("Subscription ends: \(dateString)")
+                                Text("Free Trial ends: \(dateString)")
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }
 
-                            let subscribeLabel = (isSubscribed && !willRenew)
-                                ? "Resume Subscription"
-                                : "Start Subscription"
-                            
-                            Button(subscribeLabel) { showPaywall = true }
+                            Button("Start Subscription") { showPaywall = true }
                                 .buttonStyle(.borderedProminent)
+                        } else if !willRenew, let expiration = revenueCat.entitlementExpirationDate {
+                            let dateString = DateFormatter.localizedString(
+                                from: expiration,
+                                dateStyle: .medium,
+                                timeStyle: .short
+                            )
+                            Text("Subscription ends: \(dateString)")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
                         }
 
                         Button("Manage Subscription") {

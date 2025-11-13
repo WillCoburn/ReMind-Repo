@@ -82,14 +82,22 @@ final class RevenueCatManager: NSObject, ObservableObject {
     private func apply(_ info: CustomerInfo?) {
         guard let info else { return }
 
-        // Update local/UI state
-        lastCustomerInfo = info
-        managementURL = info.managementURL
+
 
         let entitlement = info.entitlements[PaywallConfig.entitlementId]
-        entitlementActive = entitlement?.isActive == true
-        entitlementWillRenew = entitlement?.willRenew ?? false
-        entitlementExpirationDate = entitlement?.expirationDate
+
+        let isActive = entitlement?.isActive == true
+        let willRenew = entitlement?.willRenew ?? false
+        let expirationDate = entitlement?.expirationDate
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.lastCustomerInfo = info
+            self.managementURL = info.managementURL
+            self.entitlementActive = isActive
+            self.entitlementWillRenew = willRenew
+            self.entitlementExpirationDate = expirationDate
+        }
 
         // 🔒 Hard gates before any Firestore writes
         guard isIdentified else { return }
