@@ -21,7 +21,10 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if appVM.shouldShowOnboarding {
+            if !appVM.hasLoadedInitialProfile {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if appVM.shouldShowOnboarding {
                 OnboardingView()
             } else {
                 NavigationView {

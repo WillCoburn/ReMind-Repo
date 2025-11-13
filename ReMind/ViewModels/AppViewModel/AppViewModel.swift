@@ -12,6 +12,7 @@ final class AppViewModel: ObservableObject {
     @Published var user: UserProfile?
     @Published var entries: [Entry] = []
     @Published var isLoading = false
+    @Published var hasLoadedInitialProfile = false
 
     // Current SMS opt-out state for the signed-in user
     @Published var smsOptOut: Bool = false
@@ -43,6 +44,7 @@ final class AppViewModel: ObservableObject {
     /// - Show onboarding if there is NO Firebase session
     /// - Or if we don’t yet have a phone number in the loaded profile
     var shouldShowOnboarding: Bool {
+        if !hasLoadedInitialProfile { return false }
         // If Firebase has no user, we must show onboarding.
         guard Auth.auth().currentUser != nil else { return true }
 

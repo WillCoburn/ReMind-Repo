@@ -11,13 +11,14 @@ struct MainView: View {
     @State private var showExportSheet = false
     @State private var showSuccessMessage = false
     @State private var showPaywall = false
+    @State private var isSubmitting = false
 
     // Alerts
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
 
-    private let goal: Int = 10
+    private let goal: Int = 5
 
     private func isActive(trialEndsAt: Date?) -> Bool {
         let entitled = RevenueCatManager.shared.entitlementActive
@@ -27,9 +28,9 @@ struct MainView: View {
 
     var body: some View {
         let count = appVM.entries.count
-        let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
-
+        let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected || !active
         VStack(spacing: 20) {
             Spacer(minLength: 32)
 
@@ -62,8 +63,8 @@ struct MainView: View {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 32))
                 }
-                .disabled(inputIsEmpty || !net.isConnected || !active)
-                .opacity((inputIsEmpty || !net.isConnected || !active) ? 0.4 : 1.0)
+                .disabled(buttonDisabled)
+                .opacity(buttonDisabled ? 0.4 : 1.0)
                 .accessibilityLabel("Submit entry")
                 .accessibilityHint(
                     !net.isConnected
@@ -164,6 +165,11 @@ struct MainView: View {
 
     // MARK: - Actions
     private func sendEntry() async {
+        guard !isSubmitting else { return }
+                isSubmitting = true
+                defer { isSubmitting = false }
+
+        
         guard net.isConnected else {
             presentOfflineAlert()
             return

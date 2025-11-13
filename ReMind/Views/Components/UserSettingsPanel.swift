@@ -4,6 +4,9 @@
 import SwiftUI
 import PhotosUI
 import MessageUI
+import StoreKit
+
+
 
 struct UserSettingsPanel: View {
     @EnvironmentObject private var appVM: AppViewModel
@@ -253,7 +256,7 @@ struct UserSettingsPanel: View {
                                 .foregroundStyle(.secondary)
                         }
 
-                        Button("Start Subscription") { showPaywall = true }
+                        Button("Start Subscription (99¢/mo)") { showPaywall = true }
                             .buttonStyle(.borderedProminent)
 
                         Button("Manage Subscription") {
@@ -298,7 +301,20 @@ struct UserSettingsPanel: View {
                 subject: "Re[Mind] Feedback"
             )
         }
-        .onAppear { RevenueCatManager.shared.recomputeAndPersistActive() }
+        .onAppear {
+            RevenueCatManager.shared.recomputeAndPersistActive()
+
+            // 🧪 Test StoreKit directly
+            Task {
+                do {
+                    let products = try await Product.products(for: ["remind.monthly.099.us"])
+                    print("🧪 SK2 products:", products.map { "\($0.id) • \($0.displayName) • \($0.displayPrice)" })
+                } catch {
+                    print("🧪 SK2 fetch error:", error.localizedDescription)
+                }
+            }
+        }
+
     }
 
     // MARK: - Helpers (support + image import) — unchanged

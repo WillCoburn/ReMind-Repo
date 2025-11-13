@@ -17,9 +17,14 @@ extension AppViewModel {
             self.hasSeenFeatureTour = false
             self.featureTourStep = .settings
             self.showFeatureTour = false
+            self.hasLoadedInitialProfile = true
             return
         }
 
+        hasLoadedInitialProfile = false
+        defer { hasLoadedInitialProfile = true }
+
+        
         // One-time fetch so UI has something immediately
         do {
             let snap = try await db.collection("users").document(uid).getDocument()

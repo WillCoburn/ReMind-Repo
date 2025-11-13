@@ -2,6 +2,7 @@
 // File: Views/Onboarding/PhoneEntrySection.swift
 // ============================
 import SwiftUI
+import UIKit
 
 struct PhoneEntrySection: View {
     @Binding var phoneDigits: String
@@ -20,7 +21,14 @@ struct PhoneEntrySection: View {
                 )
                 .onChange(of: phoneDigits) { newVal in
                     showErrorBorder = !(newVal.count == 10) && !newVal.isEmpty
-                    if newVal.isEmpty { errorText = "" }
+                    if newVal.isEmpty {
+                        errorText = ""
+                    }
+
+                    // 👇 Automatically dismiss keyboard when 10 digits entered
+                    if newVal.count == 10 {
+                        hideKeyboard()
+                    }
                 }
 
             if showErrorBorder && !isValidPhone && !phoneDigits.isEmpty {
@@ -33,5 +41,13 @@ struct PhoneEntrySection: View {
                     .foregroundColor(.secondary)
             }
         }
+    }
+}
+
+// MARK: - Keyboard Dismiss Helper
+extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                        to: nil, from: nil, for: nil)
     }
 }

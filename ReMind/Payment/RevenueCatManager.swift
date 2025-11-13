@@ -7,25 +7,27 @@ import FirebaseAuth
 import FirebaseFirestore
 
 /// Client-side subscription state manager.
-/// Lazily configures RevenueCat on first identify/restore to prevent early writes.
-/// Defers ALL Firestore writes until we've explicitly identified with Firebase UID.
+/// - Lazily configures RevenueCat only when needed (identify/restore)
+/// - Defers ALL Firestore writes until we've explicitly identified with Firebase UID
+/// - Uses a one-shot timer to flip `active` exactly at trial end (no periodic heartbeat)
 final class RevenueCatManager: NSObject, ObservableObject {
     static let shared = RevenueCatManager()
     private override init() { super.init() }
 
+    // UI-observable bits
     @Published var entitlementActive: Bool = false
     @Published var managementURL: URL?
     @Published var lastCustomerInfo: CustomerInfo?
 
+    // Infra
     private let db = Firestore.firestore()
-    private var activeCheckTimer: Timer?
+
+    // Timers
     private var trialExpiryTimer: Timer?
 
-    /// Gate: becomes true ONLY after `logIn(uid)` succeeds.
-    private var isIdentified = false
-
-    /// Track whether the SDK has been configured.
-    private var isConfigured = false
+    // Gates
+    private var isIdentified = false        // true only after Purchases.logIn(uid) succeeds
+    private var isConfigured = false        // true after Purchases.configure(...)
 
     // MARK: - Lazy configure
 
@@ -34,12 +36,13 @@ final class RevenueCatManager: NSObject, ObservableObject {
         Purchases.configure(withAPIKey: PaywallConfig.rcPublicSDKKey)
         Purchases.shared.delegate = self
         isConfigured = true
-
-        // Periodic recompute (only acts when identified)
-        scheduleActiveRecomputeTimer()
+        // NOTE: No periodic timer — only the trialExpiryTimer remains.
     }
 
     // MARK: - Identify (call this after user doc exists)
+
+    /// Attempts to identify with RC, but only after confirming the Firestore user doc
+    /// exists and has a non-empty `phoneE164` (prevents RC from being first writer).
     func identifyIfPossible() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
 
@@ -77,14 +80,13 @@ final class RevenueCatManager: NSObject, ObservableObject {
     private func apply(_ info: CustomerInfo?) {
         guard let info else { return }
 
+        // Update local/UI state
         lastCustomerInfo = info
         managementURL = info.managementURL
         entitlementActive = info.entitlements[PaywallConfig.entitlementId]?.isActive == true
 
-        // 🔒 Hard gate: do nothing until we've explicitly identified.
+        // 🔒 Hard gates before any Firestore writes
         guard isIdentified else { return }
-
-        // Safety: require identity match.
         guard let uid = Auth.auth().currentUser?.uid,
               Purchases.shared.appUserID == uid else { return }
 
@@ -105,7 +107,8 @@ final class RevenueCatManager: NSObject, ObservableObject {
         ]
 
         let userRef = db.collection("users").document(uid)
-        // Extra guard: only write if base doc exists (prevents creating doc from RC alone)
+
+        // Don't let RC create the doc by itself.
         userRef.getDocument { snap, _ in
             guard snap?.exists == true else { return }
             userRef.setData(["rc": rcPayload], merge: true) { _ in
@@ -116,6 +119,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
 
     /// `active` = (Date() < trialEndsAt) || entitlementActive
     /// `subscriptionStatus` = "subscribed" if entitlementActive else "unsubscribed"
+    /// Also (re)schedules a one-shot timer to fire exactly at `trialEndsAt`.
     func recomputeAndPersistActive(uid: String? = nil, entitlement: Bool? = nil) {
         let uidValue: String
         if let u = uid { uidValue = u }
@@ -129,11 +133,15 @@ final class RevenueCatManager: NSObject, ObservableObject {
                 self.scheduleTrialExpiryTimer(trialEndsAt: nil)
                 return
             }
+
+            // Trial window
             let ts = (data["trialEndsAt"] as? Timestamp)?.dateValue()
             let onTrial = ts.map { Date() < $0 } ?? false
 
+            // Always keep the one-shot timer aligned to the current trial end.
             self.scheduleTrialExpiryTimer(trialEndsAt: ts)
-            
+
+            // Determine entitlement
             let entitled: Bool
             if let entitlement = entitlement {
                 entitled = entitlement
@@ -148,6 +156,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
             // If neither trial nor entitlement is known/true yet, avoid writing a misleading `active`.
             if ts == nil && !entitled { return }
 
+            // Derived fields
             let isActive = onTrial || entitled
             let subscriptionStatus = entitled ? "subscribed" : "unsubscribed"
 
@@ -158,14 +167,8 @@ final class RevenueCatManager: NSObject, ObservableObject {
         }
     }
 
-    private func scheduleActiveRecomputeTimer() {
-        activeCheckTimer?.invalidate()
-        activeCheckTimer = Timer.scheduledTimer(withTimeInterval: 60 * 10, repeats: true) { [weak self] _ in
-            guard let self, self.isIdentified else { return }
-            self.recomputeAndPersistActive()
-        }
-    }
-    
+    // MARK: - One-shot timer for precise trial flip
+
     private func scheduleTrialExpiryTimer(trialEndsAt: Date?) {
         DispatchQueue.main.async {
             self.trialExpiryTimer?.invalidate()
@@ -174,14 +177,17 @@ final class RevenueCatManager: NSObject, ObservableObject {
             guard let trialEndsAt else { return }
 
             let interval = trialEndsAt.timeIntervalSinceNow
-            guard interval > 0 else { return }
+            guard interval > 0 else {
+                // If it has already passed, recompute now to flip immediately.
+                self.recomputeAndPersistActive()
+                return
+            }
 
             self.trialExpiryTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
                 self?.recomputeAndPersistActive()
             }
         }
     }
-    
 }
 
 // MARK: - PurchasesDelegate
