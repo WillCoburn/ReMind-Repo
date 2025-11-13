@@ -12,6 +12,7 @@ struct MainView: View {
     @State private var showSuccessMessage = false
     @State private var showPaywall = false
     @State private var isSubmitting = false
+    @FocusState private var isEntryFieldFocused: Bool
     
 
     // Alerts
@@ -57,6 +58,7 @@ struct MainView: View {
                         RoundedRectangle(cornerRadius: 18)
                             .fill(Color(UIColor.secondarySystemBackground))
                     )
+                    .focused($isEntryFieldFocused)
 
                 Button {
                     Task { await sendEntry() }
@@ -81,11 +83,34 @@ struct MainView: View {
 
             Spacer(minLength: 16)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .contentShape(Rectangle())
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                guard isEntryFieldFocused else { return }
+                isEntryFieldFocused = false
+                hideKeyboard()
+            },
+            including: .gesture
+        )
         .navigationTitle("ReMind")
         .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button {
+                    isEntryFieldFocused = false
+                    hideKeyboard()
+                } label: {
+                    Image(systemName: "keyboard.chevron.compact.down")
+                        .font(.title3)
+                }
+                .accessibilityLabel("Dismiss keyboard")
+            }
+
+
             ToolbarItemGroup(placement: .navigationBarTrailing) {
 
-                // 📩 Export — requires online, >=10, and NOT opted-out
+                // 📩 Export — requires online, >=5, and NOT opted-out
                 Button {
                     Task {
                         guard net.isConnected else {
@@ -165,20 +190,26 @@ struct MainView: View {
     }
 
     // MARK: - Actions
+    @MainActor
     private func sendEntry() async {
         guard !isSubmitting else { return }
-                isSubmitting = true
-                defer { isSubmitting = false }
+        isSubmitting = true
+        defer { isSubmitting = false }
 
         
         guard net.isConnected else {
             presentOfflineAlert()
             return
         }
+        
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
+        
         await appVM.submit(text: text)
         input = ""
+        isEntryFieldFocused = false
+        hideKeyboard()
+        
         withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = false }
