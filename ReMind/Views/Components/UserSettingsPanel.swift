@@ -10,6 +10,7 @@ import StoreKit
 
 struct UserSettingsPanel: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @ObservedObject private var revenueCat = RevenueCatManager.shared
 
     @Binding var remindersPerDay: Double
     @Binding var tzIdentifier: String
@@ -245,19 +246,23 @@ struct UserSettingsPanel: View {
 
                     // 💳 Subscription section
                     VStack(alignment: .leading, spacing: 8) {
-                        if let end = appVM.user?.trialEndsAt {
-                            let dateString = DateFormatter.localizedString(
-                                from: end,
-                                dateStyle: .medium,
-                                timeStyle: .short
-                            )
-                            Text("Free trial ends: \(dateString)")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
+                        let isSubscribed = revenueCat.entitlementActive
 
-                        Button("Start Subscription (99¢/mo)") { showPaywall = true }
-                            .buttonStyle(.borderedProminent)
+                                                if !isSubscribed {
+                                                    if let end = appVM.user?.trialEndsAt {
+                                                        let dateString = DateFormatter.localizedString(
+                                                            from: end,
+                                                            dateStyle: .medium,
+                                                            timeStyle: .short
+                                                        )
+                                                        Text("Free trial ends: \(dateString)")
+                                                            .font(.footnote)
+                                                            .foregroundStyle(.secondary)
+                                                    }
+
+                                                    Button("Start Subscription (99¢/mo)") { showPaywall = true }
+                                                        .buttonStyle(.borderedProminent)
+                                                }
 
                         Button("Manage Subscription") {
                             if let url = RevenueCatManager.shared.managementURL {
