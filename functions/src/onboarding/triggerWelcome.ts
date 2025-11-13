@@ -92,7 +92,7 @@ export const triggerWelcome = onCall(
     const settingsSnap = await settingsRef.get();
     if (!settingsSnap.exists) {
       await settingsRef.set(
-        { remindersPerDay: 1, tzIdentifier: "UTC", quietStartHour: 9, quietEndHour: 22 },
+        { remindersPerWeek: 7, tzIdentifier: "UTC", quietStartHour: 9, quietEndHour: 22 },
         { merge: true }
       );
     }

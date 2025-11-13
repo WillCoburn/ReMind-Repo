@@ -20,19 +20,19 @@ export const TWILIO_FROM = defineSecret("TWILIO_FROM"); // +1XXXXXXXXXX
 export const TWILIO_MSID = defineSecret("TWILIO_MSID"); // optional
 
 // ----- Shared helpers & scheduling logic -----
-const clampRate = (r: number) => Math.min(5, Math.max(0.1, r));
+const clampWeeklyRate = (r: number) => Math.min(20, Math.max(1, r));
 const randExpHrs = (mean: number) => -Math.log(1 - Math.random()) * mean;
 
-async function hasAtLeastEntries(uid: string, min = 10) {
+async function hasAtLeastEntries(uid: string, min = 5) {
   const snap = await db.collection(`users/${uid}/entries`).limit(min).get();
   return snap.size >= min;
 }
 
 function nextLocalTime(
   nowLocal: Date,
-  s: { remindersPerDay: number; quietStartHour: number; quietEndHour: number }
+  s: { remindersPerWeek: number; quietStartHour: number; quietEndHour: number }
 ) {
-  const meanHrs = 24 / clampRate(s.remindersPerDay);
+  const meanHrs = (24 * 7) / clampWeeklyRate(s.remindersPerWeek);
   const candidate = new Date(nowLocal.getTime() + randExpHrs(meanHrs) * 3_600_000);
 
   const start = s.quietStartHour;
@@ -70,7 +70,9 @@ async function loadSettings(uid: string) {
   const snap = await db.doc(`users/${uid}/meta/settings`).get();
   const d = snap.exists ? snap.data()! : {};
   return {
-    remindersPerDay: clampRate(Number(d?.remindersPerDay ?? 1)),
+    remindersPerWeek: clampWeeklyRate(
+      Number(d?.remindersPerWeek ?? (Number(d?.remindersPerDay ?? 1) * 7))
+    ),
     tzIdentifier: String(d?.tzIdentifier ?? "UTC"),
     quietStartHour: Number(d?.quietStartHour ?? 9),
     quietEndHour: Number(d?.quietEndHour ?? 22),
@@ -78,7 +80,7 @@ async function loadSettings(uid: string) {
 }
 
 async function scheduleNext(uid: string, fromUtc = new Date()) {
-  if (!(await hasAtLeastEntries(uid, 10))) {
+  if (!(await hasAtLeastEntries(uid, 5))) {
     await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
     logger.info("[scheduleNext] threshold not met; nextSendAt=null", { uid });
     return;
@@ -255,7 +257,7 @@ export {
   STOP_KEYWORDS,
   START_KEYWORDS,
   // scheduling utilities
-  clampRate,
+  clampWeeklyRate,
   randExpHrs,
   hasAtLeastEntries,
   nextLocalTime,
