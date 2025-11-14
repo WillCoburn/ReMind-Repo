@@ -67,6 +67,7 @@
 		D2D07BF02EC3F6A50078BAB0 /* RevenueCatManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BEF2EC3F69D0078BAB0 /* RevenueCatManager.swift */; };
 		D2D07BF22EC3F6D20078BAB0 /* SubscriptionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BF12EC3F6CB0078BAB0 /* SubscriptionSheet.swift */; };
 		D2D07BF42EC3F6E90078BAB0 /* TrialExpiryBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */; };
+		D2ED48062EC6F8D20030CBA7 /* FunctionsErrorHandling.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48052EC6F8C80030CBA7 /* FunctionsErrorHandling.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -139,6 +140,7 @@
 		D2D07BEF2EC3F69D0078BAB0 /* RevenueCatManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueCatManager.swift; sourceTree = "<group>"; };
 		D2D07BF12EC3F6CB0078BAB0 /* SubscriptionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSheet.swift; sourceTree = "<group>"; };
 		D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialExpiryBanner.swift; sourceTree = "<group>"; };
+		D2ED48052EC6F8C80030CBA7 /* FunctionsErrorHandling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FunctionsErrorHandling.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -302,6 +304,7 @@
 		D22EF47A2E7B2EA100810204 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				D2ED48052EC6F8C80030CBA7 /* FunctionsErrorHandling.swift */,
 				D2D07BE42EBC1D290078BAB0 /* NetworkAwareModifier.swift */,
 				D22EF49B2E7B312B00810204 /* RandomDeliveryWindow.swift */,
 				D22EF49D2E7B314100810204 /* Design+Utils.swift */,
@@ -531,6 +534,7 @@
 				D2BEC25A2E7E1897009E3698 /* FirebasePing.swift in Sources */,
 				D22EF4862E7B2F7A00810204 /* ExportService.swift in Sources */,
 				D2D07BF22EC3F6D20078BAB0 /* SubscriptionSheet.swift in Sources */,
+				D2ED48062EC6F8D20030CBA7 /* FunctionsErrorHandling.swift in Sources */,
 				D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */,
 				D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */,
 				D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */,

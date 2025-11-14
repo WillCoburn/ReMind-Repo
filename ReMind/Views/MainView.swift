@@ -33,6 +33,7 @@ struct MainView: View {
         let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
         let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected || !active
+
         VStack(spacing: 20) {
             Spacer(minLength: 32)
 
@@ -107,7 +108,6 @@ struct MainView: View {
                 .accessibilityLabel("Dismiss keyboard")
             }
 
-
             ToolbarItemGroup(placement: .navigationBarTrailing) {
 
                 // 📩 Export — requires online, >=5, and NOT opted-out
@@ -135,7 +135,7 @@ struct MainView: View {
                 .disabled(!net.isConnected || count < goal)
                 .opacity(!net.isConnected ? 0.35 : (count < goal ? 0.35 : 1.0))
 
-                // ⚡ Send now — requires online, >=10, NOT opted-out, AND active
+                // ⚡ Send now — requires online, >=5, NOT opted-out, AND active
                 Button {
                     Task {
                         guard net.isConnected else {
@@ -157,8 +157,17 @@ struct MainView: View {
                             showAlert = true
                             return
                         }
-                        let ok = await appVM.sendOneNow()
-                        if ok { UIImpactFeedbackGenerator(style: .rigid).impactOccurred() }
+
+                        do {
+                            try await appVM.sendOneNow()
+                            UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                        } catch {
+                            // This will show the monthly cap message when they hit the limit,
+                            // or a generic error (e.g., backend issue) otherwise.
+                            alertTitle = "ReMind"
+                            alertMessage = error.localizedDescription
+                            showAlert = true
+                        }
                     }
                 } label: {
                     Image(systemName: "bolt.fill")
@@ -196,7 +205,6 @@ struct MainView: View {
         isSubmitting = true
         defer { isSubmitting = false }
 
-        
         guard net.isConnected else {
             presentOfflineAlert()
             return

@@ -3,6 +3,7 @@
 // ============================
 import * as admin from "firebase-admin";
 import { HttpsError } from "firebase-functions/v2/https";
+import * as logger from "firebase-functions/logger";
 
 const db = admin.firestore();
 
@@ -33,6 +34,15 @@ export async function enforceMonthlyLimit(
       typeof usage.usagePeriodStart === "number" ? usage.usagePeriodStart : now;
     let count = typeof usage[field] === "number" ? usage[field] : 0;
 
+    logger.info("[usageLimits] before", {
+      uid,
+      field,
+      limit,
+      windowStart,
+      count,
+      rawUsage: usage,
+    });
+
     // Reset window if older than 30 days
     if (now - windowStart > MONTH_MS) {
       windowStart = now;
@@ -40,7 +50,7 @@ export async function enforceMonthlyLimit(
     }
 
     if (count >= limit) {
-      // Your exact error message:
+      logger.warn("[usageLimits] limit hit", { uid, field, limit, count });
       throw new HttpsError(
         "resource-exhausted",
         "We're so sorry - but you've hit the maximum number of on-demand monthly ReMinders that our backend can support per user. You will still get the regular random ReMinders until this resets!"
@@ -52,6 +62,8 @@ export async function enforceMonthlyLimit(
       usagePeriodStart: windowStart,
       [field]: count + 1,
     };
+
+    logger.info("[usageLimits] writing usage", { uid, field, newUsage });
 
     tx.set(userRef, { usage: newUsage }, { merge: true });
   });

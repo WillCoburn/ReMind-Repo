@@ -101,16 +101,35 @@ public struct FirebaseExportService: ExportService {
         // --- Ask backend to send link ---
         print("Step 6 requesting send export link")
         let sendFn = functions.httpsCallable("sendExportLink")
-        let sendResp = try await sendFn.call(["path": path])
-        
-        guard
-            let sendData = sendResp.data as? [String: Any],
-            let linkString = sendData["link"] as? String,
-            let link = URL(string: linkString)
-        else { throw ExportError.backend("Invalid link response.") }
-        
-        print("✅ Export link:", link)
-        return link
+        do {
+            let sendResp = try await sendFn.call(["path": path])
+            
+            guard
+                let sendData = sendResp.data as? [String: Any],
+                let linkString = sendData["link"] as? String,
+                let link = URL(string: linkString)
+            else { throw ExportError.backend("Invalid link response.") }
+            
+            print("✅ Export link:", link)
+            return link
+        } catch let err as NSError {
+            print("❌ sendExportLink failed")
+            print("domain:", err.domain)
+            print("code:", err.code)
+            print("localizedDescription:", err.localizedDescription)
+            
+            // If this is our monthly cap error, use the backend’s message
+            if err.domain == FunctionsErrorDomain,
+               let code = FunctionsErrorCode(rawValue: err.code),
+               code == .resourceExhausted,
+               let details = err.userInfo[FunctionsErrorDetailsKey] as? String,
+               !details.isEmpty {
+                throw ExportError.backend(details)
+            }
+            
+            // Fallback: generic backend error
+            throw ExportError.backend(err.localizedDescription)
+        }
     }
     
     // MARK: - PDF generation

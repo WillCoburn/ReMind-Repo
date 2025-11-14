@@ -7,7 +7,7 @@ import {
   logger,
   applyOptOut,
   isTwilioStopError,
-  pickEntry, // 👈 use the shared randomized picker
+  pickEntry,
   TWILIO_SID,
   TWILIO_AUTH,
   TWILIO_FROM,
@@ -48,11 +48,11 @@ export const sendOneNow = onCall(
       const to = userSnap.get("phoneE164") as string | undefined;
       if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
 
-      // 👇 Randomized pick that considers all entries (unsent preferred; fallback to any)
+      // Pick entry
       const body = await pickEntry(uid);
       if (!body) throw new HttpsError("failed-precondition", "No entries available.");
 
-      // Send via Twilio (Messaging Service SID if present, else From number)
+      // Send via Twilio
       const sid = TWILIO_SID.value();
       const token = TWILIO_AUTH.value();
       const from = TWILIO_FROM.value();
@@ -63,7 +63,7 @@ export const sendOneNow = onCall(
       const res = await sendSMS(client, params);
       logger.info("[sendOneNow] sent", { messageSid: res.sid });
 
-      // ✅ Best-effort: mark the most recent UNSENT entry with the same text as sent
+      // Mark matching unsent entry as sent (best-effort)
       try {
         const match = await db
           .collection(`users/${uid}/entries`)
@@ -93,11 +93,9 @@ export const sendOneNow = onCall(
 
       return { ok: true, messageSid: res.sid };
     } catch (err: any) {
-      // If we threw an HttpsError (including the cap), surface it as-is
       if (err instanceof HttpsError) {
         throw err;
       }
-
       if (isTwilioStopError(err)) {
         const uid = req.auth?.uid as string | undefined;
         if (uid) await applyOptOut(uid);
