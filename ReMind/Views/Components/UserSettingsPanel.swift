@@ -6,8 +6,6 @@ import PhotosUI
 import MessageUI
 import StoreKit
 
-
-
 struct UserSettingsPanel: View {
     @EnvironmentObject private var appVM: AppViewModel
     @ObservedObject private var revenueCat = RevenueCatManager.shared
@@ -249,31 +247,51 @@ struct UserSettingsPanel: View {
                     VStack(alignment: .leading, spacing: 8) {
                         let isSubscribed = revenueCat.entitlementActive
                         let willRenew = revenueCat.entitlementWillRenew
+                        let expiration = revenueCat.entitlementExpirationDate
 
-                        
-                        if !isSubscribed {
-                            if let end = appVM.user?.trialEndsAt {
+                        let now = Date()
+                        let trialEnd = appVM.user?.trialEndsAt
+                        let onTrial = (trialEnd ?? .distantPast) > now && !isSubscribed
+
+                        // 🔎 State 1: user has an active entitlement (paid access)
+                        if isSubscribed {
+                            if let expiration {
                                 let dateString = DateFormatter.localizedString(
-                                    from: end,
+                                    from: expiration,
                                     dateStyle: .medium,
                                     timeStyle: .short
                                 )
-                                Text("Free Trial ends: \(dateString)")
+
+                                if willRenew {
+                                    Text("Subscription renews on: \(dateString)")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Text("Subscription ends on: \(dateString)")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+
+                            // In this state we do NOT show the "Start Subscription" button.
+
+                        // 🔎 State 2: no entitlement – user is either on free trial or fully unsubscribed
+                        } else {
+                            if onTrial, let trialEnd {
+                                let dateString = DateFormatter.localizedString(
+                                    from: trialEnd,
+                                    dateStyle: .medium,
+                                    timeStyle: .short
+                                )
+                                Text("Free trial ends: \(dateString)")
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }
 
-                            Button("Start Subscription") { showPaywall = true }
-                                .buttonStyle(.borderedProminent)
-                        } else if !willRenew, let expiration = revenueCat.entitlementExpirationDate {
-                            let dateString = DateFormatter.localizedString(
-                                from: expiration,
-                                dateStyle: .medium,
-                                timeStyle: .short
-                            )
-                            Text("Subscription ends: \(dateString)")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+                            Button("Start Subscription") {
+                                showPaywall = true
+                            }
+                            .buttonStyle(.borderedProminent)
                         }
 
                         Button("Manage Subscription") {
@@ -293,7 +311,9 @@ struct UserSettingsPanel: View {
                         .buttonStyle(.bordered)
 
                         if let msg = restoreMessage {
-                            Text(msg).font(.footnote).foregroundStyle(.secondary)
+                            Text(msg)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .padding(.top, 4)
@@ -319,6 +339,7 @@ struct UserSettingsPanel: View {
             )
         }
         .onAppear {
+            RevenueCatManager.shared.refreshEntitlementState()
             RevenueCatManager.shared.recomputeAndPersistActive()
 
             // 🧪 Test StoreKit directly
@@ -331,11 +352,10 @@ struct UserSettingsPanel: View {
                 }
             }
         }
-
     }
 
     // MARK: - Helpers (support + image import) — unchanged
-    private func openSupport() { /* same as your version */
+    private func openSupport() {
         mailError = nil
         if MFMailComposeViewController.canSendMail() {
             showMailSheet = true
@@ -353,7 +373,9 @@ struct UserSettingsPanel: View {
         }
     }
 
-    private func remindersDisplay(_ value: Double) -> String { String(format: "%.0f", value) }
+    private func remindersDisplay(_ value: Double) -> String {
+        String(format: "%.0f", value)
+    }
 
     private func hourLabel(_ value: Double) -> String {
         let h = Int(round(value)) % 24
@@ -374,7 +396,8 @@ struct UserSettingsPanel: View {
     }
 
     private func previewImage() -> UIImage? {
-        guard !bgImageBase64.isEmpty, let data = Data(base64Encoded: bgImageBase64) else { return nil }
+        guard !bgImageBase64.isEmpty,
+              let data = Data(base64Encoded: bgImageBase64) else { return nil }
         return UIImage(data: data)
     }
 
@@ -415,7 +438,8 @@ private struct MailView: UIViewControllerRepresentable {
         return vc
     }
 
-    func updateUIViewController(_ uiViewController: MFMailComposeViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: MFMailComposeViewController,
+                                context: Context) {}
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 

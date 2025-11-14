@@ -35,6 +35,14 @@ struct RootView: View {
 
                         // Your main content
                         MainView()
+                            .overlay {
+                                if showSettings {
+                                    Color.black.opacity(0.25)
+                                        .ignoresSafeArea(edges: [.horizontal, .bottom])
+                                        .transition(.opacity)
+                                        .onTapGesture { closeSettingsPanel() }
+                                }
+                            }
                             .navigationTitle("ReMind")
                             .toolbar {
                                 ToolbarItem(placement: .navigationBarLeading) {
@@ -56,17 +64,6 @@ struct RootView: View {
 
                         // Slide-down settings panel overlay
                         if showSettings {
-                            Color.black.opacity(0.25)
-                                .ignoresSafeArea()
-                                .onTapGesture {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
-                                        showSettings = false
-                                    }
-                                    // Persist settings to Firestore so backend can schedule sends
-                                    UserSettingsSync.pushAndApply { err in
-                                        print("pushAndApply ->", err?.localizedDescription ?? "OK")
-                                    }
-                                }
 
                             UserSettingsPanel(
                                 remindersPerWeek: $remindersPerWeek,
@@ -75,13 +72,7 @@ struct RootView: View {
                                 quietEndHour: $quietEndHour,
                                 bgImageBase64: $bgImageBase64,
                                 onClose: {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
-                                        showSettings = false
-                                    }
-                                    // NEW: push settings to Firestore so backend can schedule sends
-                                    UserSettingsSync.pushAndApply { err in
-                                        print("pushAndApply ->", err?.localizedDescription ?? "OK")
-                                    }
+                                    closeSettingsPanel()
                                 }
                             )
                             .transition(.move(edge: .top).combined(with: .opacity))
@@ -109,6 +100,16 @@ struct RootView: View {
         .animation(.default, value: appVM.shouldShowOnboarding)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: appVM.featureTourStep)
         .animation(.easeInOut(duration: 0.25), value: appVM.showFeatureTour)
+    }
+
+    private func closeSettingsPanel() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+            showSettings = false
+        }
+        // Persist settings to Firestore so backend can schedule sends
+        UserSettingsSync.pushAndApply { err in
+            print("pushAndApply ->", err?.localizedDescription ?? "OK")
+        }
     }
 
     // MARK: - Background renderer

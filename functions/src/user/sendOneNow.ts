@@ -7,13 +7,14 @@ import {
   logger,
   applyOptOut,
   isTwilioStopError,
-  pickEntry,                // 👈 use the shared randomized picker
+  pickEntry, // 👈 use the shared randomized picker
   TWILIO_SID,
   TWILIO_AUTH,
   TWILIO_FROM,
   TWILIO_MSID,
 } from "../config/options";
 import { getTwilioClient, buildMsgParams, sendSMS } from "../twilio/client";
+import { enforceMonthlyLimit } from "../usageLimits";
 
 function twilioHttpsError(err: any) {
   const details = {
@@ -38,6 +39,9 @@ export const sendOneNow = onCall(
       const uid = req.auth?.uid;
       if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
 
+      // 🔒 Enforce 50 manual sends per 30-day window
+      await enforceMonthlyLimit(uid, "manualSendsThisMonth", 50);
+
       // Get recipient phone
       const userSnap = await db.doc(`users/${uid}`).get();
       if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
@@ -60,7 +64,6 @@ export const sendOneNow = onCall(
       logger.info("[sendOneNow] sent", { messageSid: res.sid });
 
       // ✅ Best-effort: mark the most recent UNSENT entry with the same text as sent
-      // (If your entry schema uses a different field than "text", adjust here.)
       try {
         const match = await db
           .collection(`users/${uid}/entries`)
@@ -71,22 +74,30 @@ export const sendOneNow = onCall(
           .get();
 
         if (!match.empty) {
+          const admin = await import("firebase-admin");
           await match.docs[0].ref.update({
             sent: true,
-            sentAt: (await import("firebase-admin")).firestore.FieldValue.serverTimestamp(),
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
             deliveredVia: "sms",
             scheduledFor: null,
           });
         } else {
-          // Nothing matched (maybe already marked, or text stored under a different key) — just log.
           logger.info("[sendOneNow] no matching unsent entry to mark as sent", { uid });
         }
       } catch (markErr: any) {
-        logger.warn("[sendOneNow] failed to mark entry sent", { uid, message: markErr?.message });
+        logger.warn("[sendOneNow] failed to mark entry sent", {
+          uid,
+          message: markErr?.message,
+        });
       }
 
       return { ok: true, messageSid: res.sid };
     } catch (err: any) {
+      // If we threw an HttpsError (including the cap), surface it as-is
+      if (err instanceof HttpsError) {
+        throw err;
+      }
+
       if (isTwilioStopError(err)) {
         const uid = req.auth?.uid as string | undefined;
         if (uid) await applyOptOut(uid);

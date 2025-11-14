@@ -70,10 +70,34 @@ final class RevenueCatManager: NSObject, ObservableObject {
     // MARK: - Restore
 
     func restore(completion: @escaping (Bool, String?) -> Void) {
+        Purchases.shared.restorePurchases { [weak self] info, err in
+            guard let self else { return }
+
+            if let err = err {
+                completion(false, err.localizedDescription)
+                return
+            }
+
+            if let info { self.apply(info) }
+
+            let active = info?.entitlements[PaywallConfig.entitlementId]?.isActive == true
+            completion(active, nil)
+        }
+    }
+
+    /// Fetches the latest `CustomerInfo` from RevenueCat and reapplies it to the
+    /// published properties that power the subscription UI.
+    func refreshEntitlementState() {
         ensureConfigured()
-        Purchases.shared.restorePurchases { info, err in
-            if let err = err { completion(false, err.localizedDescription); return }
-            completion(info?.entitlements[PaywallConfig.entitlementId]?.isActive == true, nil)
+
+        Purchases.shared.getCustomerInfo { [weak self] info, error in
+            guard let self else { return }
+
+            if let info {
+                self.apply(info)
+            } else if let error {
+                print("⚠️ RevenueCatManager refresh error: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -82,13 +106,18 @@ final class RevenueCatManager: NSObject, ObservableObject {
     private func apply(_ info: CustomerInfo?) {
         guard let info else { return }
 
-
-
         let entitlement = info.entitlements[PaywallConfig.entitlementId]
 
         let isActive = entitlement?.isActive == true
         let willRenew = entitlement?.willRenew ?? false
         let expirationDate = entitlement?.expirationDate
+
+        // 🧪 Debug what RC is actually telling us
+        print("🧾 RC entitlement snapshot:",
+              "active=\(isActive)",
+              "willRenew=\(willRenew)",
+              "expires=\(String(describing: expirationDate))",
+              "product=\(String(describing: entitlement?.productIdentifier))")
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -110,11 +139,14 @@ final class RevenueCatManager: NSObject, ObservableObject {
     /// Mirror essential RC state into Firestore and recompute `active` + `subscriptionStatus`.
     private func syncToFirestore(info: CustomerInfo, uid: String) {
         let ent = info.entitlements[PaywallConfig.entitlementId]
+        let willRenew = ent?.willRenew ?? false
+        let expirationDate = ent?.expirationDate
 
         let rcPayload: [String: Any?] = [
             "entitlementActive": ent?.isActive ?? false,
+            "willRenew": willRenew,
             "productId": ent?.productIdentifier,
-            "expiresAt": ent?.expirationDate?.timeIntervalSince1970,
+            "expiresAt": expirationDate?.timeIntervalSince1970,
             "latestPurchaseAt": ent?.latestPurchaseDate?.timeIntervalSince1970,
             "store": "app_store",
             "lastSyncedAt": Date().timeIntervalSince1970
@@ -131,8 +163,11 @@ final class RevenueCatManager: NSObject, ObservableObject {
         }
     }
 
-    /// `active` = (Date() < trialEndsAt) || entitlementActive
-    /// `subscriptionStatus` = "subscribed" if entitlementActive else "unsubscribed"
+    /// `active` = (Date() < trialEndsAt) || entitlementActive (within paid period)
+    /// `subscriptionStatus`:
+    ///   - "subscribed"  if entitled & willRenew
+    ///   - "cancelled"   if entitled but will not renew (access until expiration)
+    ///   - "unsubscribed" after paid access fully ends
     /// Also (re)schedules a one-shot timer to fire exactly at `trialEndsAt`.
     func recomputeAndPersistActive(uid: String? = nil, entitlement: Bool? = nil) {
         let uidValue: String
@@ -155,24 +190,37 @@ final class RevenueCatManager: NSObject, ObservableObject {
             // Always keep the one-shot timer aligned to the current trial end.
             self.scheduleTrialExpiryTimer(trialEndsAt: ts)
 
-            // Determine entitlement
+            // Determine entitlement from latest RC snapshot
+            let rc = data["rc"] as? [String: Any] ?? [:]
+
             let entitled: Bool
             if let entitlement = entitlement {
                 entitled = entitlement
-            } else if
-                let rc = data["rc"] as? [String: Any],
-                let activeFromRC = rc["entitlementActive"] as? Bool {
+            } else if let activeFromRC = rc["entitlementActive"] as? Bool {
                 entitled = activeFromRC
             } else {
                 entitled = false
             }
 
+            let willRenew = rc["willRenew"] as? Bool ?? false
+            let rcExpiresAt = (rc["expiresAt"] as? TimeInterval).map(Date.init(timeIntervalSince1970:))
+
             // If neither trial nor entitlement is known/true yet, avoid writing a misleading `active`.
             if ts == nil && !entitled { return }
 
             // Derived fields
-            let isActive = onTrial || entitled
-            let subscriptionStatus = entitled ? "subscribed" : "unsubscribed"
+            let now = Date()
+            let inPaidPeriod = entitled && ((rcExpiresAt ?? now) >= now)
+            let isActive = onTrial || inPaidPeriod
+
+            let subscriptionStatus: String
+            if inPaidPeriod && willRenew {
+                subscriptionStatus = "subscribed"          // auto-renewing
+            } else if inPaidPeriod {
+                subscriptionStatus = "cancelled"           // will not renew, but still has access
+            } else {
+                subscriptionStatus = "unsubscribed"        // fully expired
+            }
 
             docRef.setData([
                 "active": isActive,
