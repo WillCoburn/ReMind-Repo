@@ -49,10 +49,10 @@ struct ConsentAndAgreeBottom: View {
 
             HStack {
                 Link("Privacy Policy",
-                     destination: URL(string: "https://willcoburn.github.io/remind-site/privacy.html")!)
+                     destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
                 Spacer()
                 Link("Terms of Service",
-                     destination: URL(string: "https://willcoburn.github.io/remind-site/terms.html")!)
+                     destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
             }
             .font(.caption2)
             .foregroundColor(.secondary)
