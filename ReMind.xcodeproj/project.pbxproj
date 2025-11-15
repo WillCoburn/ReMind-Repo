@@ -44,7 +44,6 @@
 		D2BEC2712E7FBE47009E3698 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC2702E7FBE47009E3698 /* FirebaseCore */; };
 		D2BEC2732E7FBE47009E3698 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC2722E7FBE47009E3698 /* FirebaseFirestore */; };
 		D2BEC2752E7FBE47009E3698 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC2742E7FBE47009E3698 /* FirebaseFunctions */; };
-		D2BEC27B2EAC4F0E009E3698 /* UserSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BEC27A2EAC4F05009E3698 /* UserSettingsPanel.swift */; };
 		D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */; };
 		D2BEC27F2EB039E0009E3698 /* PDFKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D2BEC27E2EB039E0009E3698 /* PDFKit.framework */; };
 		D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */; };
@@ -68,6 +67,16 @@
 		D2D07BF22EC3F6D20078BAB0 /* SubscriptionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BF12EC3F6CB0078BAB0 /* SubscriptionSheet.swift */; };
 		D2D07BF42EC3F6E90078BAB0 /* TrialExpiryBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */; };
 		D2ED48062EC6F8D20030CBA7 /* FunctionsErrorHandling.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48052EC6F8C80030CBA7 /* FunctionsErrorHandling.swift */; };
+		D2ED48102EC8F2F00030CBA7 /* SettingsHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED480F2EC8F2ED0030CBA7 /* SettingsHelpers.swift */; };
+		D2ED48122EC8F3270030CBA7 /* SettingsHeaderBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48112EC8F3210030CBA7 /* SettingsHeaderBar.swift */; };
+		D2ED48142EC8F3300030CBA7 /* RangeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48132EC8F32D0030CBA7 /* RangeSlider.swift */; };
+		D2ED48162EC8F33F0030CBA7 /* RemindersPerWeekSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48152EC8F3390030CBA7 /* RemindersPerWeekSection.swift */; };
+		D2ED48182EC8F3470030CBA7 /* TimeZoneSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48172EC8F3430030CBA7 /* TimeZoneSection.swift */; };
+		D2ED481A2EC8F3580030CBA7 /* SendWindowSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48192EC8F3500030CBA7 /* SendWindowSection.swift */; };
+		D2ED481C2EC8F3640030CBA7 /* BackgroundPickerSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED481B2EC8F35D0030CBA7 /* BackgroundPickerSection.swift */; };
+		D2ED481F2EC8F3780030CBA7 /* FeedbackSupportSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED481E2EC8F3730030CBA7 /* FeedbackSupportSection.swift */; };
+		D2ED48212EC8F3810030CBA7 /* SubscriptionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48202EC8F37D0030CBA7 /* SubscriptionSection.swift */; };
+		D2ED48232EC8F3F80030CBA7 /* UserSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48222EC8F3F20030CBA7 /* UserSettingsPanel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -119,7 +128,6 @@
 		D2BEC2652E7E334B009E3698 /* FirestoreDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreDataStore.swift; sourceTree = "<group>"; };
 		D2BEC2672E7E3525009E3698 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		D2BEC2692E7E37C1009E3698 /* DataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStore.swift; sourceTree = "<group>"; };
-		D2BEC27A2EAC4F05009E3698 /* UserSettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsPanel.swift; sourceTree = "<group>"; };
 		D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsSync.swift; sourceTree = "<group>"; };
 		D2BEC27E2EB039E0009E3698 /* PDFKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PDFKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/PDFKit.framework; sourceTree = DEVELOPER_DIR; };
 		D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureTourOverlay.swift; sourceTree = "<group>"; };
@@ -141,6 +149,16 @@
 		D2D07BF12EC3F6CB0078BAB0 /* SubscriptionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSheet.swift; sourceTree = "<group>"; };
 		D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialExpiryBanner.swift; sourceTree = "<group>"; };
 		D2ED48052EC6F8C80030CBA7 /* FunctionsErrorHandling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FunctionsErrorHandling.swift; sourceTree = "<group>"; };
+		D2ED480F2EC8F2ED0030CBA7 /* SettingsHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsHelpers.swift; sourceTree = "<group>"; };
+		D2ED48112EC8F3210030CBA7 /* SettingsHeaderBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsHeaderBar.swift; sourceTree = "<group>"; };
+		D2ED48132EC8F32D0030CBA7 /* RangeSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RangeSlider.swift; sourceTree = "<group>"; };
+		D2ED48152EC8F3390030CBA7 /* RemindersPerWeekSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersPerWeekSection.swift; sourceTree = "<group>"; };
+		D2ED48172EC8F3430030CBA7 /* TimeZoneSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeZoneSection.swift; sourceTree = "<group>"; };
+		D2ED48192EC8F3500030CBA7 /* SendWindowSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendWindowSection.swift; sourceTree = "<group>"; };
+		D2ED481B2EC8F35D0030CBA7 /* BackgroundPickerSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundPickerSection.swift; sourceTree = "<group>"; };
+		D2ED481E2EC8F3730030CBA7 /* FeedbackSupportSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackSupportSection.swift; sourceTree = "<group>"; };
+		D2ED48202EC8F37D0030CBA7 /* SubscriptionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSection.swift; sourceTree = "<group>"; };
+		D2ED48222EC8F3F20030CBA7 /* UserSettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsPanel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -291,6 +309,7 @@
 		D22EF4792E7B2E9900810204 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				D2ED48092EC8F2860030CBA7 /* Settings */,
 				D2D07BC32EBC16C90078BAB0 /* Onboarding */,
 				D22EF4982E7B30D800810204 /* Sheets */,
 				D22EF4952E7B30B000810204 /* Components */,
@@ -317,7 +336,6 @@
 			isa = PBXGroup;
 			children = (
 				D2D07BE22EBC1CD30078BAB0 /* OfflineBanner.swift */,
-				D2BEC27A2EAC4F05009E3698 /* UserSettingsPanel.swift */,
 				D22EF4962E7B30C000810204 /* HintBadge.swift */,
 				D22EF49F2E7B944700810204 /* CompletionCollapseBadge.swift */,
 			);
@@ -375,6 +393,39 @@
 				D2D07BED2EC3F66C0078BAB0 /* PaywallConfig.swift */,
 			);
 			path = Payment;
+			sourceTree = "<group>";
+		};
+		D2ED48092EC8F2860030CBA7 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				D2ED48222EC8F3F20030CBA7 /* UserSettingsPanel.swift */,
+				D2ED480F2EC8F2ED0030CBA7 /* SettingsHelpers.swift */,
+				D2ED480B2EC8F2AC0030CBA7 /* Components */,
+				D2ED480C2EC8F2B30030CBA7 /* Sections */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		D2ED480B2EC8F2AC0030CBA7 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				D2ED48132EC8F32D0030CBA7 /* RangeSlider.swift */,
+				D2ED48112EC8F3210030CBA7 /* SettingsHeaderBar.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		D2ED480C2EC8F2B30030CBA7 /* Sections */ = {
+			isa = PBXGroup;
+			children = (
+				D2ED48202EC8F37D0030CBA7 /* SubscriptionSection.swift */,
+				D2ED481E2EC8F3730030CBA7 /* FeedbackSupportSection.swift */,
+				D2ED481B2EC8F35D0030CBA7 /* BackgroundPickerSection.swift */,
+				D2ED48192EC8F3500030CBA7 /* SendWindowSection.swift */,
+				D2ED48172EC8F3430030CBA7 /* TimeZoneSection.swift */,
+				D2ED48152EC8F3390030CBA7 /* RemindersPerWeekSection.swift */,
+			);
+			path = Sections;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -514,6 +565,7 @@
 			files = (
 				D22EF4A02E7B944700810204 /* CompletionCollapseBadge.swift in Sources */,
 				D2D07BD52EBC18F60078BAB0 /* AppViewModel+InitialLoad.swift in Sources */,
+				D2ED48102EC8F2F00030CBA7 /* SettingsHelpers.swift in Sources */,
 				D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
 				D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
 				D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */,
@@ -522,13 +574,17 @@
 				D2D07BD32EBC18C30078BAB0 /* AppViewModel+RealTimeUserListener.swift in Sources */,
 				D2D07BDD2EBC19530078BAB0 /* AppViewModel+FeatureTour.swift in Sources */,
 				D2D07BDB2EBC193E0078BAB0 /* AppViewModel+Functions.swift in Sources */,
+				D2ED481C2EC8F3640030CBA7 /* BackgroundPickerSection.swift in Sources */,
+				D2ED481F2EC8F3780030CBA7 /* FeedbackSupportSection.swift in Sources */,
 				D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */,
 				D2D07BEE2EC3F6730078BAB0 /* PaywallConfig.swift in Sources */,
-				D2BEC27B2EAC4F0E009E3698 /* UserSettingsPanel.swift in Sources */,
+				D2ED48122EC8F3270030CBA7 /* SettingsHeaderBar.swift in Sources */,
 				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,
+				D2ED48142EC8F3300030CBA7 /* RangeSlider.swift in Sources */,
 				D2D07BE32EBC1CD70078BAB0 /* OfflineBanner.swift in Sources */,
 				D2D07BF02EC3F6A50078BAB0 /* RevenueCatManager.swift in Sources */,
 				D2D07BE52EBC1D2E0078BAB0 /* NetworkAwareModifier.swift in Sources */,
+				D2ED48212EC8F3810030CBA7 /* SubscriptionSection.swift in Sources */,
 				D2D07BCD2EBC17470078BAB0 /* CodeEntrySection.swift in Sources */,
 				D2BEC2582E7E17B5009E3698 /* AppDelegate.swift in Sources */,
 				D2BEC25A2E7E1897009E3698 /* FirebasePing.swift in Sources */,
@@ -537,17 +593,21 @@
 				D2ED48062EC6F8D20030CBA7 /* FunctionsErrorHandling.swift in Sources */,
 				D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */,
 				D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */,
+				D2ED48162EC8F33F0030CBA7 /* RemindersPerWeekSection.swift in Sources */,
 				D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */,
 				D2D07BD92EBC19290078BAB0 /* AppViewModel+Entries.swift in Sources */,
 				D2BEC2662E7E334B009E3698 /* FirestoreDataStore.swift in Sources */,
 				D22EF47E2E7B2F1300810204 /* Affirmation.swift in Sources */,
 				D22EF4902E7B302900810204 /* RootView.swift in Sources */,
+				D2ED48182EC8F3470030CBA7 /* TimeZoneSection.swift in Sources */,
 				D2D07BF42EC3F6E90078BAB0 /* TrialExpiryBanner.swift in Sources */,
 				D22EF48E2E7B2FEE00810204 /* AppViewModel.swift in Sources */,
 				D2D07BDF2EBC1C7F0078BAB0 /* NetworkMonitor.swift in Sources */,
+				D2ED481A2EC8F3580030CBA7 /* SendWindowSection.swift in Sources */,
 				D22EF44B2E78EA0700810204 /* ReMindApp.swift in Sources */,
 				D22EF4922E7B303E00810204 /* OnboardingView.swift in Sources */,
 				D2BEC26A2E7E37C1009E3698 /* DataStore.swift in Sources */,
+				D2ED48232EC8F3F80030CBA7 /* UserSettingsPanel.swift in Sources */,
 				D22EF4972E7B30C000810204 /* HintBadge.swift in Sources */,
 				D2D07BCF2EBC175C0078BAB0 /* PhoneField.swift in Sources */,
 				D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */,
