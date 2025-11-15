@@ -21,7 +21,6 @@
 		D22EF48E2E7B2FEE00810204 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF48D2E7B2FEE00810204 /* AppViewModel.swift */; };
 		D22EF4902E7B302900810204 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF48F2E7B302900810204 /* RootView.swift */; };
 		D22EF4922E7B303E00810204 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4912E7B303E00810204 /* OnboardingView.swift */; };
-		D22EF4942E7B308B00810204 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4932E7B308B00810204 /* MainView.swift */; };
 		D22EF4972E7B30C000810204 /* HintBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4962E7B30C000810204 /* HintBadge.swift */; };
 		D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF4992E7B30E700810204 /* ExportSheet.swift */; };
 		D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF49B2E7B312B00810204 /* RandomDeliveryWindow.swift */; };
@@ -77,6 +76,10 @@
 		D2ED481F2EC8F3780030CBA7 /* FeedbackSupportSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED481E2EC8F3730030CBA7 /* FeedbackSupportSection.swift */; };
 		D2ED48212EC8F3810030CBA7 /* SubscriptionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48202EC8F37D0030CBA7 /* SubscriptionSection.swift */; };
 		D2ED48232EC8F3F80030CBA7 /* UserSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48222EC8F3F20030CBA7 /* UserSettingsPanel.swift */; };
+		D2ED48272EC8F9190030CBA7 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48262EC8F9160030CBA7 /* MainView.swift */; };
+		D2ED48292EC8F9390030CBA7 /* EntryComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */; };
+		D2ED482B2EC8F9420030CBA7 /* TopBarActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */; };
+		D2ED482D2EC8F94D0030CBA7 /* TrialBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -115,7 +118,6 @@
 		D22EF48D2E7B2FEE00810204 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
 		D22EF48F2E7B302900810204 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		D22EF4912E7B303E00810204 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		D22EF4932E7B308B00810204 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		D22EF4962E7B30C000810204 /* HintBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HintBadge.swift; sourceTree = "<group>"; };
 		D22EF4992E7B30E700810204 /* ExportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportSheet.swift; sourceTree = "<group>"; };
 		D22EF49B2E7B312B00810204 /* RandomDeliveryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomDeliveryWindow.swift; sourceTree = "<group>"; };
@@ -159,6 +161,10 @@
 		D2ED481E2EC8F3730030CBA7 /* FeedbackSupportSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackSupportSection.swift; sourceTree = "<group>"; };
 		D2ED48202EC8F37D0030CBA7 /* SubscriptionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSection.swift; sourceTree = "<group>"; };
 		D2ED48222EC8F3F20030CBA7 /* UserSettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsPanel.swift; sourceTree = "<group>"; };
+		D2ED48262EC8F9160030CBA7 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryComposer.swift; sourceTree = "<group>"; };
+		D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBarActions.swift; sourceTree = "<group>"; };
+		D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialBanner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -309,13 +315,13 @@
 		D22EF4792E7B2E9900810204 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				D2ED48242EC8F9010030CBA7 /* Main */,
 				D2ED48092EC8F2860030CBA7 /* Settings */,
 				D2D07BC32EBC16C90078BAB0 /* Onboarding */,
 				D22EF4982E7B30D800810204 /* Sheets */,
 				D22EF4952E7B30B000810204 /* Components */,
 				D22EF48F2E7B302900810204 /* RootView.swift */,
 				D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */,
-				D22EF4932E7B308B00810204 /* MainView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -335,7 +341,6 @@
 		D22EF4952E7B30B000810204 /* Components */ = {
 			isa = PBXGroup;
 			children = (
-				D2D07BE22EBC1CD30078BAB0 /* OfflineBanner.swift */,
 				D22EF4962E7B30C000810204 /* HintBadge.swift */,
 				D22EF49F2E7B944700810204 /* CompletionCollapseBadge.swift */,
 			);
@@ -426,6 +431,26 @@
 				D2ED48152EC8F3390030CBA7 /* RemindersPerWeekSection.swift */,
 			);
 			path = Sections;
+			sourceTree = "<group>";
+		};
+		D2ED48242EC8F9010030CBA7 /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				D2ED48262EC8F9160030CBA7 /* MainView.swift */,
+				D2ED48252EC8F9080030CBA7 /* Components */,
+			);
+			path = Main;
+			sourceTree = "<group>";
+		};
+		D2ED48252EC8F9080030CBA7 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				D2D07BE22EBC1CD30078BAB0 /* OfflineBanner.swift */,
+				D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */,
+				D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */,
+				D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -569,7 +594,6 @@
 				D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
 				D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
 				D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */,
-				D22EF4942E7B308B00810204 /* MainView.swift in Sources */,
 				D22EF4802E7B2F2F00810204 /* UserProfile.swift in Sources */,
 				D2D07BD32EBC18C30078BAB0 /* AppViewModel+RealTimeUserListener.swift in Sources */,
 				D2D07BDD2EBC19530078BAB0 /* AppViewModel+FeatureTour.swift in Sources */,
@@ -577,6 +601,7 @@
 				D2ED481C2EC8F3640030CBA7 /* BackgroundPickerSection.swift in Sources */,
 				D2ED481F2EC8F3780030CBA7 /* FeedbackSupportSection.swift in Sources */,
 				D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */,
+				D2ED48292EC8F9390030CBA7 /* EntryComposer.swift in Sources */,
 				D2D07BEE2EC3F6730078BAB0 /* PaywallConfig.swift in Sources */,
 				D2ED48122EC8F3270030CBA7 /* SettingsHeaderBar.swift in Sources */,
 				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,
@@ -591,6 +616,7 @@
 				D22EF4862E7B2F7A00810204 /* ExportService.swift in Sources */,
 				D2D07BF22EC3F6D20078BAB0 /* SubscriptionSheet.swift in Sources */,
 				D2ED48062EC6F8D20030CBA7 /* FunctionsErrorHandling.swift in Sources */,
+				D2ED48272EC8F9190030CBA7 /* MainView.swift in Sources */,
 				D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */,
 				D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */,
 				D2ED48162EC8F33F0030CBA7 /* RemindersPerWeekSection.swift in Sources */,
@@ -601,10 +627,12 @@
 				D22EF4902E7B302900810204 /* RootView.swift in Sources */,
 				D2ED48182EC8F3470030CBA7 /* TimeZoneSection.swift in Sources */,
 				D2D07BF42EC3F6E90078BAB0 /* TrialExpiryBanner.swift in Sources */,
+				D2ED482D2EC8F94D0030CBA7 /* TrialBanner.swift in Sources */,
 				D22EF48E2E7B2FEE00810204 /* AppViewModel.swift in Sources */,
 				D2D07BDF2EBC1C7F0078BAB0 /* NetworkMonitor.swift in Sources */,
 				D2ED481A2EC8F3580030CBA7 /* SendWindowSection.swift in Sources */,
 				D22EF44B2E78EA0700810204 /* ReMindApp.swift in Sources */,
+				D2ED482B2EC8F9420030CBA7 /* TopBarActions.swift in Sources */,
 				D22EF4922E7B303E00810204 /* OnboardingView.swift in Sources */,
 				D2BEC26A2E7E37C1009E3698 /* DataStore.swift in Sources */,
 				D2ED48232EC8F3F80030CBA7 /* UserSettingsPanel.swift in Sources */,

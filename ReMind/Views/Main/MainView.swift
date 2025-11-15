@@ -1,5 +1,5 @@
 // ======================
-// File: Views/MainView.swift
+// File: Views/Main/MainView.swift
 // ======================
 import SwiftUI
 
@@ -13,7 +13,6 @@ struct MainView: View {
     @State private var showPaywall = false
     @State private var isSubmitting = false
     @FocusState private var isEntryFieldFocused: Bool
-    
 
     // Alerts
     @State private var showAlert = false
@@ -50,33 +49,14 @@ struct MainView: View {
                     .animation(.easeInOut(duration: 0.3), value: showSuccessMessage)
             }
 
-            HStack(alignment: .center, spacing: 12) {
-                TextField("Type an entry…", text: $input, axis: .vertical)
-                    .lineLimit(3...5)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(Color(UIColor.secondarySystemBackground))
-                    )
-                    .focused($isEntryFieldFocused)
-
-                Button {
-                    Task { await sendEntry() }
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 32))
-                }
-                .disabled(buttonDisabled)
-                .opacity(buttonDisabled ? 0.4 : 1.0)
-                .accessibilityLabel("Submit entry")
-                .accessibilityHint(
-                    !net.isConnected
-                    ? "Unavailable while offline."
-                    : (!active ? "Start a subscription to continue after your free trial."
-                       : (inputIsEmpty ? "Type something to enable." : "Saves your entry."))
-                )
-            }
+            // Composer row
+            EntryComposer(
+                text: $input,
+                isSubmitting: $isSubmitting,
+                isDisabled: buttonDisabled,
+                isEntryFieldFocused: _isEntryFieldFocused,
+                onSubmit: { await sendEntry() }
+            )
             .padding(.horizontal)
 
             HintBadge(count: count, goal: goal)
@@ -96,6 +76,7 @@ struct MainView: View {
         )
         .navigationTitle("ReMind")
         .toolbar {
+            // Keyboard toolbar
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button {
@@ -108,73 +89,16 @@ struct MainView: View {
                 .accessibilityLabel("Dismiss keyboard")
             }
 
+            // Top right actions
             ToolbarItemGroup(placement: .navigationBarTrailing) {
-
-                // 📩 Export — requires online, >=5, and NOT opted-out
-                Button {
-                    Task {
-                        guard net.isConnected else {
-                            presentOfflineAlert()
-                            return
-                        }
-                        if count < goal {
-                            presentLockedAlert(feature: "Export PDF")
-                            return
-                        }
-                        let freshOptOut = await appVM.reloadSmsOptOut()
-                        if freshOptOut {
-                            presentOptOutAlert()
-                            return
-                        }
-                        showExportSheet = true
-                    }
-                } label: {
-                    Image(systemName: "envelope.fill")
-                        .font(.title3.weight(.semibold))
-                }
-                .disabled(!net.isConnected || count < goal)
-                .opacity(!net.isConnected ? 0.35 : (count < goal ? 0.35 : 1.0))
-
-                // ⚡ Send now — requires online, >=5, NOT opted-out, AND active
-                Button {
-                    Task {
-                        guard net.isConnected else {
-                            presentOfflineAlert()
-                            return
-                        }
-                        if count < goal {
-                            presentLockedAlert(feature: "Send One Now")
-                            return
-                        }
-                        let freshOptOut = await appVM.reloadSmsOptOut()
-                        if freshOptOut {
-                            presentOptOutAlert()
-                            return
-                        }
-                        guard active else {
-                            alertTitle = "Subscribe to Continue"
-                            alertMessage = "Your free trial has ended. Start a subscription to send reminders."
-                            showAlert = true
-                            return
-                        }
-
-                        do {
-                            try await appVM.sendOneNow()
-                            UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
-                        } catch {
-                            // This will show the monthly cap message when they hit the limit,
-                            // or a generic error (e.g., backend issue) otherwise.
-                            alertTitle = "ReMind"
-                            alertMessage = error.localizedDescription
-                            showAlert = true
-                        }
-                    }
-                } label: {
-                    Image(systemName: "bolt.fill")
-                        .font(.title3.weight(.semibold))
-                }
-                .disabled(!net.isConnected || count < goal || !active)
-                .opacity(!net.isConnected ? 0.35 : ((count < goal || !active) ? 0.35 : 1.0))
+                TopBarActions(
+                    count: appVM.entries.count,
+                    goal: goal,
+                    isOnline: net.isConnected,
+                    isActive: active,
+                    onExport: { handleExportTap() },
+                    onSendNow: { handleSendNowTap() }
+                )
             }
         }
         .sheet(isPresented: $showExportSheet) { ExportSheet() }
@@ -209,18 +133,55 @@ struct MainView: View {
             presentOfflineAlert()
             return
         }
-        
+
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        
+
         await appVM.submit(text: text)
         input = ""
         isEntryFieldFocused = false
         hideKeyboard()
-        
+
         withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = false }
+        }
+    }
+
+    private func handleExportTap() {
+        let count = appVM.entries.count
+        guard net.isConnected else { presentOfflineAlert(); return }
+        if count < goal { presentLockedAlert(feature: "Export PDF"); return }
+        Task {
+            let freshOptOut = await appVM.reloadSmsOptOut()
+            if freshOptOut { presentOptOutAlert(); return }
+            showExportSheet = true
+        }
+    }
+
+    private func handleSendNowTap() {
+        let count = appVM.entries.count
+        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
+
+        guard net.isConnected else { presentOfflineAlert(); return }
+        if count < goal { presentLockedAlert(feature: "Send One Now"); return }
+        Task {
+            let freshOptOut = await appVM.reloadSmsOptOut()
+            if freshOptOut { presentOptOutAlert(); return }
+            guard active else {
+                alertTitle = "Subscribe to Continue"
+                alertMessage = "Your free trial has ended. Start a subscription to send reminders."
+                showAlert = true
+                return
+            }
+            do {
+                try await appVM.sendOneNow()
+                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+            } catch {
+                alertTitle = "ReMind"
+                alertMessage = error.localizedDescription
+                showAlert = true
+            }
         }
     }
 
@@ -246,23 +207,5 @@ struct MainView: View {
         alertTitle = "No Internet Connection"
         alertMessage = "Please reconnect to the internet to use this feature."
         showAlert = true
-    }
-}
-
-// Inline banner so this file compiles even if you don’t add Payment/TrialExpiryBanner.swift
-private struct TrialBanner: View {
-    var onTap: () -> Void
-    var body: some View {
-        VStack(spacing: 8) {
-            Text("Your 30-day free trial has ended.")
-                .font(.subheadline).bold()
-            Text("Start your subscription to resume reminders.")
-                .font(.footnote).foregroundStyle(.secondary)
-            Button("Start Subscription") { onTap() }
-                .buttonStyle(.borderedProminent)
-        }
-        .padding()
-        .background(Color.yellow.opacity(0.18))
-        .cornerRadius(12)
     }
 }
