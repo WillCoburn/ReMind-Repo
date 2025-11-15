@@ -48,6 +48,17 @@ struct UserSettingsPanel: View {
         var seen = Set<String>(); return ids.filter { seen.insert($0).inserted }
     }()
 
+    private var sendWindowBinding: Binding<ClosedRange<Double>> {
+        Binding(
+            get: { quietStartHour...quietEndHour },
+            set: { range in
+                quietStartHour = range.lowerBound
+                quietEndHour = range.upperBound
+            }
+        )
+    }
+
+    
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -129,30 +140,41 @@ struct UserSettingsPanel: View {
                                 .foregroundStyle(.secondary)
                         }
 
-                        VStack {
+                        VStack(spacing: 12) {
+                            RangeSlider(
+                                value: sendWindowBinding,
+                                in: 0...23,
+                                step: 1,
+                                minimumValueLabel: {
+                                    Text(hourLabel(0))
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                },
+                                maximumValueLabel: {
+                                    Text(hourLabel(23))
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                            )
+
+                            
+                            
                             HStack {
-                                Text("Earliest")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                Slider(value: Binding(
-                                    get: { quietStartHour },
-                                    set: { quietStartHour = min($0, quietEndHour) }
-                                ), in: 0...23, step: 1)
-                                Text(hourLabel(quietStartHour))
-                                    .font(.footnote.monospaced())
-                                    .frame(width: 44)
-                            }
-                            HStack {
-                                Text("Latest")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                Slider(value: Binding(
-                                    get: { quietEndHour },
-                                    set: { quietEndHour = max($0, quietStartHour) }
-                                ), in: 0...23, step: 1)
-                                Text(hourLabel(quietEndHour))
-                                    .font(.footnote.monospaced())
-                                    .frame(width: 44)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Start")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                    Text(hourLabel(quietStartHour))
+                                        .font(.footnote.monospaced())
+                                }
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text("End")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                    Text(hourLabel(quietEndHour))
+                                        .font(.footnote.monospaced())
+                                }
                             }
                         }
 
@@ -462,5 +484,143 @@ private extension UIImage {
         defer { UIGraphicsEndImageContext() }
         draw(in: CGRect(origin: .zero, size: newSize))
         return UIGraphicsGetImageFromCurrentImageContext() ?? self
+    }
+}
+
+
+
+
+
+
+
+// MARK: - Range Slider (Dual-handle)
+
+private struct RangeSlider<MinimumLabel: View, MaximumLabel: View>: View {
+    @Binding var value: ClosedRange<Double>
+    let bounds: ClosedRange<Double>
+    var step: Double
+    @ViewBuilder var minimumValueLabel: () -> MinimumLabel
+    @ViewBuilder var maximumValueLabel: () -> MaximumLabel
+
+    private let handleDiameter: CGFloat = 28
+    private let trackHeight: CGFloat = 4
+
+    init(value: Binding<ClosedRange<Double>>, in bounds: ClosedRange<Double>, step: Double = 1,
+         @ViewBuilder minimumValueLabel: @escaping () -> MinimumLabel,
+         @ViewBuilder maximumValueLabel: @escaping () -> MaximumLabel) {
+        _value = value
+        self.bounds = bounds
+        self.step = step
+        self.minimumValueLabel = minimumValueLabel
+        self.maximumValueLabel = maximumValueLabel
+    }
+
+    private var totalSpan: Double { max(bounds.upperBound - bounds.lowerBound, .leastNonzeroMagnitude) }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            GeometryReader { geometry in
+                let totalWidth = geometry.size.width
+                let usableWidth = max(totalWidth - handleDiameter, 1)
+                let lowerPosition = position(for: value.lowerBound, totalWidth: totalWidth)
+                let upperPosition = position(for: value.upperBound, totalWidth: totalWidth)
+
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: trackHeight / 2)
+                        .fill(Color.secondary.opacity(0.25))
+                        .frame(width: usableWidth, height: trackHeight)
+                        .position(x: totalWidth / 2, y: handleDiameter / 2)
+
+                    RoundedRectangle(cornerRadius: trackHeight / 2)
+                        .fill(Color.accentColor)
+                        .frame(width: max(upperPosition - lowerPosition, 0), height: trackHeight)
+                        .position(x: lowerPosition + max((upperPosition - lowerPosition) / 2, 0),
+                                  y: handleDiameter / 2)
+
+                    sliderHandle
+                        .position(x: lowerPosition, y: handleDiameter / 2)
+                        .highPriorityGesture(dragGesture(forLowerHandleIn: totalWidth))
+
+                    sliderHandle
+                        .position(x: upperPosition, y: handleDiameter / 2)
+                        .highPriorityGesture(dragGesture(forUpperHandleIn: totalWidth))
+                }
+                .frame(height: handleDiameter)
+            }
+            .frame(height: handleDiameter)
+
+            HStack {
+                minimumValueLabel()
+                Spacer()
+                maximumValueLabel()
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Range")
+        .accessibilityValue("\(Int(value.lowerBound)) to \(Int(value.upperBound))")
+    }
+
+    private var sliderHandle: some View {
+        Circle()
+            .fill(Color(uiColor: .systemBackground))
+            .overlay(Circle().stroke(Color.secondary.opacity(0.4), lineWidth: 1))
+            .shadow(radius: 1, y: 1)
+            .frame(width: handleDiameter, height: handleDiameter)
+    }
+
+    private func percent(for rawValue: Double) -> CGFloat {
+        let clamped = min(max(rawValue, bounds.lowerBound), bounds.upperBound)
+        return CGFloat((clamped - bounds.lowerBound) / totalSpan)
+    }
+
+    private func position(for value: Double, totalWidth: CGFloat) -> CGFloat {
+        let usableWidth = max(totalWidth - handleDiameter, 1)
+        return percent(for: value) * usableWidth + handleDiameter / 2
+    }
+
+    private func dragGesture(forLowerHandleIn totalWidth: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { gesture in
+                let newValue = value(for: gesture.location.x, totalWidth: totalWidth)
+                let limited = min(newValue, value.upperBound)
+                value = limited...value.upperBound
+            }
+    }
+
+    private func dragGesture(forUpperHandleIn totalWidth: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { gesture in
+                let newValue = value(for: gesture.location.x, totalWidth: totalWidth)
+                let limited = max(newValue, value.lowerBound)
+                value = value.lowerBound...limited
+            }
+    }
+
+    private func value(for location: CGFloat, totalWidth: CGFloat) -> Double {
+        let usableWidth = max(totalWidth - handleDiameter, 1)
+        let clampedLocation = min(max(location, handleDiameter / 2), totalWidth - handleDiameter / 2)
+        let percent = Double((clampedLocation - handleDiameter / 2) / usableWidth)
+        let rawValue = bounds.lowerBound + percent * totalSpan
+        let snapped = snap(rawValue)
+        return min(max(snapped, bounds.lowerBound), bounds.upperBound)
+    }
+
+    private func snap(_ rawValue: Double) -> Double {
+        guard step > 0 else { return rawValue }
+        let relative = (rawValue - bounds.lowerBound) / step
+        let rounded = relative.rounded()
+        return bounds.lowerBound + rounded * step
+    }
+}
+
+private extension RangeSlider where MinimumLabel == EmptyView, MaximumLabel == EmptyView {
+    init(value: Binding<ClosedRange<Double>>, in bounds: ClosedRange<Double>, step: Double = 1) {
+        self.init(
+            value: value,
+            in: bounds,
+            step: step,
+            minimumValueLabel: { EmptyView() },
+            maximumValueLabel: { EmptyView() }
+        )
     }
 }
