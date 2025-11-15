@@ -7,6 +7,8 @@ struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var net: NetworkMonitor   // 👈 network state
 
+    @AppStorage("bgImageBase64") private var bgImageBase64: String = ""
+    
     @State private var input: String = ""
     @State private var showExportSheet = false
     @State private var showSuccessMessage = false
@@ -34,7 +36,9 @@ struct MainView: View {
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected || !active
 
         ZStack {
-            ReMindBackgroundSoftDiagonal()
+            if bgImageBase64.isEmpty {
+                ReMindBackgroundSoftDiagonal()
+            }
 
 
             VStack(spacing: 20) {

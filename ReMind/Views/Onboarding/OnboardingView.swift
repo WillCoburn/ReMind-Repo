@@ -40,73 +40,75 @@ struct OnboardingView: View {
     """
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer(minLength: 24)
+        ZStack {
+            // ✅ Background sits *behind* everything and ignores safe areas
+            ReMindBackgroundSoftDiagonal()
+                .ignoresSafeArea()
 
-            Text("ReMind")
-                .font(.system(size: 44, weight: .bold))
+            // ✅ Your content stays padded without affecting the background bounds
+            VStack(spacing: 24) {
+                Spacer(minLength: 24)
 
-            Text("Celebrate when it's all clear, and prepare for when it's not.")
-                .font(.title3)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+                Text("ReMind")
+                    .font(.system(size: 44, weight: .bold))
 
-            Group {
-                switch step {
-                case .enterPhone:
-                    PhoneEntrySection(
-                        phoneDigits: $phoneDigits,
-                        showErrorBorder: $showErrorBorder,
-                        errorText: $errorText,
-                        isValidPhone: isValidPhone
-                    )
+                Text("Celebrate when it's all clear, and prepare for when it's not.")
+                    .font(.title3)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
 
-                case .enterCode:
-                    CodeEntrySection(
-                        code: $code,
-                        isVerifying: isVerifying,
-                        onEditNumber: {
-                            step = .enterPhone
-                            errorText = ""
-                            code = ""
-                        },
-                        onVerify: {
-                            Task { await verifyCode() }
+                Group {
+                    switch step {
+                    case .enterPhone:
+                        PhoneEntrySection(
+                            phoneDigits: $phoneDigits,
+                            showErrorBorder: $showErrorBorder,
+                            errorText: $errorText,
+                            isValidPhone: isValidPhone
+                        )
+
+                    case .enterCode:
+                        CodeEntrySection(
+                            code: $code,
+                            isVerifying: isVerifying,
+                            onEditNumber: {
+                                step = .enterPhone
+                                errorText = ""
+                                code = ""
+                            },
+                            onVerify: {
+                                Task { await verifyCode() }
+                            }
+                        )
+                    }
+                }
+
+                if !errorText.isEmpty {
+                    Text(errorText)
+                        .font(.footnote)
+                        .foregroundColor(.red)
+                        .padding(.horizontal)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+
+                Spacer()
+
+                if step == .enterPhone {
+                    ConsentAndAgreeBottom(
+                        hasConsented: $hasConsented,
+                        consentMessage: consentMessage,
+                        canContinue: canContinueOnline, // 👈 pass online-aware flag
+                        isSending: isSending,
+                        onAgreeAndContinue: {
+                            Task { await sendCode() }
                         }
                     )
                 }
             }
-
-            if !errorText.isEmpty {
-                Text(errorText)
-                    .font(.footnote)
-                    .foregroundColor(.red)
-                    .padding(.horizontal)
-                    .transition(.opacity
-                        .combined(with: .move(edge: .top)))
-            }
-
-            Spacer()
-
-            if step == .enterPhone {
-                ConsentAndAgreeBottom(
-                    hasConsented: $hasConsented,
-                    consentMessage: consentMessage,
-                    canContinue: canContinueOnline, // 👈 pass online-aware flag
-                    isSending: isSending,
-                    onAgreeAndContinue: {
-                        Task { await sendCode() }
-                    }
-                )
-            }
+            .padding(.horizontal) // 👈 padding only affects the content, not the background
         }
-        
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white)
-        .ignoresSafeArea()
-        
-        .padding(.horizontal)
+        // keep your animations & observers on the outer view
         .animation(.default, value: step)
         .animation(.default, value: errorText)
         .animation(.easeInOut, value: isValidPhone)
@@ -120,7 +122,7 @@ struct OnboardingView: View {
 
     private func sendCode() async {
         guard canContinueBase else { return }
-        guard net.isConnected else {                 // 👈 offline guard
+        guard net.isConnected else {
             errorText = "No internet connection. Please reconnect and try again."
             return
         }
@@ -143,7 +145,7 @@ struct OnboardingView: View {
 
     private func verifyCode() async {
         guard let verID = verificationID else { return }
-        guard net.isConnected else {                 // 👈 offline guard
+        guard net.isConnected else {
             errorText = "No internet connection. Please reconnect and try again."
             return
         }

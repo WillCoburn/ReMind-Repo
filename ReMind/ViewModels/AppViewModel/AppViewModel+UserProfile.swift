@@ -21,24 +21,34 @@ extension AppViewModel {
         let profile = UserProfile(uid: uid, phoneE164: e164)
         self.user = profile
 
-        // Compute trial end locally (server will store canonical timestamps)
-        let now = Date()
-        let trialEnd = Calendar.current.date(byAdding: .day, value: 30, to: now)
-            ?? now.addingTimeInterval(60 * 60 * 24 * 30)
 
         do {
             let docRef = db.collection("users").document(uid)
 
-            // Create/merge the base fields with server timestamps + 30-day trial
-            try await docRef.setData([
-                "uid": uid,
-                "phoneE164": e164,
-                "createdAt": FieldValue.serverTimestamp(),
-                "updatedAt": FieldValue.serverTimestamp(),
-                "trialEndsAt": Timestamp(date: trialEnd),
-                "subscriptionStatus": SubscriptionStatus.unsubscribed.rawValue,
-                "active": true   // starts active during trial
-            ], merge: true)
+            let existingSnapshot = try await docRef.getDocument()
+
+            if existingSnapshot.exists {
+                try await docRef.setData([
+                    "uid": uid,
+                    "phoneE164": e164,
+                    "updatedAt": FieldValue.serverTimestamp()
+                ], merge: true)
+            } else {
+                // Compute trial end locally (server will store canonical timestamps)
+                let now = Date()
+                let trialEnd = Calendar.current.date(byAdding: .day, value: 30, to: now)
+                    ?? now.addingTimeInterval(60 * 60 * 24 * 30)
+
+                try await docRef.setData([
+                    "uid": uid,
+                    "phoneE164": e164,
+                    "createdAt": FieldValue.serverTimestamp(),
+                    "updatedAt": FieldValue.serverTimestamp(),
+                    "trialEndsAt": Timestamp(date: trialEnd),
+                    "subscriptionStatus": SubscriptionStatus.unsubscribed.rawValue,
+                    "active": true   // starts active during trial
+                ], merge: true)
+            }
 
             // ✅ Identify with RevenueCat only AFTER base doc exists.
             RevenueCatManager.shared.identifyIfPossible()
