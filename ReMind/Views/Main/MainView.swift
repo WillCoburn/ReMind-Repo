@@ -33,47 +33,60 @@ struct MainView: View {
         let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected || !active
 
-        VStack(spacing: 20) {
-            Spacer(minLength: 32)
+        ZStack {
+            ReMindBackgroundSoftDiagonal()
 
-            if !active {
-                TrialBanner { showPaywall = true }
-                    .padding(.horizontal)
-            }
 
-            if showSuccessMessage {
-                Text("✅ Successfully stored!")
-                    .font(.footnote)
-                    .foregroundColor(.green)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                    .animation(.easeInOut(duration: 0.3), value: showSuccessMessage)
-            }
+            VStack(spacing: 20) {
+                Spacer(minLength: 32)
 
-            // Composer row
-            EntryComposer(
-                text: $input,
-                isSubmitting: $isSubmitting,
-                isDisabled: buttonDisabled,
-                isEntryFieldFocused: _isEntryFieldFocused,
-                onSubmit: { await sendEntry() }
-            )
-            .padding(.horizontal)
+                if !active {
+                    TrialBanner { showPaywall = true }
+                        .padding(.horizontal)
+                }
 
-            HintBadge(count: count, goal: goal)
+                if showSuccessMessage {
+                    Text("✅ Successfully stored!")
+                        .font(.footnote)
+                        .foregroundColor(.green)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .animation(.easeInOut(duration: 0.3), value: showSuccessMessage)
+                }
+
+                // Composer row
+                EntryComposer(
+                    text: $input,
+                    isSubmitting: $isSubmitting,
+                    isDisabled: buttonDisabled,
+                    isEntryFieldFocused: _isEntryFieldFocused,
+                    onSubmit: { await sendEntry() }
+                )
                 .padding(.horizontal)
 
-            Spacer(minLength: 16)
+                HintBadge(count: count, goal: goal)
+                    .padding(.horizontal)
+
+                Spacer(minLength: 16)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .contentShape(Rectangle())
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    guard isEntryFieldFocused else { return }
+                    isEntryFieldFocused = false
+                    hideKeyboard()
+                },
+                including: .gesture
+            )
+            .overlay(alignment: .center) {
+                if !net.isConnected {
+                    OfflineBanner()
+                        .transition(.opacity)
+                        .zIndex(999)
+                }
+            }
+            .allowsHitTesting(net.isConnected)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .contentShape(Rectangle())
-        .simultaneousGesture(
-            TapGesture().onEnded {
-                guard isEntryFieldFocused else { return }
-                isEntryFieldFocused = false
-                hideKeyboard()
-            },
-            including: .gesture
-        )
         .navigationTitle("ReMind")
         .toolbar {
             // Keyboard toolbar
@@ -106,14 +119,6 @@ struct MainView: View {
         .alert(alertTitle, isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
         } message: { Text(alertMessage) }
-        .overlay(alignment: .center) {
-            if !net.isConnected {
-                OfflineBanner()
-                    .transition(.opacity)
-                    .zIndex(999)
-            }
-        }
-        .allowsHitTesting(net.isConnected)
         .onChange(of: net.isConnected) { value in
             print("🔄 net.isConnected (MainView) ->", value)
         }

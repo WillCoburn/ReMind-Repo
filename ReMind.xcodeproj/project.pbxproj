@@ -80,6 +80,7 @@
 		D2ED48292EC8F9390030CBA7 /* EntryComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */; };
 		D2ED482B2EC8F9420030CBA7 /* TopBarActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */; };
 		D2ED482D2EC8F94D0030CBA7 /* TrialBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */; };
+		D2ED48322EC8FB020030CBA7 /* ReMindBackgrounds.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -165,6 +166,7 @@
 		D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryComposer.swift; sourceTree = "<group>"; };
 		D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBarActions.swift; sourceTree = "<group>"; };
 		D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialBanner.swift; sourceTree = "<group>"; };
+		D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindBackgrounds.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -315,6 +317,7 @@
 		D22EF4792E7B2E9900810204 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				D2ED48302EC8FAF20030CBA7 /* Design */,
 				D2ED48242EC8F9010030CBA7 /* Main */,
 				D2ED48092EC8F2860030CBA7 /* Settings */,
 				D2D07BC32EBC16C90078BAB0 /* Onboarding */,
@@ -451,6 +454,14 @@
 				D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */,
 			);
 			path = Components;
+			sourceTree = "<group>";
+		};
+		D2ED48302EC8FAF20030CBA7 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */,
+			);
+			path = Design;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -638,6 +649,7 @@
 				D2ED48232EC8F3F80030CBA7 /* UserSettingsPanel.swift in Sources */,
 				D22EF4972E7B30C000810204 /* HintBadge.swift in Sources */,
 				D2D07BCF2EBC175C0078BAB0 /* PhoneField.swift in Sources */,
+				D2ED48322EC8FB020030CBA7 /* ReMindBackgrounds.swift in Sources */,
 				D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */,
 				D2BEC2682E7E3525009E3698 /* Haptics.swift in Sources */,
 				D2D07BD72EBC19100078BAB0 /* AppViewModel+UserProfile.swift in Sources */,
