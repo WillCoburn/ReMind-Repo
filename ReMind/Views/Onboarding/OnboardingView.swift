@@ -18,6 +18,8 @@ struct OnboardingView: View {
     @State private var showErrorBorder = false
     @State private var errorText: String = ""
     @State private var hasConsented = false
+    @State private var isKeyboardVisible = false
+    
 
     // Code entry
     @State private var verificationID: String?
@@ -109,12 +111,27 @@ struct OnboardingView: View {
             .padding(.horizontal) // 👈 padding only affects the content, not the background
         }
         // keep your animations & observers on the outer view
+        .contentShape(Rectangle())
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                if isKeyboardVisible {
+                    hideKeyboard()
+                }
+            },
+            including: .gesture
+        )
         .animation(.default, value: step)
         .animation(.default, value: errorText)
         .animation(.easeInOut, value: isValidPhone)
         .networkAware() // 👈 center popup while offline
         .onChange(of: net.isConnected) { value in
             print("🔄 net.isConnected ->", value)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            isKeyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            isKeyboardVisible = false
         }
     }
 

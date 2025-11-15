@@ -28,11 +28,25 @@ extension AppViewModel {
             let existingSnapshot = try await docRef.getDocument()
 
             if existingSnapshot.exists {
-                try await docRef.setData([
+                let existingCreatedAt = existingSnapshot.data()?["createdAt"] as? Timestamp
+                // Only repair a missing createdAt once; never overwrite a historical timestamp
+                var mergePayload: [String: Any] = [
                     "uid": uid,
                     "phoneE164": e164,
                     "updatedAt": FieldValue.serverTimestamp()
-                ], merge: true)
+                ]
+
+                if existingCreatedAt == nil {
+                    mergePayload["createdAt"] = FieldValue.serverTimestamp()
+                }
+
+                try await docRef.setData(mergePayload, merge: true)
+
+                if let createdAtDate = existingCreatedAt?.dateValue() {
+                    self.user?.createdAt = createdAtDate
+                } else if mergePayload["createdAt"] != nil {
+                    self.user?.createdAt = Date()
+                }
             } else {
                 // Compute trial end locally (server will store canonical timestamps)
                 let now = Date()
@@ -48,6 +62,8 @@ extension AppViewModel {
                     "subscriptionStatus": SubscriptionStatus.unsubscribed.rawValue,
                     "active": true   // starts active during trial
                 ], merge: true)
+
+                self.user?.createdAt = now
             }
 
             // ✅ Identify with RevenueCat only AFTER base doc exists.

@@ -21,7 +21,7 @@ struct EntryComposer: View {
                 .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 18)
-                        .fill(Color(UIColor.secondarySystemBackground))
+                        .fill(Color.white.opacity(0.85))
                 )
                 .focused($isEntryFieldFocused)
 
