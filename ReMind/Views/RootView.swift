@@ -45,9 +45,7 @@ struct RootView: View {
                             }
                             .navigationTitle("ReMind")
                             .toolbar {
-                                ToolbarItem(placement: .navigationBarLeading) {
-                                    Button("Log Out") { appVM.logout() }
-                                }
+
                                 // Settings button (top-right)
                                 ToolbarItem(placement: .navigationBarTrailing) {
                                     Button {

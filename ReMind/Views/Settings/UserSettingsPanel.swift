@@ -76,6 +76,19 @@ struct UserSettingsPanel: View {
                         restoreMessage: $restoreMessage
                     )
                     .sheet(isPresented: $showPaywall) { SubscriptionSheet() }
+                    
+                    
+                    Divider()
+
+                    Button(role: .destructive) {
+                        appVM.logout()
+                    } label: {
+                        Text("Log Out")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 12)
+                    
 
                     Spacer(minLength: 8)
                 }
