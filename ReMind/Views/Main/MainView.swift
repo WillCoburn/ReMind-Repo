@@ -7,6 +7,7 @@ struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var net: NetworkMonitor   // 👈 network state
 
+    // User-selected background image (Base64)
     @AppStorage("bgImageBase64") private var bgImageBase64: String = ""
     
     @State private var input: String = ""
@@ -36,10 +37,8 @@ struct MainView: View {
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected || !active
 
         ZStack {
-            if bgImageBase64.isEmpty {
-                ReMindBackgroundSoftDiagonal()
-            }
-
+            // 🔹 Background now handled *here* so it only affects MainView.
+            backgroundLayer
 
             VStack(spacing: 20) {
                 Spacer(minLength: 32)
@@ -91,6 +90,8 @@ struct MainView: View {
             }
             .allowsHitTesting(net.isConnected)
         }
+        // 👇 This makes the whole screen (including background) extend under the status bar + home indicator
+        .ignoresSafeArea()
         .navigationTitle("ReMind")
         .toolbar {
             // Keyboard toolbar
@@ -131,7 +132,40 @@ struct MainView: View {
         }
     }
 
+    // MARK: - Background just for MainView
+
+    @ViewBuilder
+    private var backgroundLayer: some View {
+        GeometryReader { proxy in
+            if let uiImage = decodeBase64ToImage(bgImageBase64) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(
+                        width: max(proxy.size.width, 1),
+                        height: max(proxy.size.height, 1)
+                    )
+                    .clipped()
+                    .overlay(Color.black.opacity(0.15)) // subtle contrast for readability
+                    .ignoresSafeArea()
+            } else {
+                ReMindBackgroundSoftDiagonal()
+                    .frame(
+                        width: max(proxy.size.width, 1),
+                        height: max(proxy.size.height, 1)
+                    )
+                    .ignoresSafeArea()
+            }
+        }
+    }
+
+    private func decodeBase64ToImage(_ base64: String) -> UIImage? {
+        guard !base64.isEmpty, let data = Data(base64Encoded: base64) else { return nil }
+        return UIImage(data: data)
+    }
+
     // MARK: - Actions
+
     @MainActor
     private func sendEntry() async {
         guard !isSubmitting else { return }
@@ -195,6 +229,7 @@ struct MainView: View {
     }
 
     // MARK: - Alerts
+
     private func presentLockedAlert(feature: String) {
         alertTitle = "Keep going!"
         alertMessage = "You need at least \(goal) entries to use “\(feature)”. Add more entries to unlock this feature."

@@ -26,6 +26,12 @@
 		D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF49B2E7B312B00810204 /* RandomDeliveryWindow.swift */; };
 		D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF49D2E7B314100810204 /* Design+Utils.swift */; };
 		D22EF4A02E7B944700810204 /* CompletionCollapseBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF49F2E7B944700810204 /* CompletionCollapseBadge.swift */; };
+		D23CFAF12ECAAADB00FEBF3D /* CommunityAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF02ECAAAD100FEBF3D /* CommunityAPI.swift */; };
+		D23CFAF32ECAAAF700FEBF3D /* HomePagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF22ECAAAF300FEBF3D /* HomePagerView.swift */; };
+		D23CFAF52ECAAAFE00FEBF3D /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF42ECAAAFC00FEBF3D /* CommunityView.swift */; };
+		D23CFAF72ECAAB0700FEBF3D /* CommunityPostRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF62ECAAB0300FEBF3D /* CommunityPostRow.swift */; };
+		D23CFAF92ECAAB0F00FEBF3D /* CommunityComposerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */; };
+		D23CFAFB2ECAAD3A00FEBF3D /* RightPanelPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAFA2ECAAD3100FEBF3D /* RightPanelPlaceholderView.swift */; };
 		D2BEC24C2E7E16AD009E3698 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24B2E7E16AD009E3698 /* FirebaseAnalytics */; };
 		D2BEC24E2E7E16AD009E3698 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24D2E7E16AD009E3698 /* FirebaseAuth */; };
 		D2BEC2502E7E16AD009E3698 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24F2E7E16AD009E3698 /* FirebaseCore */; };
@@ -124,6 +130,12 @@
 		D22EF49B2E7B312B00810204 /* RandomDeliveryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomDeliveryWindow.swift; sourceTree = "<group>"; };
 		D22EF49D2E7B314100810204 /* Design+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Design+Utils.swift"; sourceTree = "<group>"; };
 		D22EF49F2E7B944700810204 /* CompletionCollapseBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionCollapseBadge.swift; sourceTree = "<group>"; };
+		D23CFAF02ECAAAD100FEBF3D /* CommunityAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityAPI.swift; sourceTree = "<group>"; };
+		D23CFAF22ECAAAF300FEBF3D /* HomePagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePagerView.swift; sourceTree = "<group>"; };
+		D23CFAF42ECAAAFC00FEBF3D /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
+		D23CFAF62ECAAB0300FEBF3D /* CommunityPostRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityPostRow.swift; sourceTree = "<group>"; };
+		D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityComposerSheet.swift; sourceTree = "<group>"; };
+		D23CFAFA2ECAAD3100FEBF3D /* RightPanelPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RightPanelPlaceholderView.swift; sourceTree = "<group>"; };
 		D2BEC2572E7E17B5009E3698 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D2BEC2592E7E1897009E3698 /* FirebasePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebasePing.swift; sourceTree = "<group>"; };
 		D2BEC2602E7E293E009E3698 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -317,6 +329,8 @@
 		D22EF4792E7B2E9900810204 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				D23CFAEF2ECAAAB600FEBF3D /* Community */,
+				D23CFAEE2ECAAAA400FEBF3D /* Home */,
 				D2ED48302EC8FAF20030CBA7 /* Design */,
 				D2ED48242EC8F9010030CBA7 /* Main */,
 				D2ED48092EC8F2860030CBA7 /* Settings */,
@@ -332,6 +346,7 @@
 		D22EF47A2E7B2EA100810204 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				D23CFAF02ECAAAD100FEBF3D /* CommunityAPI.swift */,
 				D2ED48052EC6F8C80030CBA7 /* FunctionsErrorHandling.swift */,
 				D2D07BE42EBC1D290078BAB0 /* NetworkAwareModifier.swift */,
 				D22EF49B2E7B312B00810204 /* RandomDeliveryWindow.swift */,
@@ -356,6 +371,25 @@
 				D22EF4992E7B30E700810204 /* ExportSheet.swift */,
 			);
 			path = Sheets;
+			sourceTree = "<group>";
+		};
+		D23CFAEE2ECAAAA400FEBF3D /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				D23CFAFA2ECAAD3100FEBF3D /* RightPanelPlaceholderView.swift */,
+				D23CFAF22ECAAAF300FEBF3D /* HomePagerView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		D23CFAEF2ECAAAB600FEBF3D /* Community */ = {
+			isa = PBXGroup;
+			children = (
+				D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */,
+				D23CFAF62ECAAB0300FEBF3D /* CommunityPostRow.swift */,
+				D23CFAF42ECAAAFC00FEBF3D /* CommunityView.swift */,
+			);
+			path = Community;
 			sourceTree = "<group>";
 		};
 		D2BEC25B2E7E19EA009E3698 /* Frameworks */ = {
@@ -605,6 +639,7 @@
 				D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
 				D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
 				D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */,
+				D23CFAF92ECAAB0F00FEBF3D /* CommunityComposerSheet.swift in Sources */,
 				D22EF4802E7B2F2F00810204 /* UserProfile.swift in Sources */,
 				D2D07BD32EBC18C30078BAB0 /* AppViewModel+RealTimeUserListener.swift in Sources */,
 				D2D07BDD2EBC19530078BAB0 /* AppViewModel+FeatureTour.swift in Sources */,
@@ -616,6 +651,7 @@
 				D2D07BEE2EC3F6730078BAB0 /* PaywallConfig.swift in Sources */,
 				D2ED48122EC8F3270030CBA7 /* SettingsHeaderBar.swift in Sources */,
 				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,
+				D23CFAF32ECAAAF700FEBF3D /* HomePagerView.swift in Sources */,
 				D2ED48142EC8F3300030CBA7 /* RangeSlider.swift in Sources */,
 				D2D07BE32EBC1CD70078BAB0 /* OfflineBanner.swift in Sources */,
 				D2D07BF02EC3F6A50078BAB0 /* RevenueCatManager.swift in Sources */,
@@ -634,8 +670,10 @@
 				D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */,
 				D2D07BD92EBC19290078BAB0 /* AppViewModel+Entries.swift in Sources */,
 				D2BEC2662E7E334B009E3698 /* FirestoreDataStore.swift in Sources */,
+				D23CFAF72ECAAB0700FEBF3D /* CommunityPostRow.swift in Sources */,
 				D22EF47E2E7B2F1300810204 /* Affirmation.swift in Sources */,
 				D22EF4902E7B302900810204 /* RootView.swift in Sources */,
+				D23CFAF52ECAAAFE00FEBF3D /* CommunityView.swift in Sources */,
 				D2ED48182EC8F3470030CBA7 /* TimeZoneSection.swift in Sources */,
 				D2D07BF42EC3F6E90078BAB0 /* TrialExpiryBanner.swift in Sources */,
 				D2ED482D2EC8F94D0030CBA7 /* TrialBanner.swift in Sources */,
@@ -651,7 +689,9 @@
 				D2D07BCF2EBC175C0078BAB0 /* PhoneField.swift in Sources */,
 				D2ED48322EC8FB020030CBA7 /* ReMindBackgrounds.swift in Sources */,
 				D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */,
+				D23CFAF12ECAAADB00FEBF3D /* CommunityAPI.swift in Sources */,
 				D2BEC2682E7E3525009E3698 /* Haptics.swift in Sources */,
+				D23CFAFB2ECAAD3A00FEBF3D /* RightPanelPlaceholderView.swift in Sources */,
 				D2D07BD72EBC19100078BAB0 /* AppViewModel+UserProfile.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -7,6 +7,10 @@ import PhotosUI
 struct RootView: View {
     @EnvironmentObject private var appVM: AppViewModel
 
+    // Which horizontal page we’re on
+    private enum Page: Hashable { case community, main, right }
+    @State private var activePage: Page = .main
+
     // Settings UI state
     @State private var showSettings = false
 
@@ -16,7 +20,7 @@ struct RootView: View {
     @AppStorage("quietStartHour")  private var quietStartHour: Double = 9     // 0...23
     @AppStorage("quietEndHour")    private var quietEndHour: Double = 22      // 0...23
 
-    // Background image (stored as Base64 string for portability)
+    // Background image (still stored here so settings can edit it)
     @AppStorage("bgImageBase64")   private var bgImageBase64: String = ""
 
     var body: some View {
@@ -27,69 +31,44 @@ struct RootView: View {
             } else if appVM.shouldShowOnboarding {
                 OnboardingView()
             } else {
-                NavigationView {
-                    ZStack(alignment: .top) {
-                        // Background layer (custom image or system background color)
-                        backgroundLayer
-                            .ignoresSafeArea()
+                ZStack(alignment: .top) {
+                    // Global background is just system color now.
+                    // The user photo is handled *inside MainView* only.
+                    Color(UIColor.systemBackground)
+                        .ignoresSafeArea()
 
-                        // Your main content
-                        MainView()
-                            .overlay {
-                                if showSettings {
-                                    Color.black.opacity(0.25)
-                                        .ignoresSafeArea(edges: [.horizontal, .bottom])
-                                        .transition(.opacity)
-                                        .onTapGesture { closeSettingsPanel() }
-                                }
+                    // Horizontal pager: Community ← Main → Right
+                    pager
+
+                    // Slide-down settings panel overlay (only on main page)
+                    if showSettings, activePage == .main {
+                        UserSettingsPanel(
+                            remindersPerWeek: $remindersPerWeek,
+                            tzIdentifier: $tzIdentifier,
+                            quietStartHour: $quietStartHour,
+                            quietEndHour: $quietEndHour,
+                            bgImageBase64: $bgImageBase64,
+                            onClose: {
+                                closeSettingsPanel()
                             }
-                            .navigationTitle("ReMind")
-                            .toolbar {
+                        )
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .zIndex(1)
+                    }
 
-                                // Settings button (top-right)
-                                ToolbarItem(placement: .navigationBarTrailing) {
-                                    Button {
-                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
-                                            showSettings.toggle()
-                                        }
-                                    } label: {
-                                        Image(systemName: "gearshape.fill")
-                                            .imageScale(.large)
-                                            .accessibilityLabel("Settings")
-                                    }
-                                }
+                    // Feature tour overlay (only on main page)
+                    if appVM.showFeatureTour, activePage == .main {
+                        FeatureTourOverlay(
+                            step: appVM.featureTourStep,
+                            onNext: {
+                                Task { await appVM.advanceFeatureTour() }
+                            },
+                            onSkip: {
+                                Task { await appVM.skipFeatureTour() }
                             }
-
-                        // Slide-down settings panel overlay
-                        if showSettings {
-
-                            UserSettingsPanel(
-                                remindersPerWeek: $remindersPerWeek,
-                                tzIdentifier: $tzIdentifier,
-                                quietStartHour: $quietStartHour,
-                                quietEndHour: $quietEndHour,
-                                bgImageBase64: $bgImageBase64,
-                                onClose: {
-                                    closeSettingsPanel()
-                                }
-                            )
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                            .zIndex(1)
-                        }
-
-                        if appVM.showFeatureTour {
-                            FeatureTourOverlay(
-                                step: appVM.featureTourStep,
-                                onNext: {
-                                    Task { await appVM.advanceFeatureTour() }
-                                },
-                                onSkip: {
-                                    Task { await appVM.skipFeatureTour() }
-                                }
-                            )
-                            .transition(.opacity)
-                            .zIndex(2)
-                        }
+                        )
+                        .transition(.opacity)
+                        .zIndex(2)
                     }
                 }
             }
@@ -100,6 +79,63 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.25), value: appVM.showFeatureTour)
     }
 
+    // MARK: - Pager (3 horizontal screens)
+
+    private var pager: some View {
+        TabView(selection: $activePage) {
+            // LEFT: Community
+            NavigationStack {
+                CommunityView()
+            }
+            .tag(Page.community)
+
+            // CENTER: main page (your existing MainView with toolbar)
+            NavigationStack {
+                mainPage
+            }
+            .tag(Page.main)
+
+            // RIGHT: placeholder for future stuff
+            NavigationStack {
+                RightPanelPlaceholderView()
+            }
+            .tag(Page.right)
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never)) // Snapchat-style swipe
+    }
+
+    @ViewBuilder
+    private var mainPage: some View {
+        MainView()
+            .overlay {
+                if showSettings {
+                    Color.black.opacity(0.25)
+                        .ignoresSafeArea(edges: [.horizontal, .bottom])
+                        .transition(.opacity)
+                        .onTapGesture { closeSettingsPanel() }
+                }
+            }
+            .navigationTitle("ReMind")
+            .toolbar {
+                // Settings button (top-right)
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        toggleSettingsPanel()
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                            .imageScale(.large)
+                            .accessibilityLabel("Settings")
+                    }
+                }
+            }
+    }
+
+    private func toggleSettingsPanel() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+            showSettings.toggle()
+        }
+    }
+
     private func closeSettingsPanel() {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
             showSettings = false
@@ -108,32 +144,5 @@ struct RootView: View {
         UserSettingsSync.pushAndApply { err in
             print("pushAndApply ->", err?.localizedDescription ?? "OK")
         }
-    }
-
-    // MARK: - Background renderer
-
-    @ViewBuilder
-    private var backgroundLayer: some View {
-        GeometryReader { proxy in
-            if let uiImage = decodeBase64ToImage(bgImageBase64) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    // Clamp to the actual container bounds to avoid oversized ideal sizes
-                    .frame(width: max(proxy.size.width, 1),
-                           height: max(proxy.size.height, 1))
-                    .clipped()
-                    .overlay(.black.opacity(0.15)) // subtle contrast for readability
-            } else {
-                Color(UIColor.systemBackground)
-                    .frame(width: max(proxy.size.width, 1),
-                           height: max(proxy.size.height, 1))
-            }
-        }
-    }
-
-    private func decodeBase64ToImage(_ base64: String) -> UIImage? {
-        guard !base64.isEmpty, let data = Data(base64Encoded: base64) else { return nil }
-        return UIImage(data: data)
     }
 }
