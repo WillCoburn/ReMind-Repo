@@ -14,10 +14,11 @@ struct CommunityComposerSheet: View {
                     .font(.headline)
 
                 TextEditor(text: $text)
-                    .frame(minHeight: 150)
-                    .overlay(
+                    .frame(minHeight: 160)
+                    .padding(8)
+                    .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.secondary.opacity(0.2))
+                            .fill(Color(.secondarySystemBackground))
                     )
 
                 Spacer()

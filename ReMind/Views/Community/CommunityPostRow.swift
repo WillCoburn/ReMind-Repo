@@ -8,33 +8,30 @@ struct CommunityPostRow: View {
             Text(post.text)
                 .font(.body)
 
-            HStack(spacing: 16) {
-                Label("\(post.likeCount)", systemImage: "hand.thumbsup")
+            HStack(spacing: 12) {
+                Text(timeAgoString(from: post.createdAt))
                     .font(.caption)
-
-                Button {
-                    // TODO: like
-                } label: {
-                    Image(systemName: "plus.circle")
-                        .font(.caption)
-                }
-                .buttonStyle(.borderless)
-
-                Button(role: .destructive) {
-                    // TODO: report
-                } label: {
-                    Image(systemName: "flag")
-                        .font(.caption)
-                }
-                .buttonStyle(.borderless)
+                    .foregroundColor(.secondary)
 
                 Spacer()
-
-                // time since posted later (e.g., "3h ago")
             }
-            .foregroundColor(.secondary)
-            .font(.caption)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
+    }
+
+    private func timeAgoString(from date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        if interval < 60 {
+            return "Just now"
+        } else if interval < 3600 {
+            let m = Int(interval / 60)
+            return "\(m)m ago"
+        } else if interval < 86_400 {
+            let h = Int(interval / 3600)
+            return "\(h)h ago"
+        } else {
+            let d = Int(interval / 86_400)
+            return "\(d)d ago"
+        }
     }
 }

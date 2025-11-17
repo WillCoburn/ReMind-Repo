@@ -1,8 +1,11 @@
+// ============================
+// File: Services/Community/CommunityAPI.swift
+// ============================
 import Foundation
-import FirebaseFunctions
 import FirebaseFirestore
+import FirebaseFunctions
 
-struct CommunityPost: Identifiable, Codable {
+struct CommunityPost: Identifiable, Hashable {
     let id: String
     let text: String
     let createdAt: Date
@@ -10,42 +13,67 @@ struct CommunityPost: Identifiable, Codable {
     let reportCount: Int
     let isHidden: Bool
     let expiresAt: Date
+
+    init?(from doc: DocumentSnapshot) {
+        guard let data = doc.data() else { return nil }
+        guard let text = data["text"] as? String,
+              let createdAtTs = data["createdAt"] as? Timestamp,
+              let expiresAtTs = data["expiresAt"] as? Timestamp else {
+            return nil
+        }
+
+        self.id = doc.documentID
+        self.text = text
+        self.createdAt = createdAtTs.dateValue()
+        self.expiresAt = expiresAtTs.dateValue()
+        self.likeCount = data["likeCount"] as? Int ?? 0
+        self.reportCount = data["reportCount"] as? Int ?? 0
+        self.isHidden = data["isHidden"] as? Bool ?? false
+    }
 }
 
 final class CommunityAPI {
     static let shared = CommunityAPI()
     private init() {}
 
-    private lazy var functions = Functions.functions()
     private let db = Firestore.firestore()
+    private let functions = Functions.functions()
 
-    // MARK: - Feed
+    // MARK: - Feed subscription
 
-    func observeFeed(completion: @escaping ([CommunityPost]) -> Void) -> ListenerRegistration {
-        return db.collection("communityPosts")
+    func observeFeed(
+        onChange: @escaping ([CommunityPost]) -> Void
+    ) -> ListenerRegistration {
+        db.collection("communityPosts")
             .whereField("isHidden", isEqualTo: false)
             .whereField("expiresAt", isGreaterThan: Timestamp(date: Date()))
             .order(by: "createdAt", descending: true)
             .addSnapshotListener { snapshot, error in
-                // parse into [CommunityPost]; you can fill this in later
+                if let error = error {
+                    print("[CommunityAPI] observeFeed error:", error)
+                    onChange([])
+                    return
+                }
+                guard let snapshot = snapshot else {
+                    onChange([])
+                    return
+                }
+
+                let posts: [CommunityPost] = snapshot.documents.compactMap {
+                    CommunityPost(from: $0)
+                }
+                onChange(posts)
             }
     }
 
     // MARK: - Actions
 
     func createPost(text: String) async throws {
-        // will call callable "createCommunityPost"
+        let data: [String: Any] = ["text": text]
+        _ = try await functions.httpsCallable("createCommunityPost").call(data)
     }
 
-    func like(postId: String) async throws {
-        // callable "likeCommunityPost"
-    }
-
-    func report(postId: String) async throws {
-        // callable "reportCommunityPost"
-    }
-
-    func save(postId: String) async throws {
-        // callable "saveCommunityPost"
-    }
+    // Placeholders for future stages:
+    func like(postId: String) async throws { /* to be implemented later */ }
+    func report(postId: String) async throws { /* to be implemented later */ }
 }
