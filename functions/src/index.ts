@@ -10,6 +10,15 @@ import { Timestamp } from "firebase-admin/firestore";
 import { db } from "./config/options";
 import { isGodMode } from "./config/godMode";
 
+const REPORT_LIMIT_PER_HOUR = 5;
+const REPORT_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const REPORT_LIMIT_MESSAGE =
+  "Reports are limited to 5 per hour to avoid report-spamming.";
+
+interface CommunityReportLimitDoc {
+  recentReports?: Timestamp[];
+}
+
 // -----------------------------
 // community: createCommunityPost
 // -----------------------------
@@ -133,9 +142,11 @@ export const toggleCommunityReport = onCall(async (request) => {
   }
 
   const postRef = db.collection("communityPosts").doc(postId);
+  const limiterRef = db.collection("communityReportLimits").doc(uid);
   const godModeUser = isGodMode(request.auth);
 
   return await db.runTransaction(async (tx) => {
+    const now = Timestamp.now();
     const postSnap = await tx.get(postRef);
     if (!postSnap.exists) {
       throw new HttpsError("not-found", "Post not found.");
@@ -166,6 +177,55 @@ export const toggleCommunityReport = onCall(async (request) => {
     const reportDocRef = postRef.collection("reports").doc(uid);
     const reportSnap = await tx.get(reportDocRef);
     const alreadyReported = reportSnap.exists;
+
+    if (!godModeUser && !alreadyReported) {
+      const limiterSnap = await tx.get(limiterRef);
+      const limiterData = limiterSnap.data() as
+        | CommunityReportLimitDoc
+        | undefined;
+      const cutoffMillis = now.toMillis() - REPORT_LIMIT_WINDOW_MS;
+      let recentReports = (limiterData?.recentReports ?? []).filter(
+        (entry): entry is Timestamp => entry instanceof Timestamp
+      );
+      recentReports = recentReports.filter(
+        (entry) => entry.toMillis() > cutoffMillis
+      );
+
+      if (recentReports.length >= REPORT_LIMIT_PER_HOUR) {
+        throw new HttpsError(
+          "resource-exhausted",
+          REPORT_LIMIT_MESSAGE,
+          REPORT_LIMIT_MESSAGE
+        );
+      }
+
+      recentReports.push(now);
+      const trimmedReports = recentReports.slice(-REPORT_LIMIT_PER_HOUR);
+
+      tx.set(
+        limiterRef,
+        { recentReports: trimmedReports },
+        { merge: true }
+      );
+    } else if (!godModeUser) {
+      // Keep the limiter document tidy even when the user un-reports.
+      const limiterSnap = await tx.get(limiterRef);
+      if (limiterSnap.exists) {
+        const limiterData = limiterSnap.data() as CommunityReportLimitDoc;
+        const cutoffMillis = now.toMillis() - REPORT_LIMIT_WINDOW_MS;
+        const trimmedReports = (limiterData.recentReports ?? [])
+          .filter((entry): entry is Timestamp => entry instanceof Timestamp)
+          .filter((entry) => entry.toMillis() > cutoffMillis)
+          .slice(-REPORT_LIMIT_PER_HOUR);
+
+        tx.set(
+          limiterRef,
+          { recentReports: trimmedReports },
+          { merge: true }
+        );
+      }
+    }
+
     const nextCount = alreadyReported
       ? Math.max(0, currentCount - 1)
       : currentCount + 1;
@@ -173,7 +233,7 @@ export const toggleCommunityReport = onCall(async (request) => {
     if (alreadyReported) {
       tx.delete(reportDocRef);
     } else {
-      tx.set(reportDocRef, { createdAt: Timestamp.now() });
+      tx.set(reportDocRef, { createdAt: now });
     }
 
     const updates: Record<string, unknown> = {
