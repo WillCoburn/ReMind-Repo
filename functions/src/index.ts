@@ -8,6 +8,7 @@ import "./config/options";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { Timestamp } from "firebase-admin/firestore";
 import { db } from "./config/options";
+import { isGodMode } from "./config/godMode";
 
 // -----------------------------
 // community: createCommunityPost
@@ -17,6 +18,8 @@ export const createCommunityPost = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "You must be signed in to post.");
   }
+
+  const godModeUser = isGodMode(request.auth);
 
   const textRaw = (request.data?.text ?? "") as string;
   const text = textRaw.trim();
@@ -34,19 +37,21 @@ export const createCommunityPost = onCall(async (request) => {
   const now = Timestamp.now();
   const oneDayAgo = Timestamp.fromMillis(now.toMillis() - 24 * 60 * 60 * 1000);
 
-  // 1 post per user per 24h
-  const recentSnap = await db
-    .collection("communityPosts")
-    .where("authorId", "==", uid)
-    .where("createdAt", ">", oneDayAgo)
-    .limit(1)
-    .get();
+  if (!godModeUser) {
+    // 1 post per user per 24h
+    const recentSnap = await db
+      .collection("communityPosts")
+      .where("authorId", "==", uid)
+      .where("createdAt", ">", oneDayAgo)
+      .limit(1)
+      .get();
 
-  if (!recentSnap.empty) {
-    throw new HttpsError(
-      "failed-precondition",
-      "You can only post once per day."
-    );
+    if (!recentSnap.empty) {
+      throw new HttpsError(
+        "failed-precondition",
+        "You can only post once per day."
+      );
+    }
   }
 
   const expiresAt = Timestamp.fromMillis(
@@ -72,6 +77,8 @@ export const toggleCommunityLike = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "You must be signed in to like posts.");
   }
 
+  const godModeUser = isGodMode(request.auth);
+
   const postId = (request.data?.postId ?? "") as string;
   if (!postId) {
     throw new HttpsError("invalid-argument", "A postId is required.");
@@ -85,10 +92,16 @@ export const toggleCommunityLike = onCall(async (request) => {
       throw new HttpsError("not-found", "Post not found.");
     }
 
+    const currentCount = (postSnap.data()?.likeCount ?? 0) as number;
+    if (godModeUser) {
+      const nextCount = currentCount + 1;
+      tx.update(postRef, { likeCount: nextCount });
+      return { liked: true, likeCount: nextCount, godMode: true };
+    }
+
     const likeDocRef = postRef.collection("likes").doc(uid);
     const likeSnap = await tx.get(likeDocRef);
     const alreadyLiked = likeSnap.exists;
-    const currentCount = (postSnap.data()?.likeCount ?? 0) as number;
 
     const nextCount = alreadyLiked
       ? Math.max(0, currentCount - 1)
@@ -120,6 +133,7 @@ export const toggleCommunityReport = onCall(async (request) => {
   }
 
   const postRef = db.collection("communityPosts").doc(postId);
+  const godModeUser = isGodMode(request.auth);
 
   return await db.runTransaction(async (tx) => {
     const postSnap = await tx.get(postRef);
@@ -127,11 +141,31 @@ export const toggleCommunityReport = onCall(async (request) => {
       throw new HttpsError("not-found", "Post not found.");
     }
 
+    const currentCount = (postSnap.data()?.reportCount ?? 0) as number;
+    const alreadyHidden = Boolean(postSnap.data()?.isHidden);
+
+    if (godModeUser) {
+      const nextCount = currentCount + 1;
+      const updates: Record<string, unknown> = { reportCount: nextCount };
+
+      if (nextCount >= 5 && !alreadyHidden) {
+        updates["isHidden"] = true;
+        updates["hiddenReason"] = "reports";
+        updates["hiddenAt"] = Timestamp.now();
+      }
+
+      tx.update(postRef, updates);
+      return {
+        reported: true,
+        reportCount: nextCount,
+        removed: Boolean(updates["isHidden"] ?? alreadyHidden),
+        godMode: true,
+      };
+    }
+
     const reportDocRef = postRef.collection("reports").doc(uid);
     const reportSnap = await tx.get(reportDocRef);
     const alreadyReported = reportSnap.exists;
-    const currentCount = (postSnap.data()?.reportCount ?? 0) as number;
-
     const nextCount = alreadyReported
       ? Math.max(0, currentCount - 1)
       : currentCount + 1;
@@ -146,7 +180,6 @@ export const toggleCommunityReport = onCall(async (request) => {
       reportCount: nextCount,
     };
 
-    const alreadyHidden = Boolean(postSnap.data()?.isHidden);
     if (!alreadyReported && nextCount >= 5 && !alreadyHidden) {
       updates["isHidden"] = true;
       updates["hiddenReason"] = "reports";

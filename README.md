@@ -12,3 +12,25 @@ Core features: The app should be able to do the following things:
       7. Show an 'affirmations bank' count (this should flash red and remind user they are out of affirmations when they try to text themselves one)
       
 Extras Iphone only, simple, modern UI colors and design
+
+## Developer "god mode" for Community
+
+The Community feed now supports a developer-only "god mode" so you can stress test
+the experience without tripping daily or per-post limits.
+
+1. Use the Firebase Admin script to set the custom `godMode` claim on your test
+   account:
+   ```bash
+   cd functions
+   # Ensure GOOGLE_APPLICATION_CREDENTIALS points to a service account with auth.admin permissions
+   GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json npm run godmode -- <YOUR_FIREBASE_UID> on
+   ```
+   Run the same command with `off` to remove the override.
+2. Sign out/in (or restart the app) so the iOS client refreshes its ID token.
+3. When the banner appears on the Community tab you can:
+   * create unlimited posts per 24h window,
+   * tap like repeatedly to add as many likes as you need, and
+   * file unlimited reports.
+
+The override is enforced server-side via Firebase Auth custom claims, so regular
+users cannot grant it to themselves.

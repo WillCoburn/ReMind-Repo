@@ -14,6 +14,7 @@ extension AppViewModel {
             self.user = nil
             self.entries = []
             self.smsOptOut = false
+            self.isGodModeUser = false
             self.hasSeenFeatureTour = false
             self.featureTourStep = .settings
             self.showFeatureTour = false

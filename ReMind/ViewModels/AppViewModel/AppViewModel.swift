@@ -17,6 +17,9 @@ final class AppViewModel: ObservableObject {
     // Current SMS opt-out state for the signed-in user
     @Published var smsOptOut: Bool = false
 
+    // Developer override for community interactions
+    @Published var isGodModeUser: Bool = false
+
     // MARK: - Feature tour state
     enum FeatureTourStep: Int, CaseIterable {
         case settings, export, sendNow
@@ -60,6 +63,7 @@ final class AppViewModel: ObservableObject {
             Task {
                 // Load user profile and entries for this auth state.
                 await self.loadUserAndEntries(authUser?.uid)
+                await self.refreshGodModeFlag(forceRefresh: true)
 
                 // ✅ Only identify/configure RevenueCat AFTER the base user profile is loaded.
                 // This ensures no RC config/writes occur before the Firestore user doc exists.

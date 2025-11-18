@@ -2,6 +2,7 @@ import SwiftUI
 import FirebaseFirestore
 
 struct CommunityView: View {
+    @EnvironmentObject private var appVM: AppViewModel
     @State private var posts: [CommunityPost] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
@@ -32,6 +33,9 @@ struct CommunityView: View {
 
             } else if posts.isEmpty {
                 VStack(spacing: 12) {
+                    if appVM.isGodModeUser {
+                        GodModeBanner()
+                    }
                     Text("No posts yet")
                         .font(.headline)
                     Text("Be the first to share a reminder with the community.")
@@ -42,13 +46,19 @@ struct CommunityView: View {
                 }
 
             } else {
+                if appVM.isGodModeUser {
+                    GodModeBanner()
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                }
+
                 ScrollView {
                     LazyVStack(spacing: 16) {
                         ForEach(posts) { post in
                             CommunityPostRow(
                                 post: post,
-                                isLiked: likedPostIds.contains(post.id),
-                                isReported: reportedPostIds.contains(post.id),
+                                isLiked: isLiked(post),
+                                isReported: isReported(post),
                                 onLike: { handleLike(post) },
                                 onReport: { handleReport(post) }
                             )
@@ -109,11 +119,16 @@ struct CommunityView: View {
     // MARK: - Actions
 
     private func handleLike(_ post: CommunityPost) {
+        let godModeEnabled = appVM.isGodModeUser
         Task {
             do {
                 try await CommunityAPI.shared.toggleLike(postId: post.id)
-                await MainActor.run {
-                    toggle(id: post.id, in: &likedPostIds)
+                if godModeEnabled {
+                    await refreshFeed()
+                } else {
+                    await MainActor.run {
+                        toggle(id: post.id, in: &likedPostIds)
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -124,11 +139,16 @@ struct CommunityView: View {
     }
 
     private func handleReport(_ post: CommunityPost) {
+        let godModeEnabled = appVM.isGodModeUser
         Task {
             do {
                 try await CommunityAPI.shared.toggleReport(postId: post.id)
-                await MainActor.run {
-                    toggle(id: post.id, in: &reportedPostIds)
+                if godModeEnabled {
+                    await refreshFeed()
+                } else {
+                    await MainActor.run {
+                        toggle(id: post.id, in: &reportedPostIds)
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -136,6 +156,16 @@ struct CommunityView: View {
                 }
             }
         }
+    }
+
+    private func isLiked(_ post: CommunityPost) -> Bool {
+        guard !appVM.isGodModeUser else { return false }
+        return likedPostIds.contains(post.id)
+    }
+
+    private func isReported(_ post: CommunityPost) -> Bool {
+        guard !appVM.isGodModeUser else { return false }
+        return reportedPostIds.contains(post.id)
     }
 
     @MainActor
@@ -162,6 +192,24 @@ struct CommunityView: View {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+}
+
+private struct GodModeBanner: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "bolt.fill")
+                .foregroundColor(.yellow)
+            Text("God mode enabled: unlimited posts, likes, and reports.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+            Spacer()
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(.tertiarySystemFill))
+        )
     }
 }
 
