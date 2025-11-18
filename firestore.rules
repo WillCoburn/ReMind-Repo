@@ -1,19 +1,20 @@
-// firestore.rules
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // User doc and entries subcollection
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
 
-      // existing:
       match /entries/{entryId} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
+    }
 
-      // add this:
-      match /affirmations/{affirmationId} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
-      }
+    // 🔹 Top-level communityPosts collection
+    match /communityPosts/{postId} {
+      allow read: if true;   // for now, anyone can read
+      allow write: if false; // only Cloud Functions write
     }
   }
 }
