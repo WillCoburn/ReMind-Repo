@@ -14,7 +14,21 @@ service cloud.firestore {
     // 🔹 Top-level communityPosts collection
     match /communityPosts/{postId} {
       allow read: if true;   // for now, anyone can read
-      allow write: if false; // only Cloud Functions write
+      
+            // Allow signed-in users to increment likes or reports. All other
+      // mutations (creating posts, editing text, hiding, etc.) must go
+      // through Cloud Functions which run with admin privileges.
+      allow update: if request.auth != null && (
+        isAllowedIncrement("likeCount") ||
+        isAllowedIncrement("reportCount")
+      );
+
+      allow create, delete: if false; // only Cloud Functions write
+
+      function isAllowedIncrement(field) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly([field]) &&
+          request.resource.data[field] == resource.data[field] + 1;
+      }
     }
   }
 }

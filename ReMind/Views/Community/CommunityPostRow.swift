@@ -19,12 +19,12 @@ struct CommunityPostRow: View {
                 
                 Spacer()
                 
-                Text(expirationString(from: post.expiresAt))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+
             }
             
             HStack(spacing: 12) {
+                Spacer()
+                
                 Button {
                     onLike?()
                 } label: {
@@ -69,19 +69,5 @@ struct CommunityPostRow: View {
             return "\(d)d ago"
         }
     }
-    private func expirationString(from date: Date) -> String {
-        let remaining = date.timeIntervalSinceNow
-        guard remaining > 0 else { return "Expired" }
 
-        if remaining < 3600 {
-            let minutes = Int(remaining / 60)
-            return "Expires in \(minutes)m"
-        } else if remaining < 86_400 {
-            let hours = Int(remaining / 3600)
-            return "Expires in \(hours)h"
-        } else {
-            let days = Int(remaining / 86_400)
-            return "Expires in \(days)d"
-        }
-    }
 }
