@@ -47,11 +47,19 @@ struct CommunityComposerSheet: View {
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting)
                 }
             }
-            .alert("Error", isPresented: .constant(errorMessage != nil), actions: {
-                Button("OK", role: .cancel) { errorMessage = nil }
-            }, message: {
-                Text(errorMessage ?? "")
-            })
+            .alert(
+                "Error",
+                isPresented: Binding(
+                    get: { errorMessage != nil },
+                    set: { if !$0 { errorMessage = nil } }
+                ),
+                actions: {
+                    Button("OK", role: .cancel) { errorMessage = nil }
+                },
+                message: {
+                    Text(errorMessage ?? "")
+                }
+            )
         }
     }
 
