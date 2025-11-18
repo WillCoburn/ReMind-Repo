@@ -2,23 +2,58 @@ import SwiftUI
 
 struct CommunityPostRow: View {
     let post: CommunityPost
-
+    
+    var onLike: (() -> Void)? = nil
+    var onReport: (() -> Void)? = nil
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(post.text)
                 .font(.body)
-
+                .foregroundColor(.primary)
+            
             HStack(spacing: 12) {
-                Text(timeAgoString(from: post.createdAt))
+                Label(timeAgoString(from: post.createdAt), systemImage: "clock")
                     .font(.caption)
                     .foregroundColor(.secondary)
-
+                
                 Spacer()
+                
+                Text(expirationString(from: post.expiresAt))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            HStack(spacing: 12) {
+                Button {
+                    onLike?()
+                } label: {
+                    Label("\(post.likeCount)", systemImage: "arrow.up.square.fill")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Color.accentColor)
+                
+                Button {
+                    onReport?()
+                } label: {
+                    Label("\(post.reportCount)", systemImage: "flag.fill")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
+                
+                Spacer()
+                
             }
         }
-        .padding(.vertical, 6)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
     }
-
+    
     private func timeAgoString(from date: Date) -> String {
         let interval = Date().timeIntervalSince(date)
         if interval < 60 {
@@ -32,6 +67,21 @@ struct CommunityPostRow: View {
         } else {
             let d = Int(interval / 86_400)
             return "\(d)d ago"
+        }
+    }
+    private func expirationString(from date: Date) -> String {
+        let remaining = date.timeIntervalSinceNow
+        guard remaining > 0 else { return "Expired" }
+
+        if remaining < 3600 {
+            let minutes = Int(remaining / 60)
+            return "Expires in \(minutes)m"
+        } else if remaining < 86_400 {
+            let hours = Int(remaining / 3600)
+            return "Expires in \(hours)h"
+        } else {
+            let days = Int(remaining / 86_400)
+            return "Expires in \(days)d"
         }
     }
 }

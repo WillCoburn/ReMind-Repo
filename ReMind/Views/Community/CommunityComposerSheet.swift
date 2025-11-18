@@ -20,6 +20,10 @@ struct CommunityComposerSheet: View {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color(.secondarySystemBackground))
                     )
+                
+                Text("Community posts expire automatically after 3 days and can be liked or reported by anyone in the feed.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
 
                 Spacer()
             }
@@ -62,7 +66,10 @@ struct CommunityComposerSheet: View {
             try await CommunityAPI.shared.createPost(text: trimmed)
             dismiss()
         } catch {
-            errorMessage = error.localizedDescription
+            let nsError = error as NSError
+            print("🔥 createCommunityPost error:", nsError, nsError.userInfo)
+            errorMessage = nsError.localizedDescription
         }
     }
+
 }

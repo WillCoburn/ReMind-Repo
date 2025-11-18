@@ -6,6 +6,7 @@ struct CommunityView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var showComposer = false
+    @State private var actionErrorMessage: String?
 
     @State private var listener: ListenerRegistration?
 
@@ -15,11 +16,11 @@ struct CommunityView: View {
 
             if isLoading {
                 ProgressView("Loading community…")
-            } else if !errorMessage.isNilOrEmpty {
+            } else if let errorMessage, !errorMessage.isEmpty {
                 VStack(spacing: 8) {
                     Text("Something went wrong")
                         .font(.headline)
-                    Text(errorMessage ?? "")
+                    Text(errorMessage)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -35,12 +36,22 @@ struct CommunityView: View {
                         .padding(.horizontal)
                 }
             } else {
-                List {
-                    ForEach(posts) { post in
-                        CommunityPostRow(post: post)
+                ScrollView {
+                    LazyVStack(spacing: 16, pinnedViews: []) {
+                        ForEach(posts) { post in
+                            CommunityPostRow(
+                                post: post,
+                                onLike: { handleLike(post) },
+                                onReport: { handleReport(post) }
+                            )
+                        }
                     }
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
                 }
-                .listStyle(.plain)
+                .refreshable {
+                    await refreshFeed()
+                }
             }
         }
         .navigationTitle("Community")
@@ -57,6 +68,23 @@ struct CommunityView: View {
         .sheet(isPresented: $showComposer) {
             CommunityComposerSheet()
         }
+        .alert(
+            "Action Failed",
+            isPresented: Binding(
+                get: { actionErrorMessage != nil },
+                set: { newValue in
+                    if newValue == false { actionErrorMessage = nil }
+                }
+            ),
+            actions: {
+                Button("OK", role: .cancel) {
+                    actionErrorMessage = nil
+                }
+            }, message: {
+                Text(actionErrorMessage ?? "")
+            }
+        )
+        
         .onAppear { startListeningIfNeeded() }
         .onDisappear { stopListening() }
     }
@@ -67,6 +95,7 @@ struct CommunityView: View {
         listener = CommunityAPI.shared.observeFeed { newPosts in
             self.posts = newPosts
             self.isLoading = false
+            self.errorMessage = nil
         }
     }
 
@@ -74,6 +103,47 @@ struct CommunityView: View {
         listener?.remove()
         listener = nil
     }
+    
+    
+    private func handleLike(_ post: CommunityPost) {
+        Task {
+            do {
+                try await CommunityAPI.shared.like(postId: post.id)
+            } catch {
+                await MainActor.run {
+                    actionErrorMessage = "Unable to like post. Please try again."
+                }
+            }
+        }
+    }
+
+    private func handleReport(_ post: CommunityPost) {
+        Task {
+            do {
+                try await CommunityAPI.shared.report(postId: post.id)
+            } catch {
+                await MainActor.run {
+                    actionErrorMessage = "Unable to report post. Please try again."
+                }
+            }
+        }
+    }
+
+    private func refreshFeed() async {
+        do {
+            let latest = try await CommunityAPI.shared.fetchLatest()
+            await MainActor.run {
+                posts = latest
+                isLoading = false
+                errorMessage = nil
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+    
 }
 
 private extension Optional where Wrapped == String {

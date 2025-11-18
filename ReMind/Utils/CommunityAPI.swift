@@ -66,6 +66,17 @@ final class CommunityAPI {
             }
     }
 
+    func fetchLatest() async throws -> [CommunityPost] {
+        let snapshot = try await db.collection("communityPosts")
+            .whereField("isHidden", isEqualTo: false)
+            .whereField("expiresAt", isGreaterThan: Timestamp(date: Date()))
+            .order(by: "createdAt", descending: true)
+            .getDocuments()
+
+        return snapshot.documents.compactMap { CommunityPost(from: $0) }
+    }
+    
+    
     // MARK: - Actions
 
     func createPost(text: String) async throws {
@@ -73,7 +84,19 @@ final class CommunityAPI {
         _ = try await functions.httpsCallable("createCommunityPost").call(data)
     }
 
-    // Placeholders for future stages:
-    func like(postId: String) async throws { /* to be implemented later */ }
-    func report(postId: String) async throws { /* to be implemented later */ }
+    func like(postId: String) async throws {
+        try await db.collection("communityPosts")
+            .document(postId)
+            .updateData([
+                "likeCount": FieldValue.increment(Int64(1))
+            ])
+    }
+
+    func report(postId: String) async throws {
+        try await db.collection("communityPosts")
+            .document(postId)
+            .updateData([
+                "reportCount": FieldValue.increment(Int64(1))
+            ])
+    }
 }
