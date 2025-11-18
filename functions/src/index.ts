@@ -66,6 +66,105 @@ export const createCommunityPost = onCall(async (request) => {
   return { ok: true };
 });
 
+export const toggleCommunityLike = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "You must be signed in to like posts.");
+  }
+
+  const postId = (request.data?.postId ?? "") as string;
+  if (!postId) {
+    throw new HttpsError("invalid-argument", "A postId is required.");
+  }
+
+  const postRef = db.collection("communityPosts").doc(postId);
+
+  return await db.runTransaction(async (tx) => {
+    const postSnap = await tx.get(postRef);
+    if (!postSnap.exists) {
+      throw new HttpsError("not-found", "Post not found.");
+    }
+
+    const likeDocRef = postRef.collection("likes").doc(uid);
+    const likeSnap = await tx.get(likeDocRef);
+    const alreadyLiked = likeSnap.exists;
+    const currentCount = (postSnap.data()?.likeCount ?? 0) as number;
+
+    const nextCount = alreadyLiked
+      ? Math.max(0, currentCount - 1)
+      : currentCount + 1;
+
+    if (alreadyLiked) {
+      tx.delete(likeDocRef);
+    } else {
+      tx.set(likeDocRef, { createdAt: Timestamp.now() });
+    }
+
+    tx.update(postRef, {
+      likeCount: nextCount,
+    });
+
+    return { liked: !alreadyLiked, likeCount: nextCount };
+  });
+});
+
+export const toggleCommunityReport = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "You must be signed in to report posts.");
+  }
+
+  const postId = (request.data?.postId ?? "") as string;
+  if (!postId) {
+    throw new HttpsError("invalid-argument", "A postId is required.");
+  }
+
+  const postRef = db.collection("communityPosts").doc(postId);
+
+  return await db.runTransaction(async (tx) => {
+    const postSnap = await tx.get(postRef);
+    if (!postSnap.exists) {
+      throw new HttpsError("not-found", "Post not found.");
+    }
+
+    const reportDocRef = postRef.collection("reports").doc(uid);
+    const reportSnap = await tx.get(reportDocRef);
+    const alreadyReported = reportSnap.exists;
+    const currentCount = (postSnap.data()?.reportCount ?? 0) as number;
+
+    const nextCount = alreadyReported
+      ? Math.max(0, currentCount - 1)
+      : currentCount + 1;
+
+    if (alreadyReported) {
+      tx.delete(reportDocRef);
+    } else {
+      tx.set(reportDocRef, { createdAt: Timestamp.now() });
+    }
+
+    const updates: Record<string, unknown> = {
+      reportCount: nextCount,
+    };
+
+    const alreadyHidden = Boolean(postSnap.data()?.isHidden);
+    if (!alreadyReported && nextCount >= 5 && !alreadyHidden) {
+      updates["isHidden"] = true;
+      updates["hiddenReason"] = "reports";
+      updates["hiddenAt"] = Timestamp.now();
+    }
+
+    tx.update(postRef, updates);
+
+    return {
+      reported: !alreadyReported,
+      reportCount: nextCount,
+      removed: Boolean(updates["isHidden"] ?? alreadyHidden),
+    };
+  });
+});
+
+
+
 // -----------------------------
 // existing exports
 // -----------------------------

@@ -84,19 +84,13 @@ final class CommunityAPI {
         _ = try await functions.httpsCallable("createCommunityPost").call(data)
     }
 
-    func like(postId: String) async throws {
-        try await db.collection("communityPosts")
-            .document(postId)
-            .updateData([
-                "likeCount": FieldValue.increment(Int64(1))
-            ])
+    func toggleLike(postId: String) async throws {
+        let data: [String: Any] = ["postId": postId]
+        _ = try await functions.httpsCallable("toggleCommunityLike").call(data)
     }
 
-    func report(postId: String) async throws {
-        try await db.collection("communityPosts")
-            .document(postId)
-            .updateData([
-                "reportCount": FieldValue.increment(Int64(1))
-            ])
+    func toggleReport(postId: String) async throws {
+        let data: [String: Any] = ["postId": postId]
+        _ = try await functions.httpsCallable("toggleCommunityReport").call(data)
     }
 }

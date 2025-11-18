@@ -108,8 +108,7 @@ struct CommunityView: View {
     private func handleLike(_ post: CommunityPost) {
         Task {
             do {
-                try await CommunityAPI.shared.like(postId: post.id)
-            } catch {
+                try await CommunityAPI.shared.toggleLike(postId: post.id)            } catch {
                 await MainActor.run {
                     actionErrorMessage = "Unable to like post. Please try again."
                 }
@@ -120,7 +119,7 @@ struct CommunityView: View {
     private func handleReport(_ post: CommunityPost) {
         Task {
             do {
-                try await CommunityAPI.shared.report(postId: post.id)
+                try await CommunityAPI.shared.toggleReport(postId: post.id)
             } catch {
                 await MainActor.run {
                     actionErrorMessage = "Unable to report post. Please try again."
