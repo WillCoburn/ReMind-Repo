@@ -20,13 +20,13 @@ the experience without tripping daily or per-post limits.
 
 1. Use the Firebase Admin script to set the custom `godMode` claim on your test
    account:
-   ```bash
+
 cd ~/Documents/ReMind-Repo/functions
 
 GOOGLE_APPLICATION_CREDENTIALS="/Users/willcoburn/Development/firebase_keys/remind-7aa51-64b023e4bfe6.json" \
 npm run godmode -- Lj351qGNiXTMHCGzpyauOc4rQG13 on
 
-   ```
+
    Run the same command with `off` to remove the override.
 2. Sign out/in (or restart the app) so the iOS client refreshes its ID token.
 3. When the banner appears on the Community tab you can:
