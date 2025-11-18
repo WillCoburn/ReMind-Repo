@@ -18,7 +18,7 @@ struct CommunityView: View {
 
     var body: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            Color.communityBackground.ignoresSafeArea()
 
             if isLoading {
                 ProgressView("Loading community…")
@@ -246,6 +246,14 @@ private struct GodModeBanner: View {
                 .fill(Color(.tertiarySystemFill))
         )
     }
+}
+
+extension Color {
+    static let communityBackground = Color(
+        red: 101.0 / 255.0,
+        green: 207.0 / 255.0,
+        blue: 193.0 / 255.0
+    )
 }
 
 private extension Optional where Wrapped == String {

@@ -61,6 +61,7 @@ struct CommunityComposerSheet: View {
                 }
             )
         }
+        .background(Color.communityBackground.ignoresSafeArea())
     }
 
     private func handleSubmit() async {
