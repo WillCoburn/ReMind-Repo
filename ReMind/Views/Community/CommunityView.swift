@@ -8,6 +8,9 @@ struct CommunityView: View {
     @State private var showComposer = false
     @State private var actionErrorMessage: String?
 
+    @State private var likedPostIds: Set<String> = []
+    @State private var reportedPostIds: Set<String> = []
+
     @State private var listener: ListenerRegistration?
 
     var body: some View {
@@ -16,6 +19,7 @@ struct CommunityView: View {
 
             if isLoading {
                 ProgressView("Loading community…")
+
             } else if let errorMessage, !errorMessage.isEmpty {
                 VStack(spacing: 8) {
                     Text("Something went wrong")
@@ -25,6 +29,7 @@ struct CommunityView: View {
                         .foregroundColor(.secondary)
                 }
                 .padding()
+
             } else if posts.isEmpty {
                 VStack(spacing: 12) {
                     Text("No posts yet")
@@ -35,12 +40,15 @@ struct CommunityView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                 }
+
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 16, pinnedViews: []) {
+                    LazyVStack(spacing: 16) {
                         ForEach(posts) { post in
                             CommunityPostRow(
                                 post: post,
+                                isLiked: likedPostIds.contains(post.id),
+                                isReported: reportedPostIds.contains(post.id),
                                 onLike: { handleLike(post) },
                                 onReport: { handleReport(post) }
                             )
@@ -58,9 +66,7 @@ struct CommunityView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showComposer = true
-                } label: {
+                Button { showComposer = true } label: {
                     Image(systemName: "square.and.pencil")
                 }
             }
@@ -72,22 +78,18 @@ struct CommunityView: View {
             "Action Failed",
             isPresented: Binding(
                 get: { actionErrorMessage != nil },
-                set: { newValue in
-                    if newValue == false { actionErrorMessage = nil }
-                }
+                set: { if !$0 { actionErrorMessage = nil } }
             ),
             actions: {
-                Button("OK", role: .cancel) {
-                    actionErrorMessage = nil
-                }
-            }, message: {
-                Text(actionErrorMessage ?? "")
-            }
+                Button("OK", role: .cancel) { actionErrorMessage = nil }
+            },
+            message: { Text(actionErrorMessage ?? "") }
         )
-        
         .onAppear { startListeningIfNeeded() }
         .onDisappear { stopListening() }
     }
+
+    // MARK: - Firestore Feed Listener
 
     private func startListeningIfNeeded() {
         guard listener == nil else { return }
@@ -103,12 +105,17 @@ struct CommunityView: View {
         listener?.remove()
         listener = nil
     }
-    
-    
+
+    // MARK: - Actions
+
     private func handleLike(_ post: CommunityPost) {
         Task {
             do {
-                try await CommunityAPI.shared.toggleLike(postId: post.id)            } catch {
+                try await CommunityAPI.shared.toggleLike(postId: post.id)
+                await MainActor.run {
+                    toggle(id: post.id, in: &likedPostIds)
+                }
+            } catch {
                 await MainActor.run {
                     actionErrorMessage = "Unable to like post. Please try again."
                 }
@@ -120,6 +127,9 @@ struct CommunityView: View {
         Task {
             do {
                 try await CommunityAPI.shared.toggleReport(postId: post.id)
+                await MainActor.run {
+                    toggle(id: post.id, in: &reportedPostIds)
+                }
             } catch {
                 await MainActor.run {
                     actionErrorMessage = "Unable to report post. Please try again."
@@ -127,6 +137,17 @@ struct CommunityView: View {
             }
         }
     }
+
+    @MainActor
+    private func toggle(id: String, in set: inout Set<String>) {
+        if set.contains(id) {
+            set.remove(id)
+        } else {
+            set.insert(id)
+        }
+    }
+
+    // MARK: - Refresh
 
     private func refreshFeed() async {
         do {
@@ -142,7 +163,6 @@ struct CommunityView: View {
             }
         }
     }
-    
 }
 
 private extension Optional where Wrapped == String {
