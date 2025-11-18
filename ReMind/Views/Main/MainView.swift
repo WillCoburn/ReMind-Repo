@@ -37,6 +37,9 @@ struct MainView: View {
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected || !active
 
         ZStack {
+            Color(hex: "#65cfc1")
+                .ignoresSafeArea()
+
             // 🔹 Background now handled *here* so it only affects MainView.
             backgroundLayer
 
@@ -251,5 +254,18 @@ struct MainView: View {
         alertTitle = "No Internet Connection"
         alertMessage = "Please reconnect to the internet to use this feature."
         showAlert = true
+    }
+}
+
+extension Color {
+    init(hex: String) {
+        let scanner = Scanner(string: hex)
+        _ = scanner.scanString("#")
+        var rgb: UInt64 = 0
+        scanner.scanHexInt64(&rgb)
+        let r = Double((rgb >> 16) & 0xFF) / 255
+        let g = Double((rgb >> 8) & 0xFF) / 255
+        let b = Double(rgb & 0xFF) / 255
+        self.init(red: r, green: g, blue: b)
     }
 }
