@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseFirestore
+import FirebaseFunctions
 
 struct CommunityView: View {
     @EnvironmentObject private var appVM: AppViewModel
@@ -8,6 +9,7 @@ struct CommunityView: View {
     @State private var errorMessage: String?
     @State private var showComposer = false
     @State private var actionErrorMessage: String?
+    @State private var reportLimitMessage: String?
 
     @State private var likedPostIds: Set<String> = []
     @State private var reportedPostIds: Set<String> = []
@@ -95,6 +97,19 @@ struct CommunityView: View {
             },
             message: { Text(actionErrorMessage ?? "") }
         )
+        .alert(
+            "Reports Temporarily Limited",
+            isPresented: Binding(
+                get: { reportLimitMessage != nil },
+                set: { if !$0 { reportLimitMessage = nil } }
+            ),
+            actions: {
+                Button("OK", role: .cancel) { reportLimitMessage = nil }
+            },
+            message: {
+                Text(reportLimitMessage ?? "Reports are limited to avoid report-spamming. Please try again later.")
+            }
+        )
         .onAppear { startListeningIfNeeded() }
         .onDisappear { stopListening() }
     }
@@ -152,7 +167,11 @@ struct CommunityView: View {
                 }
             } catch {
                 await MainActor.run {
-                    actionErrorMessage = "Unable to report post. Please try again."
+                    if let limitMessage = reportLimitAlertMessage(for: error) {
+                        reportLimitMessage = limitMessage
+                    } else {
+                        actionErrorMessage = "Unable to report post. Please try again."
+                    }
                 }
             }
         }
@@ -192,6 +211,22 @@ struct CommunityView: View {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+
+    private func reportLimitAlertMessage(for error: Error) -> String? {
+        let nsError = error as NSError
+        guard nsError.domain == FunctionsErrorDomain,
+              let code = FunctionsErrorCode(rawValue: nsError.code),
+              code == .resourceExhausted else {
+            return nil
+        }
+
+        if let details = nsError.userInfo[FunctionsErrorDetailsKey] as? String,
+           !details.isEmpty {
+            return details
+        }
+
+        return "Reports are limited to avoid report-spamming. Please try again later."
     }
 }
 
