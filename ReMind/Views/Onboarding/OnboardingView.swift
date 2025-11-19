@@ -44,7 +44,7 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             // ✅ Background sits *behind* everything and ignores safe areas
-            ReMindBackgroundSoftDiagonal()
+            Color(hex: "#0A1222")
                 .ignoresSafeArea()
 
             // ✅ Your content stays padded without affecting the background bounds

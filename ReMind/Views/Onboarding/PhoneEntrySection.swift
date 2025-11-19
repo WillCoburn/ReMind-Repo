@@ -41,7 +41,7 @@ struct PhoneEntrySection: View {
                     .foregroundColor(.secondary)
             }
         }
-        .background(ReMindBackgroundSoftDiagonal())
+       
     }
 }
 

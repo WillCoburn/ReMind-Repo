@@ -152,7 +152,7 @@ struct MainView: View {
                     .overlay(Color.black.opacity(0.15)) // subtle contrast for readability
                     .ignoresSafeArea()
             } else {
-                ReMindBackgroundSoftDiagonal()
+                Color(hex: "#0A1222")
                     .frame(
                         width: max(proxy.size.width, 1),
                         height: max(proxy.size.height, 1)
