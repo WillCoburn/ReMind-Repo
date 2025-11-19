@@ -31,7 +31,8 @@
 		D23CFAF52ECAAAFE00FEBF3D /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF42ECAAAFC00FEBF3D /* CommunityView.swift */; };
 		D23CFAF72ECAAB0700FEBF3D /* CommunityPostRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF62ECAAB0300FEBF3D /* CommunityPostRow.swift */; };
 		D23CFAF92ECAAB0F00FEBF3D /* CommunityComposerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */; };
-		D23CFAFB2ECAAD3A00FEBF3D /* RightPanelPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAFA2ECAAD3100FEBF3D /* RightPanelPlaceholderView.swift */; };
+D23CFAFB2ECAAD3A00FEBF3D /* RightPanelPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAFA2ECAAD3100FEBF3D /* RightPanelPlaceholderView.swift */; };
+D2F5B8C02F0F125500112233 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F5B8BF2F0F125500112233 /* Color+Hex.swift */; };
 		D2BEC24C2E7E16AD009E3698 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24B2E7E16AD009E3698 /* FirebaseAnalytics */; };
 		D2BEC24E2E7E16AD009E3698 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24D2E7E16AD009E3698 /* FirebaseAuth */; };
 		D2BEC2502E7E16AD009E3698 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24F2E7E16AD009E3698 /* FirebaseCore */; };
@@ -136,7 +137,8 @@ D2D07BDF2EBC1A8D0078BAB0 /* AppViewModel+GodMode.swift in Sources */ = {isa = PB
 		D23CFAF42ECAAAFC00FEBF3D /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
 		D23CFAF62ECAAB0300FEBF3D /* CommunityPostRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityPostRow.swift; sourceTree = "<group>"; };
 		D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityComposerSheet.swift; sourceTree = "<group>"; };
-		D23CFAFA2ECAAD3100FEBF3D /* RightPanelPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RightPanelPlaceholderView.swift; sourceTree = "<group>"; };
+D23CFAFA2ECAAD3100FEBF3D /* RightPanelPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RightPanelPlaceholderView.swift; sourceTree = "<group>"; };
+D2F5B8BF2F0F125500112233 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		D2BEC2572E7E17B5009E3698 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D2BEC2592E7E1897009E3698 /* FirebasePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebasePing.swift; sourceTree = "<group>"; };
 		D2BEC2602E7E293E009E3698 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -345,10 +347,11 @@ D2D07BDE2EBC1A860078BAB0 /* AppViewModel+GodMode.swift */ = {isa = PBXFileRefere
 			path = Views;
 			sourceTree = "<group>";
 		};
-		D22EF47A2E7B2EA100810204 /* Utils */ = {
-			isa = PBXGroup;
-			children = (
-				D23CFAF02ECAAAD100FEBF3D /* CommunityAPI.swift */,
+D22EF47A2E7B2EA100810204 /* Utils */ = {
+isa = PBXGroup;
+children = (
+D2F5B8BF2F0F125500112233 /* Color+Hex.swift */,
+D23CFAF02ECAAAD100FEBF3D /* CommunityAPI.swift */,
 				D2ED48052EC6F8C80030CBA7 /* FunctionsErrorHandling.swift */,
 				D2D07BE42EBC1D290078BAB0 /* NetworkAwareModifier.swift */,
 				D22EF49B2E7B312B00810204 /* RandomDeliveryWindow.swift */,
@@ -695,8 +698,9 @@ D2D07BDF2EBC1A8D0078BAB0 /* AppViewModel+GodMode.swift in Sources */,
 				D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */,
 				D23CFAF12ECAAADB00FEBF3D /* CommunityAPI.swift in Sources */,
 				D2BEC2682E7E3525009E3698 /* Haptics.swift in Sources */,
-				D23CFAFB2ECAAD3A00FEBF3D /* RightPanelPlaceholderView.swift in Sources */,
-				D2D07BD72EBC19100078BAB0 /* AppViewModel+UserProfile.swift in Sources */,
+D23CFAFB2ECAAD3A00FEBF3D /* RightPanelPlaceholderView.swift in Sources */,
+D2F5B8C02F0F125500112233 /* Color+Hex.swift in Sources */,
+D2D07BD72EBC19100078BAB0 /* AppViewModel+UserProfile.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
