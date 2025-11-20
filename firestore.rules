@@ -2,32 +2,41 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // User doc and entries subcollection
+    // User doc and ALL subcollections
     match /users/{uid} {
+      // Allow user to read/write their own user doc
       allow read, write: if request.auth != null && request.auth.uid == uid;
 
+      // entries subcollection
       match /entries/{entryId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // meta subcollection (settings lives here)
+      match /meta/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // affirmations (you have this in your app, even if unused)
+      match /affirmations/{affirmationId} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
     }
 
-    // 🔹 Top-level communityPosts collection
+    // Community posts logic (unchanged)
     match /communityPosts/{postId} {
-      allow read: if true;   // for now, anyone can read
-      
-            // Allow signed-in users to increment likes or reports. All other
-      // mutations (creating posts, editing text, hiding, etc.) must go
-      // through Cloud Functions which run with admin privileges.
+      allow read: if true;
+
       allow update: if request.auth != null && (
         isAllowedIncrement("likeCount") ||
         isAllowedIncrement("reportCount")
       );
 
-      allow create, delete: if false; // only Cloud Functions write
+      allow create, delete: if false;
 
       function isAllowedIncrement(field) {
         return request.resource.data.diff(resource.data).affectedKeys().hasOnly([field]) &&
-          request.resource.data[field] == resource.data[field] + 1;
+               request.resource.data[field] == resource.data[field] + 1;
       }
     }
   }

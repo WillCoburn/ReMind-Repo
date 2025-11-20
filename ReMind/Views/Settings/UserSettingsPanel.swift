@@ -7,8 +7,7 @@ import MessageUI
 import StoreKit
 
 struct UserSettingsPanel: View {
-    @EnvironmentObject private var appVM: AppViewModel
-    @ObservedObject private var revenueCat = RevenueCatManager.shared
+
 
     // Bindings from parent
     @Binding var remindersPerWeek: Double
@@ -19,13 +18,7 @@ struct UserSettingsPanel: View {
 
     var onClose: () -> Void
 
-    // Local state
-    @State private var photoItem: PhotosPickerItem?
-    @State private var loadError: String?
-    @State private var showMailSheet = false
-    @State private var mailError: String?
-    @State private var showPaywall = false
-    @State private var restoreMessage: String?
+    var onSettingsChanged: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,65 +26,14 @@ struct UserSettingsPanel: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-
-                    RemindersPerWeekSection(remindersPerWeek: $remindersPerWeek)
-
-                    Divider()
-
-                    TimeZoneSection(
-                        tzIdentifier: $tzIdentifier,
-                        usTimeZones: SettingsHelpers.usTimeZones()
-                    )
-
-                    Divider()
-
-                    SendWindowSection(
-                        startHour: $quietStartHour,
-                        endHour: $quietEndHour,
-                        hourLabel: SettingsHelpers.hourLabel(_:)
-                    )
-
-                    Divider()
-
-                    BackgroundPickerSection(
-                        photoItem: $photoItem,
-                        bgImageBase64: $bgImageBase64,
-                        loadError: $loadError
-                    )
-
-                    Divider()
-
-                    FeedbackSupportSection(
-                        showMailSheet: $showMailSheet,
-                        mailError: $mailError
-                    )
-
-                    Divider()
-
-                    SubscriptionSection(
-                        appVM: appVM,
-                        revenueCat: revenueCat,
-                        showPaywall: $showPaywall,
-                        restoreMessage: $restoreMessage
-                    )
-                    .sheet(isPresented: $showPaywall) { SubscriptionSheet() }
-                    
-                    
-                    Divider()
-
-                    Button(role: .destructive) {
-                        appVM.logout()
-                    } label: {
-                        Text("Log Out")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 12)
-                    
-
-                    Spacer(minLength: 8)
-                }
+        UserSettingsForm(
+             remindersPerWeek: $remindersPerWeek,
+             tzIdentifier: $tzIdentifier,
+             quietStartHour: $quietStartHour,
+             quietEndHour: $quietEndHour,
+             bgImageBase64: $bgImageBase64,
+             onSettingsChanged: onSettingsChanged
+         )
                 .padding(16)
             }
             .background(.ultraThinMaterial)
@@ -103,6 +45,93 @@ struct UserSettingsPanel: View {
         .frame(maxWidth: .infinity)
         .background(.clear)
         .padding(.top, 8)
+}
+}
+
+struct UserSettingsForm: View {
+  @EnvironmentObject private var appVM: AppViewModel
+  @ObservedObject private var revenueCat = RevenueCatManager.shared
+
+  @Binding var remindersPerWeek: Double
+  @Binding var tzIdentifier: String
+  @Binding var quietStartHour: Double
+  @Binding var quietEndHour: Double
+  @Binding var bgImageBase64: String
+
+  var onSettingsChanged: (() -> Void)? = nil
+
+  // Local state
+  @State private var photoItem: PhotosPickerItem?
+  @State private var loadError: String?
+  @State private var showMailSheet = false
+  @State private var mailError: String?
+  @State private var showPaywall = false
+  @State private var restoreMessage: String?
+
+  var body: some View {
+      VStack(alignment: .leading, spacing: 20) {
+          RemindersPerWeekSection(remindersPerWeek: $remindersPerWeek)
+              .onChange(of: remindersPerWeek) { _ in handleSettingChange() }
+
+          Divider()
+
+          TimeZoneSection(
+              tzIdentifier: $tzIdentifier,
+              usTimeZones: SettingsHelpers.usTimeZones()
+          )
+          .onChange(of: tzIdentifier) { _ in handleSettingChange() }
+
+          Divider()
+
+          SendWindowSection(
+              startHour: $quietStartHour,
+              endHour: $quietEndHour,
+              hourLabel: SettingsHelpers.hourLabel(_:)
+          )
+          .onChange(of: quietStartHour) { _ in handleSettingChange() }
+          .onChange(of: quietEndHour) { _ in handleSettingChange() }
+
+          Divider()
+
+          BackgroundPickerSection(
+              photoItem: $photoItem,
+              bgImageBase64: $bgImageBase64,
+              loadError: $loadError
+          )
+          .onChange(of: bgImageBase64) { _ in handleSettingChange() }
+
+          Divider()
+
+          FeedbackSupportSection(
+              showMailSheet: $showMailSheet,
+              mailError: $mailError
+          )
+
+          Divider()
+
+          SubscriptionSection(
+              appVM: appVM,
+              revenueCat: revenueCat,
+              showPaywall: $showPaywall,
+              restoreMessage: $restoreMessage
+          )
+          .sheet(isPresented: $showPaywall) { SubscriptionSheet() }
+
+          Divider()
+
+          Button(role: .destructive) {
+              appVM.logout()
+          } label: {
+              Text("Log Out")
+                  .frame(maxWidth: .infinity)
+          }
+          .frame(maxWidth: .infinity, alignment: .center)
+          .padding(.vertical, 12)
+
+          Spacer(minLength: 8)
+      }
+
+
         .sheet(isPresented: $showMailSheet) {
             MailView(
                 recipients: ["remindapphelp@gmail.com"],
@@ -123,5 +152,9 @@ struct UserSettingsPanel: View {
                 }
             }
         }
+    }
+    
+    private func handleSettingChange() {
+        onSettingsChanged?()
     }
 }
