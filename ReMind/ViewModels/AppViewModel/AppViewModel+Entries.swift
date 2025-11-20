@@ -8,6 +8,11 @@ import FirebaseFirestore
 @MainActor
 extension AppViewModel {
     // MARK: - Entries
+    
+    var sentEntriesCount: Int {
+           entries.filter { $0.sent }.count
+       }
+    
     func submit(text: String, isOnline: Bool = NetworkMonitor.shared.isConnected) async {
         guard isOnline else {
             print("⏸️ submit skipped: offline")
@@ -49,7 +54,14 @@ extension AppViewModel {
                 let data = doc.data()
                 guard let text = data["text"] as? String else { return nil }
                 let ts = (data["createdAt"] as? Timestamp)?.dateValue()
-                return Entry(id: doc.documentID, text: text, createdAt: ts)
+                let sent = data["sent"] as? Bool ?? false
+
+                return Entry(
+                    id: doc.documentID,
+                    text: text,
+                    createdAt: ts,
+                    sent: sent
+                )
             }
         } catch {
             print("❌ refreshAll error:", error.localizedDescription)
