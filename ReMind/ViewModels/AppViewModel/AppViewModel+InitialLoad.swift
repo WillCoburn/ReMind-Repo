@@ -11,6 +11,8 @@ extension AppViewModel {
     func loadUserAndEntries(_ uid: String?) async {
         guard let uid = uid else {
             detachUserListener()
+            detachUserListener()
+            detachEntriesListener()
             self.user = nil
             self.entries = []
             self.smsOptOut = false
@@ -82,6 +84,7 @@ extension AppViewModel {
         }
 
         attachUserListener(uid)
+        attachEntriesListener(uid)
         await refreshAll()
     }
 

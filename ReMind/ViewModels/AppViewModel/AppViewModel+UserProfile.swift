@@ -89,6 +89,7 @@ extension AppViewModel {
 
         // Clear in-memory + UI state
         detachUserListener()
+        detachEntriesListener()
         self.user = nil
         self.entries = []
         self.smsOptOut = false

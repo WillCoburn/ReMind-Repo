@@ -36,6 +36,9 @@ final class AppViewModel: ObservableObject {
 
     // Live user listener (keeps smsOptOut in sync while the app runs)
     var userListener: ListenerRegistration?
+    
+    // Live entries listener (keeps counts in sync while the app runs)
+    var entriesListener: ListenerRegistration?
 
     // Keep a handle so we can remove the auth listener & avoid warnings.
     private var authHandle: AuthStateDidChangeListenerHandle?

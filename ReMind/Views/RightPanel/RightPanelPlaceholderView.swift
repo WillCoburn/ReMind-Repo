@@ -134,6 +134,7 @@ private extension RightPanelPlaceholderView {
                 .stroke(tint.opacity(0.25), lineWidth: 1)
         )
     }
+
     var sentRemindersTile: some View {
         let tint: Color = .blue
 
