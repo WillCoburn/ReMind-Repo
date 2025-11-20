@@ -57,12 +57,12 @@
 		D2D07BCD2EBC17470078BAB0 /* CodeEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCC2EBC17420078BAB0 /* CodeEntrySection.swift */; };
 		D2D07BCF2EBC175C0078BAB0 /* PhoneField.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCE2EBC17570078BAB0 /* PhoneField.swift */; };
 		D2D07BD32EBC18C30078BAB0 /* AppViewModel+RealTimeUserListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD22EBC18B80078BAB0 /* AppViewModel+RealTimeUserListener.swift */; };
-D2D07BD52EBC18F60078BAB0 /* AppViewModel+InitialLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD42EBC18EE0078BAB0 /* AppViewModel+InitialLoad.swift */; };
-D2D07BD72EBC19100078BAB0 /* AppViewModel+UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD62EBC190A0078BAB0 /* AppViewModel+UserProfile.swift */; };
-D2D07BD92EBC19290078BAB0 /* AppViewModel+Entries.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD82EBC19230078BAB0 /* AppViewModel+Entries.swift */; };
-D2D07BDB2EBC193E0078BAB0 /* AppViewModel+Functions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BDA2EBC19370078BAB0 /* AppViewModel+Functions.swift */; };
-D2D07BDD2EBC19530078BAB0 /* AppViewModel+FeatureTour.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BDC2EBC194A0078BAB0 /* AppViewModel+FeatureTour.swift */; };
-D2D07BDF2EBC1A8D0078BAB0 /* AppViewModel+GodMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BDE2EBC1A860078BAB0 /* AppViewModel+GodMode.swift */; };
+		D2D07BD52EBC18F60078BAB0 /* AppViewModel+InitialLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD42EBC18EE0078BAB0 /* AppViewModel+InitialLoad.swift */; };
+		D2D07BD72EBC19100078BAB0 /* AppViewModel+UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD62EBC190A0078BAB0 /* AppViewModel+UserProfile.swift */; };
+		D2D07BD92EBC19290078BAB0 /* AppViewModel+Entries.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD82EBC19230078BAB0 /* AppViewModel+Entries.swift */; };
+		D2D07BDB2EBC193E0078BAB0 /* AppViewModel+Functions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BDA2EBC19370078BAB0 /* AppViewModel+Functions.swift */; };
+		D2D07BDD2EBC19530078BAB0 /* AppViewModel+FeatureTour.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BDC2EBC194A0078BAB0 /* AppViewModel+FeatureTour.swift */; };
+		D2D07BDF2EBC1A8D0078BAB0 /* AppViewModel+GodMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BDE2EBC1A860078BAB0 /* AppViewModel+GodMode.swift */; };
 		D2D07BDF2EBC1C7F0078BAB0 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BDE2EBC1C760078BAB0 /* NetworkMonitor.swift */; };
 		D2D07BE32EBC1CD70078BAB0 /* OfflineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BE22EBC1CD30078BAB0 /* OfflineBanner.swift */; };
 		D2D07BE52EBC1D2E0078BAB0 /* NetworkAwareModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BE42EBC1D290078BAB0 /* NetworkAwareModifier.swift */; };
@@ -154,10 +154,10 @@ D2D07BDF2EBC1A8D0078BAB0 /* AppViewModel+GodMode.swift in Sources */ = {isa = PB
 		D2D07BD22EBC18B80078BAB0 /* AppViewModel+RealTimeUserListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+RealTimeUserListener.swift"; sourceTree = "<group>"; };
 		D2D07BD42EBC18EE0078BAB0 /* AppViewModel+InitialLoad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+InitialLoad.swift"; sourceTree = "<group>"; };
 		D2D07BD62EBC190A0078BAB0 /* AppViewModel+UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+UserProfile.swift"; sourceTree = "<group>"; };
-D2D07BD82EBC19230078BAB0 /* AppViewModel+Entries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+Entries.swift"; sourceTree = "<group>"; };
-D2D07BDA2EBC19370078BAB0 /* AppViewModel+Functions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+Functions.swift"; sourceTree = "<group>"; };
-D2D07BDC2EBC194A0078BAB0 /* AppViewModel+FeatureTour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+FeatureTour.swift"; sourceTree = "<group>"; };
-D2D07BDE2EBC1A860078BAB0 /* AppViewModel+GodMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+GodMode.swift"; sourceTree = "<group>"; };
+		D2D07BD82EBC19230078BAB0 /* AppViewModel+Entries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+Entries.swift"; sourceTree = "<group>"; };
+		D2D07BDA2EBC19370078BAB0 /* AppViewModel+Functions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+Functions.swift"; sourceTree = "<group>"; };
+		D2D07BDC2EBC194A0078BAB0 /* AppViewModel+FeatureTour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+FeatureTour.swift"; sourceTree = "<group>"; };
+		D2D07BDE2EBC1A860078BAB0 /* AppViewModel+GodMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+GodMode.swift"; sourceTree = "<group>"; };
 		D2D07BDE2EBC1C760078BAB0 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		D2D07BE22EBC1CD30078BAB0 /* OfflineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineBanner.swift; sourceTree = "<group>"; };
 		D2D07BE42EBC1D290078BAB0 /* NetworkAwareModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkAwareModifier.swift; sourceTree = "<group>"; };
@@ -331,6 +331,7 @@ D2D07BDE2EBC1A860078BAB0 /* AppViewModel+GodMode.swift */ = {isa = PBXFileRefere
 		D22EF4792E7B2E9900810204 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				D23CFB002ECECD7F00FEBF3D /* RightPanel */,
 				D23CFAEF2ECAAAB600FEBF3D /* Community */,
 				D23CFAEE2ECAAAA400FEBF3D /* Home */,
 				D2ED48302EC8FAF20030CBA7 /* Design */,
@@ -378,7 +379,6 @@ D2D07BDE2EBC1A860078BAB0 /* AppViewModel+GodMode.swift */ = {isa = PBXFileRefere
 		D23CFAEE2ECAAAA400FEBF3D /* Home */ = {
 			isa = PBXGroup;
 			children = (
-				D23CFAFA2ECAAD3100FEBF3D /* RightPanelPlaceholderView.swift */,
 				D23CFAF22ECAAAF300FEBF3D /* HomePagerView.swift */,
 			);
 			path = Home;
@@ -392,6 +392,14 @@ D2D07BDE2EBC1A860078BAB0 /* AppViewModel+GodMode.swift */ = {isa = PBXFileRefere
 				D23CFAF42ECAAAFC00FEBF3D /* CommunityView.swift */,
 			);
 			path = Community;
+			sourceTree = "<group>";
+		};
+		D23CFB002ECECD7F00FEBF3D /* RightPanel */ = {
+			isa = PBXGroup;
+			children = (
+				D23CFAFA2ECAAD3100FEBF3D /* RightPanelPlaceholderView.swift */,
+			);
+			path = RightPanel;
 			sourceTree = "<group>";
 		};
 		D2BEC25B2E7E19EA009E3698 /* Frameworks */ = {
@@ -417,9 +425,9 @@ D2D07BDE2EBC1A860078BAB0 /* AppViewModel+GodMode.swift */ = {isa = PBXFileRefere
 		D2D07BD02EBC18970078BAB0 /* AppViewModel */ = {
 			isa = PBXGroup;
 			children = (
-D2D07BDC2EBC194A0078BAB0 /* AppViewModel+FeatureTour.swift */,
-D2D07BDE2EBC1A860078BAB0 /* AppViewModel+GodMode.swift */,
-D2D07BDA2EBC19370078BAB0 /* AppViewModel+Functions.swift */,
+				D2D07BDC2EBC194A0078BAB0 /* AppViewModel+FeatureTour.swift */,
+				D2D07BDE2EBC1A860078BAB0 /* AppViewModel+GodMode.swift */,
+				D2D07BDA2EBC19370078BAB0 /* AppViewModel+Functions.swift */,
 				D2D07BD82EBC19230078BAB0 /* AppViewModel+Entries.swift */,
 				D2D07BD62EBC190A0078BAB0 /* AppViewModel+UserProfile.swift */,
 				D2D07BD42EBC18EE0078BAB0 /* AppViewModel+InitialLoad.swift */,
@@ -637,8 +645,8 @@ D2D07BDA2EBC19370078BAB0 /* AppViewModel+Functions.swift */,
 			buildActionMask = 2147483647;
 			files = (
 				D22EF4A02E7B944700810204 /* CompletionCollapseBadge.swift in Sources */,
-D2D07BD52EBC18F60078BAB0 /* AppViewModel+InitialLoad.swift in Sources */,
-D2D07BDF2EBC1A8D0078BAB0 /* AppViewModel+GodMode.swift in Sources */,
+				D2D07BD52EBC18F60078BAB0 /* AppViewModel+InitialLoad.swift in Sources */,
+				D2D07BDF2EBC1A8D0078BAB0 /* AppViewModel+GodMode.swift in Sources */,
 				D2ED48102EC8F2F00030CBA7 /* SettingsHelpers.swift in Sources */,
 				D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
 				D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
