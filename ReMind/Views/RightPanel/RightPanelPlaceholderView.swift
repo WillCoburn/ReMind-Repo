@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct RightPanelPlaceholderView: View {
+    @EnvironmentObject private var appVM: AppViewModel
 
     private let tiles: [PlaceholderTile] = [
-        .init(title: "Focus", subtitle: "Stay on track", icon: "target", tint: .orange, destination: FocusPlaceholderView()),
         .init(title: "Trends", subtitle: "See patterns", icon: "chart.line.uptrend.xyaxis", tint: .blue, destination: TrendsPlaceholderView()),
         .init(title: "Wins", subtitle: "Celebrate", icon: "star.fill", tint: .yellow, destination: WinsPlaceholderView()),
         .init(title: "Habits", subtitle: "Daily steps", icon: "flame.fill", tint: .red, destination: HabitsPlaceholderView()),
@@ -18,6 +18,8 @@ struct RightPanelPlaceholderView: View {
     var body: some View {
         ScrollView {
             LazyVGrid(columns: Array(repeating: .init(.flexible(), spacing: 16), count: 2), spacing: 16) {
+                reminderCountTile
+
                 ForEach(tiles) { tile in
                     NavigationLink(destination: tile.destination) {
                         PlaceholderTileView(tile: tile)
@@ -40,6 +42,7 @@ struct RightPanelPlaceholderView: View {
 struct RightPanelPlaceholderView_Previews: PreviewProvider {
     static var previews: some View {
         RightPanelPlaceholderView()
+            .environmentObject(AppViewModel())
     }
 }
 
@@ -91,6 +94,44 @@ private struct PlaceholderTileView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(tile.tint.opacity(0.25), lineWidth: 1)
+        )
+    }
+}
+
+private extension RightPanelPlaceholderView {
+    var reminderCountTile: some View {
+        let tint: Color = .orange
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: "target")
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundColor(tint)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("ReMinders saved")
+                .font(.headline)
+                .foregroundColor(.primary)
+
+            Text("\(appVM.entries.count)")
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .foregroundStyle(.primary)
+
+            Text("Total so far")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            Spacer()
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .aspectRatio(1, contentMode: .fit)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(tint.opacity(0.12))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(tint.opacity(0.25), lineWidth: 1)
         )
     }
 }
