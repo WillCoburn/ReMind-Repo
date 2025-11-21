@@ -6,6 +6,7 @@ struct CommunityComposerSheet: View {
     @State private var text: String = ""
     @State private var isSubmitting = false
     @State private var errorMessage: String?
+    @FocusState private var isTextEditorFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -17,12 +18,21 @@ struct CommunityComposerSheet: View {
                 TextEditor(text: $text)
                     .frame(minHeight: 160)
                     .padding(8)
+                    .scrollContentBackground(.hidden)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.paletteTealGreen.opacity(0.12))
+                            .fill(Color.communityBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.communityBackground, lineWidth: 3)
+                            )
+                            .compositingGroup()                      // ⬅️ allows overlay to render fully
                     )
-                    .foregroundColor(.palettePewter)
-                
+                    .clipShape(RoundedRectangle(cornerRadius: 12))   // ⬅️ prevents clipping INSIDE the scrollview
+                    .foregroundColor(.black)
+                    .focused($isTextEditorFocused)
+
+
                 Text("Community posts expire automatically after 3 days. Anything rude or offensive will result in a ban.")
                     .font(.footnote)
                     .foregroundColor(.white.opacity(0.9))
@@ -30,7 +40,10 @@ struct CommunityComposerSheet: View {
                 Spacer()
             }
             .padding()
-            .navigationTitle("New Post")
+            .onAppear {
+                // Ask for focus as soon as this view appears
+                isTextEditorFocused = true
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -85,5 +98,4 @@ struct CommunityComposerSheet: View {
             errorMessage = nsError.localizedDescription
         }
     }
-
 }
