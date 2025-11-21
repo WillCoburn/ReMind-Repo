@@ -79,14 +79,26 @@ struct CommunityView: View {
         }
         .navigationTitle("Community")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showComposer = true } label: {
-                    Image(systemName: "square.and.pencil")
-                        .foregroundColor(.paletteTurquoise)
+            .overlay(alignment: .bottomTrailing) {
+                Button {
+                    showComposer = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 56, height: 56)
+                        .background(
+                            Circle()
+                                .fill(Color.palettePewter)
+                        )
+                        .shadow(radius: 4)
                 }
+                .padding(.trailing, 20)
+                .padding(.bottom, 24)
             }
-        }
+            .toolbarBackground(Color.palettePewter, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            
         .sheet(isPresented: $showComposer) {
             CommunityComposerSheet()
         }
