@@ -19,6 +19,7 @@
 		D21FF4CF2ECED6A20054E7F8 /* SleepPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D21FF4CE2ECED69E0054E7F8 /* SleepPlaceholderView.swift */; };
 		D21FF4D12ECED6B70054E7F8 /* TrendsPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D21FF4D02ECED6B20054E7F8 /* TrendsPlaceholderView.swift */; };
 		D21FF4D32ECED6C80054E7F8 /* WinsPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D21FF4D22ECED6C40054E7F8 /* WinsPlaceholderView.swift */; };
+		D21FF4D62ECFC7490054E7F8 /* Color+Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = D21FF4D52ECFC7440054E7F8 /* Color+Palette.swift */; };
 		D22EF44B2E78EA0700810204 /* ReMindApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22EF44A2E78EA0700810204 /* ReMindApp.swift */; };
 		D22EF44F2E78EA0800810204 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D22EF44E2E78EA0800810204 /* Assets.xcassets */; };
 		D22EF4532E78EA0800810204 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D22EF4522E78EA0800810204 /* Preview Assets.xcassets */; };
@@ -131,6 +132,7 @@
 		D21FF4CE2ECED69E0054E7F8 /* SleepPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepPlaceholderView.swift; sourceTree = "<group>"; };
 		D21FF4D02ECED6B20054E7F8 /* TrendsPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsPlaceholderView.swift; sourceTree = "<group>"; };
 		D21FF4D22ECED6C40054E7F8 /* WinsPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinsPlaceholderView.swift; sourceTree = "<group>"; };
+		D21FF4D52ECFC7440054E7F8 /* Color+Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Palette.swift"; sourceTree = "<group>"; };
 		D22EF4472E78EA0700810204 /* ReMind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReMind.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D22EF44A2E78EA0700810204 /* ReMindApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindApp.swift; sourceTree = "<group>"; };
 		D22EF44E2E78EA0800810204 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -537,6 +539,7 @@
 		D2ED48302EC8FAF20030CBA7 /* Design */ = {
 			isa = PBXGroup;
 			children = (
+				D21FF4D52ECFC7440054E7F8 /* Color+Palette.swift */,
 				D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */,
 			);
 			path = Design;
@@ -696,6 +699,7 @@
 				D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */,
 				D2ED48292EC8F9390030CBA7 /* EntryComposer.swift in Sources */,
 				D2D07BEE2EC3F6730078BAB0 /* PaywallConfig.swift in Sources */,
+				D21FF4D62ECFC7490054E7F8 /* Color+Palette.swift in Sources */,
 				D21FF4BD2ECED5BB0054E7F8 /* ActivityPlaceholderView.swift in Sources */,
 				D2ED48122EC8F3270030CBA7 /* SettingsHeaderBar.swift in Sources */,
 				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,

@@ -29,9 +29,10 @@ struct RightPanelPlaceholderView: View {
         .navigationTitle("Stats & Settings")
         .navigationBarTitleDisplayMode(.inline)
         .background(
-            Color(hex: "#65cfc1")
+            Color.paletteTealGreen
                 .ignoresSafeArea()
         )
+        .foregroundColor(.palettePewter)
     }
 
 
@@ -46,11 +47,14 @@ struct RightPanelPlaceholderView: View {
         )
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.paletteTurquoise.opacity(0.18))
+        )
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
+                .strokeBorder(Color.paletteTurquoise.opacity(0.4), lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
     }
@@ -80,7 +84,7 @@ struct RightPanelPlaceholderView_Previews: PreviewProvider {
 
 private extension RightPanelPlaceholderView {
     var reminderCountTile: some View {
-        let tint: Color = .orange
+        let tint: Color = .paletteTealGreen
 
         return VStack(alignment: .leading, spacing: 8) {
             Image(systemName: "target")
@@ -90,15 +94,15 @@ private extension RightPanelPlaceholderView {
 
             Text("ReMinders saved")
                 .font(.headline)
-                .foregroundColor(.primary)
+                .foregroundColor(.palettePewter)
 
             Text("\(appVM.entries.count)")
                 .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.palettePewter)
 
             Text("Total so far")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.palettePewter.opacity(0.85))
 
             Spacer()
         }
@@ -116,7 +120,7 @@ private extension RightPanelPlaceholderView {
     }
 
     var sentRemindersTile: some View {
-        let tint: Color = .blue
+        let tint: Color = .paletteTealGreen
 
         return VStack(alignment: .leading, spacing: 8) {
             Image(systemName: "chart.line.uptrend.xyaxis")
@@ -126,15 +130,15 @@ private extension RightPanelPlaceholderView {
 
             Text("ReMinders sent")
                 .font(.headline)
-                .foregroundColor(.primary)
+                .foregroundColor(.palettePewter)
 
             Text("\(appVM.sentEntriesCount)")
                 .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.palettePewter)
 
             Text("Delivered via auto + instant")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.palettePewter.opacity(0.85))
 
             Spacer()
         }

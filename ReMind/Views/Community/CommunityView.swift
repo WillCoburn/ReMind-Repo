@@ -18,18 +18,20 @@ struct CommunityView: View {
 
     var body: some View {
         ZStack {
-            Color.communityBackground.ignoresSafeArea()
+            Color.paletteTealGreen.ignoresSafeArea()
 
             if isLoading {
                 ProgressView("Loading community…")
+                    .tint(.paletteTurquoise)
 
             } else if let errorMessage, !errorMessage.isEmpty {
                 VStack(spacing: 8) {
                     Text("Something went wrong")
+                        .foregroundColor(.palettePewter)
                         .font(.headline)
                     Text(errorMessage)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.palettePewter.opacity(0.8))
                 }
                 .padding()
 
@@ -40,9 +42,10 @@ struct CommunityView: View {
                     }
                     Text("No posts yet")
                         .font(.headline)
+                        .foregroundColor(.palettePewter)
                     Text("Be the first to share a reminder with the community.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.palettePewter.opacity(0.8))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                 }
@@ -80,6 +83,7 @@ struct CommunityView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button { showComposer = true } label: {
                     Image(systemName: "square.and.pencil")
+                        .foregroundColor(.paletteTurquoise)
                 }
             }
         }
@@ -250,9 +254,9 @@ private struct GodModeBanner: View {
 
 extension Color {
     static let communityBackground = Color(
-        red: 101.0 / 255.0,
-        green: 207.0 / 255.0,
-        blue: 193.0 / 255.0
+        red: 252.0 / 255.0,
+        green: 248.0 / 255.0,
+        blue: 246.0 / 255.0
     )
 }
 

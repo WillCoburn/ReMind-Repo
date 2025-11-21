@@ -13,13 +13,13 @@ struct CommunityPostRow: View {
 
             Text(post.text)
                 .font(.body)
-                .foregroundColor(.primary)
+                .foregroundColor(.black)
 
             // Timestamp
             HStack(spacing: 12) {
                 Label(timeAgoString(from: post.createdAt), systemImage: "clock")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.gray.opacity(0.9))
 
                 Spacer()
             }
@@ -41,9 +41,9 @@ struct CommunityPostRow: View {
                     .padding(.vertical, 6)
                     .background(
                         Capsule(style: .continuous)
-                            .fill(isLiked ? Color.accentColor.opacity(0.15) : Color(.systemGray5))
+                            .fill(Color.paletteTurquoise.opacity(isLiked ? 0.3 : 0.15))
                     )
-                    .foregroundColor(isLiked ? Color.accentColor : Color(.tertiaryLabel))
+                    .foregroundColor(.palettePewter)
                 }
                 .buttonStyle(PlainButtonStyle())
 
@@ -60,9 +60,9 @@ struct CommunityPostRow: View {
                     .padding(.vertical, 6)
                     .background(
                         Capsule(style: .continuous)
-                            .fill(isReported ? Color.red.opacity(0.15) : Color(.systemGray5))
+                            .fill(Color.paletteTurquoise.opacity(isReported ? 0.3 : 0.15))
                     )
-                    .foregroundColor(isReported ? .red : Color(.tertiaryLabel))
+                    .foregroundColor(.palettePewter)
                 }
                 .buttonStyle(PlainButtonStyle())
 
@@ -72,7 +72,7 @@ struct CommunityPostRow: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
+                .fill(Color.paletteIvory.opacity(0.9))
         )
     }
 

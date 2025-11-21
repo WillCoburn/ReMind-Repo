@@ -32,9 +32,11 @@ struct EntryComposer: View {
                     ProgressView()
                         .progressViewStyle(.circular)
                         .frame(width: 32, height: 32)
+                        .tint(.paletteTealGreen)
                 } else {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 32))
+                        .foregroundColor(.paletteTealGreen)
                 }
             }
             .disabled(isDisabled)

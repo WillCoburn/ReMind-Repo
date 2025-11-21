@@ -37,7 +37,7 @@ struct MainView: View {
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected || !active
 
         ZStack {
-            Color(hex: "#65cfc1")
+            Color.paletteIvory
                 .ignoresSafeArea()
 
             // 🔹 Background now handled *here* so it only affects MainView.
@@ -133,6 +133,7 @@ struct MainView: View {
         .onAppear {
             RevenueCatManager.shared.recomputeAndPersistActive()
         }
+        .tint(.paletteTealGreen)
     }
 
     // MARK: - Background just for MainView
@@ -152,7 +153,7 @@ struct MainView: View {
                     .overlay(Color.black.opacity(0.15)) // subtle contrast for readability
                     .ignoresSafeArea()
             } else {
-                Color(hex: "#0A1222")
+                Color.paletteIvory
                     .frame(
                         width: max(proxy.size.width, 1),
                         height: max(proxy.size.height, 1)

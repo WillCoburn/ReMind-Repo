@@ -12,18 +12,20 @@ struct CommunityComposerSheet: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Share a reminder with the community.")
                     .font(.headline)
+                    .foregroundColor(.palettePewter)
 
                 TextEditor(text: $text)
                     .frame(minHeight: 160)
                     .padding(8)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.secondarySystemBackground))
+                            .fill(Color.paletteTealGreen.opacity(0.12))
                     )
+                    .foregroundColor(.palettePewter)
                 
                 Text("Community posts expire automatically after 3 days and can be liked or reported by anyone in the feed.")
                     .font(.footnote)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.palettePewter.opacity(0.9))
 
                 Spacer()
             }
@@ -33,6 +35,7 @@ struct CommunityComposerSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .foregroundColor(.paletteTurquoise)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -40,11 +43,13 @@ struct CommunityComposerSheet: View {
                     } label: {
                         if isSubmitting {
                             ProgressView()
+                                .tint(.paletteTurquoise)
                         } else {
                             Text("Post")
                         }
                     }
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting)
+                    .foregroundColor(.paletteTurquoise)
                 }
             }
             .alert(
@@ -61,7 +66,7 @@ struct CommunityComposerSheet: View {
                 }
             )
         }
-        .background(Color.communityBackground.ignoresSafeArea())
+        .background(Color.paletteTurquoise.ignoresSafeArea())
     }
 
     private func handleSubmit() async {
