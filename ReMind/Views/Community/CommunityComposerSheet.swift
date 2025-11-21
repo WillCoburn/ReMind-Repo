@@ -10,9 +10,9 @@ struct CommunityComposerSheet: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Share a reminder with the community.")
+                Text("Share something you found uplifting or meaningful.")
                     .font(.headline)
-                    .foregroundColor(.palettePewter)
+                    .foregroundColor(.white)
 
                 TextEditor(text: $text)
                     .frame(minHeight: 160)
@@ -23,9 +23,9 @@ struct CommunityComposerSheet: View {
                     )
                     .foregroundColor(.palettePewter)
                 
-                Text("Community posts expire automatically after 3 days and can be liked or reported by anyone in the feed.")
+                Text("Community posts expire automatically after 3 days. Anything rude or offensive will result in a ban.")
                     .font(.footnote)
-                    .foregroundColor(.palettePewter.opacity(0.9))
+                    .foregroundColor(.white.opacity(0.9))
 
                 Spacer()
             }

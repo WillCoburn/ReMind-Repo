@@ -15,6 +15,7 @@ struct CommunityView: View {
     @State private var reportedPostIds: Set<String> = []
 
     @State private var listener: ListenerRegistration?
+    @State private var isAtTop = true
 
     var body: some View {
         ZStack {
@@ -58,6 +59,12 @@ struct CommunityView: View {
                 }
 
                 ScrollView {
+                    GeometryReader { proxy in
+                        Color.clear
+                            .preference(key: ScrollOffsetPreferenceKey.self,
+                                        value: proxy.frame(in: .named("communityScroll")).minY)
+                    }
+                    .frame(height: 0)
                     LazyVStack(spacing: 16) {
                         ForEach(posts) { post in
                             CommunityPostRow(
@@ -75,29 +82,33 @@ struct CommunityView: View {
                 .refreshable {
                     await refreshFeed()
                 }
+                .coordinateSpace(name: "communityScroll")
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { minY in
+                    isAtTop = minY >= 0
+                }
             }
         }
         .navigationTitle("Community")
         .navigationBarTitleDisplayMode(.inline)
-            .overlay(alignment: .bottomTrailing) {
-                Button {
-                    showComposer = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 56, height: 56)
-                        .background(
-                            Circle()
-                                .fill(Color.palettePewter)
-                        )
-                        .shadow(radius: 4)
-                }
-                .padding(.trailing, 20)
-                .padding(.bottom, 24)
+        .overlay(alignment: .bottomTrailing) {
+            Button {
+                showComposer = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 56, height: 56)
+                    .background(
+                        Circle()
+                            .fill(Color.palettePewter)
+                    )
+                    .shadow(radius: 4)
             }
-            .toolbarBackground(Color.palettePewter, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .padding(.trailing, 20)
+            .padding(.bottom, 24)
+        }
+        .toolbarBackground(isAtTop ? Color.paletteTealGreen : Color.palettePewter, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
             
         .sheet(isPresented: $showComposer) {
             CommunityComposerSheet()
@@ -261,6 +272,15 @@ private struct GodModeBanner: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color(.tertiarySystemFill))
         )
+    }
+}
+
+
+private struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 
