@@ -13,6 +13,35 @@ extension AppViewModel {
           entries.filter { $0.sent }.count
       }
 
+    var streakCount: Int {
+          let calendar = Calendar.current
+          let today = calendar.startOfDay(for: Date())
+
+          let entryDays: Set<Date> = Set(
+              entries.compactMap { entry in
+                  guard let createdAt = entry.createdAt else { return nil }
+                  return calendar.startOfDay(for: createdAt)
+              }
+          )
+
+          guard entryDays.contains(today) else { return 0 }
+
+          var streak = 0
+          var currentDay = today
+
+          while entryDays.contains(currentDay) {
+              streak += 1
+
+              guard let previousDay = calendar.date(byAdding: .day, value: -1, to: currentDay) else {
+                  break
+              }
+
+              currentDay = previousDay
+          }
+
+          return streak
+      }
+    
       func attachEntriesListener(_ uid: String) {
           entriesListener?.remove()
           entriesListener = db.collection("users")

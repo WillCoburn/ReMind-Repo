@@ -15,11 +15,12 @@ struct RightPanelPlaceholderView: View {
         ScrollView {
             VStack(spacing: 20) {
                 LazyVGrid(
-                    columns: Array(repeating: .init(.flexible(), spacing: 16), count: 2),
-                    spacing: 16
+                    columns: Array(repeating: .init(.flexible(), spacing: 12), count: 3),
+                    spacing: 12
                 ) {
-                    reminderCountTile
                     sentRemindersTile
+                    streakTile
+                    reminderCountTile
                 }
                 .padding(.horizontal)
 
@@ -149,6 +150,45 @@ private extension RightPanelPlaceholderView {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .foregroundColor(.paletteIvory)
             
+            Spacer()
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .aspectRatio(1, contentMode: .fit)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.palettePewter.opacity(0.9))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(tint.opacity(0.25), lineWidth: 1)
+        )
+    }
+    
+    // MARK: - STREAK TILE
+    var streakTile: some View {
+        let tint: Color = .palettePewter
+
+        return VStack(spacing: 12) {
+
+            // Centered icon
+            Image(systemName: "flame.fill")
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundColor(.paletteIvory)
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            // Centered "Streaks" text
+            Text("Streaks")
+                .font(.headline)
+                .foregroundColor(.paletteIvory)
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            // Centered big number
+            Text("\(appVM.streakCount)")
+                .font(.system(size: 44, weight: .bold, design: .rounded))
+                .frame(maxWidth: .infinity, alignment: .center)
+                .foregroundColor(.paletteIvory)
+
             Spacer()
         }
         .padding()
