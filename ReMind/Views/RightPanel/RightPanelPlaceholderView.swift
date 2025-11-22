@@ -18,9 +18,10 @@ struct RightPanelPlaceholderView: View {
                     columns: Array(repeating: .init(.flexible(), spacing: 12), count: 3),
                     spacing: 12
                 ) {
-                    sentRemindersTile
-                    streakTile
+                    // Order: Saved (left), Streak (middle), Sent (right)
                     reminderCountTile
+                    streakTile
+                    sentRemindersTile
                 }
                 .padding(.horizontal)
 
@@ -88,7 +89,7 @@ struct RightPanelPlaceholderView_Previews: PreviewProvider {
 
 private extension RightPanelPlaceholderView {
     
-    // MARK: - SAVED TILE
+    // MARK: - SAVED TILE (left)
     var reminderCountTile: some View {
         let tint: Color = .palettePewter
         
@@ -118,7 +119,7 @@ private extension RightPanelPlaceholderView {
         .frame(height: 130) // consistent height for all three tiles
     }
     
-    // MARK: - SENT TILE
+    // MARK: - SENT TILE (right)
     var sentRemindersTile: some View {
         let tint: Color = .palettePewter
         
@@ -127,7 +128,7 @@ private extension RightPanelPlaceholderView {
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundColor(.paletteIvory)
 
-            Text("Sent")
+            Text("Recieved")
                 .font(.headline)
                 .foregroundColor(.paletteIvory)
 
@@ -148,7 +149,7 @@ private extension RightPanelPlaceholderView {
         .frame(height: 130)
     }
     
-    // MARK: - STREAK TILE
+    // MARK: - STREAK TILE (middle)
     var streakTile: some View {
         let tint: Color = .palettePewter
 
