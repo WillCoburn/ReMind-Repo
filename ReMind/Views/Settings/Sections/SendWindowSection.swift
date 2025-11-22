@@ -13,8 +13,8 @@ struct SendWindowSection: View {
         Binding(
             get: { startHour ... endHour },
             set: { r in
-                startHour = max(0, min(23, r.lowerBound))
-                endHour   = max(0, min(23, r.upperBound))
+                startHour = max(0, min(24, r.lowerBound))
+                endHour   = max(0, min(24, r.upperBound))
             }
         )
     }
@@ -33,7 +33,7 @@ struct SendWindowSection: View {
             VStack(spacing: 12) {
                 RangeSlider(
                     value: binding,
-                    in: 0.0...23.0,
+                    in: 0.0...24.0,
                     step: 1.0,
                 )
 

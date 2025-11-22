@@ -5,8 +5,8 @@ struct RightPanelPlaceholderView: View {
 
     @AppStorage("remindersPerWeek") private var remindersPerWeek: Double = 7.0 // 1...20
     @AppStorage("tzIdentifier")    private var tzIdentifier: String = TimeZone.current.identifier
-    @AppStorage("quietStartHour")  private var quietStartHour: Double = 9     // 0...23
-    @AppStorage("quietEndHour")    private var quietEndHour: Double = 22      // 0...23
+    @AppStorage("quietStartHour")  private var quietStartHour: Double = 9     // 0...24
+    @AppStorage("quietEndHour")    private var quietEndHour: Double = 22      // 0...24
     @AppStorage("bgImageBase64")   private var bgImageBase64: String = ""
 
     @State private var pendingSaveWorkItem: DispatchWorkItem?

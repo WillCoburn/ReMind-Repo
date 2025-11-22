@@ -9,8 +9,8 @@ import FirebaseFunctions
 struct UserSettings: Codable {
     var remindersPerWeek: Double
     var tzIdentifier: String
-    var quietStartHour: Int    // 0...23
-    var quietEndHour: Int      // 0...23
+    var quietStartHour: Int    // 0...24
+    var quietEndHour: Int      // 0...24
 }
 
 enum UserSettingsSync {
@@ -28,8 +28,8 @@ enum UserSettingsSync {
         return .init(
             remindersPerWeek: weekly,
             tzIdentifier: d.string(forKey: "tzIdentifier") ?? TimeZone.current.identifier,
-            quietStartHour: max(0, min(23, Int(round(d.double(forKey: "quietStartHour"))))),
-            quietEndHour:  max(0, min(23, Int(round(d.double(forKey: "quietEndHour")))))
+            quietStartHour: max(0, min(24, Int(round(d.double(forKey: "quietStartHour"))))),
+            quietEndHour:  max(0, min(24, Int(round(d.double(forKey: "quietEndHour")))))
         )
     }
 
