@@ -128,11 +128,11 @@ private extension RightPanelPlaceholderView {
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundColor(.paletteIvory)
 
-            Text("Recieved")
+            Text("Received")
                 .font(.headline)
                 .foregroundColor(.paletteIvory)
 
-            Text("\(appVM.sentEntriesCount)")
+            Text("\(appVM.user?.receivedCount ?? appVM.sentEntriesCount)")
                 .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.paletteIvory)
         }

@@ -3,11 +3,13 @@
 // ============================
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import {
+  admin,
   db,
   logger,
   applyOptOut,
   isTwilioStopError,
   pickEntry,
+  incrementReceivedCount,
   TWILIO_SID,
   TWILIO_AUTH,
   TWILIO_FROM,
@@ -49,7 +51,8 @@ export const sendOneNow = onCall(
       if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
 
       // Pick entry
-      const body = await pickEntry(uid);
+      const picked = await pickEntry(uid);
+      const body = picked?.body;
       if (!body) throw new HttpsError("failed-precondition", "No entries available.");
 
       // Send via Twilio
@@ -65,17 +68,8 @@ export const sendOneNow = onCall(
 
       // Mark matching unsent entry as sent (best-effort)
       try {
-        const match = await db
-          .collection(`users/${uid}/entries`)
-          .where("text", "==", body)
-          .where("sent", "==", false)
-          .orderBy("createdAt", "desc")
-          .limit(1)
-          .get();
-
-        if (!match.empty) {
-          const admin = await import("firebase-admin");
-          await match.docs[0].ref.update({
+        if (picked?.ref) {
+          await picked.ref.update({
             sent: true,
             sentAt: admin.firestore.FieldValue.serverTimestamp(),
             deliveredVia: "sms",
@@ -88,6 +82,15 @@ export const sendOneNow = onCall(
         logger.warn("[sendOneNow] failed to mark entry sent", {
           uid,
           message: markErr?.message,
+        });
+      }
+
+      try {
+        await incrementReceivedCount(uid);
+      } catch (metricErr: any) {
+        logger.warn("[sendOneNow] failed to increment receivedCount", {
+          uid,
+          message: metricErr?.message,
         });
       }
 

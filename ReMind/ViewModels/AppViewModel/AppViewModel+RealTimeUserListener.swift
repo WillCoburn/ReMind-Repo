@@ -19,6 +19,7 @@ extension AppViewModel {
                 let updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue()
                 let trialEndsAt = (data["trialEndsAt"] as? Timestamp)?.dateValue()
                 let active = data["active"] as? Bool
+                let receivedCount = data["receivedCount"] as? Int ?? 0
 
                 // Build updated profile
                 let updatedProfile = UserProfile(
@@ -27,7 +28,8 @@ extension AppViewModel {
                     createdAt: createdAt,
                     updatedAt: updatedAt,
                     trialEndsAt: trialEndsAt,
-                    active: active
+                    active: active,
+                    receivedCount: receivedCount
                 )
 
                 self.user = updatedProfile

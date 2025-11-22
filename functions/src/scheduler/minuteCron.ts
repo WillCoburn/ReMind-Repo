@@ -9,6 +9,7 @@ import {
   scheduleNext,
   hasAtLeastEntries,
   pickEntry,
+  incrementReceivedCount,
   applyOptOut,
   isTwilioStopError,
   TWILIO_SID,
@@ -89,7 +90,8 @@ export const minuteCron = onSchedule(
           continue;
         }
 
-        const body = await pickEntry(uid);
+        const picked = await pickEntry(uid);
+        const body = picked?.body;
         if (!body) {
           await scheduleNext(uid, new Date());
           continue;
@@ -119,6 +121,31 @@ export const minuteCron = onSchedule(
         }
 
         await db.doc(`users/${uid}`).set({ active: true, smsOptOut: false }, { merge: true });
+
+        try {
+          if (picked?.ref) {
+            await picked.ref.update({
+              sent: true,
+              sentAt: admin.firestore.FieldValue.serverTimestamp(),
+              deliveredVia: "auto",
+              scheduledFor: null,
+            });
+          }
+        } catch (markErr: any) {
+          logger.warn("[minuteCron] failed to mark entry sent", {
+            uid,
+            message: markErr?.message,
+          });
+        }
+
+        try {
+          await incrementReceivedCount(uid);
+        } catch (metricErr: any) {
+          logger.warn("[minuteCron] failed to increment receivedCount", {
+            uid,
+            message: metricErr?.message,
+          });
+        }
 
         await scheduleNext(uid, new Date());
       } catch (e: any) {
