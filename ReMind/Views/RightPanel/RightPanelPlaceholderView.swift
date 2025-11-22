@@ -157,13 +157,17 @@ private extension RightPanelPlaceholderView {
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundColor(.paletteIvory)
 
-            Text("Streaks")
+            Text("Entry Streak")
                 .font(.headline)
                 .foregroundColor(.paletteIvory)
 
             Text("\(appVM.streakCount)")
                 .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.paletteIvory)
+            
+            Text("days in a row")
+                .font(.subheadline)
+                .foregroundColor(.paletteIvory.opacity(0.75))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.vertical, 12)

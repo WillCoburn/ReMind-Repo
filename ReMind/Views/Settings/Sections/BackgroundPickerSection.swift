@@ -56,9 +56,6 @@ struct BackgroundPickerSection: View {
                     .foregroundStyle(.red)
             }
 
-            Text("Pick a photo to personalize your app background.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
         }
     }
 

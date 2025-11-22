@@ -14,29 +14,26 @@ extension AppViewModel {
       }
 
     var streakCount: Int {
-          let calendar = Calendar.current
-          let today = calendar.startOfDay(for: Date())
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
 
-          let entryDays: Set<Date> = Set(
-              entries.compactMap { entry in
-                  guard let createdAt = entry.createdAt else { return nil }
-                  return calendar.startOfDay(for: createdAt)
-              }
-          )
+        let uniqueDays = Set(
+            entries.compactMap { entry in
+                guard let createdAt = entry.createdAt else { return nil }
+                return calendar.startOfDay(for: createdAt)
+            }
+        ).sorted(by: >)
 
-          guard entryDays.contains(today) else { return 0 }
+        guard let mostRecentDay = uniqueDays.first, mostRecentDay == today else { return 0 }
 
-          var streak = 0
-          var currentDay = today
+        var streak = 1
 
-          while entryDays.contains(currentDay) {
-              streak += 1
+        for day in uniqueDays.dropFirst() {
+            let dayDifference = calendar.dateComponents([.day], from: day, to: today).day ?? 0
 
-              guard let previousDay = calendar.date(byAdding: .day, value: -1, to: currentDay) else {
-                  break
-              }
+            guard dayDifference == streak else { break }
 
-              currentDay = previousDay
+            streak += 1
           }
 
           return streak
