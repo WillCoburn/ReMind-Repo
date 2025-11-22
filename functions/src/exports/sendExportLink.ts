@@ -10,6 +10,7 @@ import {
   db,
   applyOptOut,
   isTwilioStopError,
+  incrementReceivedCount,
   TWILIO_SID,
   TWILIO_AUTH,
   TWILIO_FROM,
@@ -133,6 +134,14 @@ export const sendExportLink = onCall(
       }
 
       // 6) (Optional) You could record an export log here if desired.
+      try {
+        await incrementReceivedCount(uid);
+      } catch (metricErr: any) {
+        logger.warn("[sendExportLink] failed to increment receivedCount", {
+          uid,
+          message: metricErr?.message,
+        });
+      }
 
       return { ok: true, path, link, messageSid };
     } catch (e: any) {

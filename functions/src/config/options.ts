@@ -154,12 +154,17 @@ function isTwilioStopError(err: any) {
 }
 
 type PickOpts = {
-  cutoffDays?: number;           // default 7 
+  cutoffDays?: number;           // default 7
   allowRecentFallback?: boolean; // default false
   now?: Date;
 };
 
-async function pickEntry(uid: string, opts: PickOpts = {}) {
+type PickResult = {
+  body: string;
+  ref: FirebaseFirestore.DocumentReference | null;
+};
+
+async function pickEntry(uid: string, opts: PickOpts = {}): Promise<PickResult | null> {
   const cutoffDays = opts.cutoffDays ?? 7;
   const allowRecentFallback = opts.allowRecentFallback ?? false;
   const now = opts.now ?? new Date();
@@ -180,7 +185,8 @@ async function pickEntry(uid: string, opts: PickOpts = {}) {
     const docs = qs.docs;
     const chosen = docs[Math.floor(Math.random() * docs.length)];
     const data = chosen.data() as any;
-    return (data.text ?? data.content ?? "").toString().trim() || null;
+    const body = (data.text ?? data.content ?? "").toString().trim() || null;
+    return body ? { body, ref: chosen.ref } : null;
   }
 
   // 2) Any entries older than cutoff (even if sent)
@@ -195,7 +201,8 @@ async function pickEntry(uid: string, opts: PickOpts = {}) {
     const docs = qs.docs;
     const chosen = docs[Math.floor(Math.random() * docs.length)];
     const data = chosen.data() as any;
-    return (data.text ?? data.content ?? "").toString().trim() || null;
+    const body = (data.text ?? data.content ?? "").toString().trim() || null;
+    return body ? { body, ref: chosen.ref } : null;
   }
 
   // 3) Optional: recent UNSENT (for new/active users)
@@ -211,7 +218,8 @@ async function pickEntry(uid: string, opts: PickOpts = {}) {
       const docs = qs.docs;
       const chosen = docs[Math.floor(Math.random() * docs.length)];
       const data = chosen.data() as any;
-      return (data.text ?? data.content ?? "").toString().trim() || null;
+      const body = (data.text ?? data.content ?? "").toString().trim() || null;
+      return body ? { body, ref: chosen.ref } : null;
     }
   }
 
@@ -226,11 +234,18 @@ async function pickEntry(uid: string, opts: PickOpts = {}) {
     const docs = qs.docs;
     const chosen = docs[Math.floor(Math.random() * docs.length)];
     const data = chosen.data() as any;
-    return (data.text ?? data.content ?? "").toString().trim() || null;
+    const body = (data.text ?? data.content ?? "").toString().trim() || null;
+    return body ? { body, ref: chosen.ref } : null;
   }
 
   // No entries at all
   return null;
+}
+
+async function incrementReceivedCount(uid: string) {
+  await db
+    .doc(`users/${uid}`)
+    .set({ receivedCount: admin.firestore.FieldValue.increment(1) }, { merge: true });
 }
 
 
@@ -265,6 +280,7 @@ export {
   loadSettings,
   scheduleNext,
   pickEntry,
+  incrementReceivedCount,
   // user helpers
   findUserByPhone,
   applyOptOut,
