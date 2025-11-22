@@ -29,8 +29,13 @@ struct RightPanelPlaceholderView: View {
             }
             .padding(.vertical, 16)
         }
-        .navigationTitle("Stats & Settings")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("Stats & Settings")
+                    .font(.headline)
+            }
+        }
         .background(
             Color.momGreen.ignoresSafeArea()
         )

@@ -88,8 +88,13 @@ struct CommunityView: View {
                 }
             }
         }
-        .navigationTitle("Community")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+         .toolbar {
+             ToolbarItem(placement: .principal) {
+                 Text("Community")
+                     .font(.headline)
+             }
+         }
         .overlay(alignment: .bottomTrailing) {
             Button {
                 showComposer = true
