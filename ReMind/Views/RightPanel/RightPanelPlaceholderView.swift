@@ -30,10 +30,9 @@ struct RightPanelPlaceholderView: View {
             .padding(.vertical, 16)
         }
         .navigationTitle("Stats & Settings")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .background(
-            Color.paletteTealGreen
-                .ignoresSafeArea()
+            Color.momGreen.ignoresSafeArea()
         )
         .foregroundColor(.palettePewter)
     }
@@ -84,123 +83,93 @@ struct RightPanelPlaceholderView_Previews: PreviewProvider {
 
 private extension RightPanelPlaceholderView {
     
-    
-    
     // MARK: - SAVED TILE
     var reminderCountTile: some View {
         let tint: Color = .palettePewter
         
-        return VStack(spacing: 12) {
-            
-            // Centered icon
+        return VStack(spacing: 8) {
             Image(systemName: "tray.full.fill")
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundColor(.paletteIvory)
-                .frame(maxWidth: .infinity, alignment: .center)
-            
-            // Centered "Saved" text
+
             Text("Saved")
                 .font(.headline)
                 .foregroundColor(.paletteIvory)
-                .frame(maxWidth: .infinity, alignment: .center)
-            
-            // Centered big number
+
             Text("\(appVM.entries.count)")
-                .font(.system(size: 44, weight: .bold, design: .rounded))
-                .frame(maxWidth: .infinity, alignment: .center)
+                .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.paletteIvory)
-            
-            Spacer()
         }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.palettePewter.opacity(0.9))
+                .fill(Color.blue.opacity(0.9))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(tint.opacity(0.25), lineWidth: 1)
         )
+        .frame(height: 130) // consistent height for all three tiles
     }
-    
     
     // MARK: - SENT TILE
     var sentRemindersTile: some View {
         let tint: Color = .palettePewter
         
-        return VStack(spacing: 12) {
-            
-            // Centered icon
+        return VStack(spacing: 8) {
             Image(systemName: "bubble.left.and.bubble.right.fill")
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundColor(.paletteIvory)
-                .frame(maxWidth: .infinity, alignment: .center)
-            
-            // Centered "Sent" text
+
             Text("Sent")
                 .font(.headline)
                 .foregroundColor(.paletteIvory)
-                .frame(maxWidth: .infinity, alignment: .center)
-            
-            // Centered big number
+
             Text("\(appVM.sentEntriesCount)")
-                .font(.system(size: 44, weight: .bold, design: .rounded))
-                .frame(maxWidth: .infinity, alignment: .center)
+                .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.paletteIvory)
-            
-            Spacer()
         }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.palettePewter.opacity(0.9))
+                .fill(Color.blue.opacity(0.9))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(tint.opacity(0.25), lineWidth: 1)
         )
+        .frame(height: 130)
     }
     
     // MARK: - STREAK TILE
     var streakTile: some View {
         let tint: Color = .palettePewter
 
-        return VStack(spacing: 12) {
-
-            // Centered icon
+        return VStack(spacing: 8) {
             Image(systemName: "flame.fill")
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundColor(.paletteIvory)
-                .frame(maxWidth: .infinity, alignment: .center)
 
-            // Centered "Streaks" text
             Text("Streaks")
                 .font(.headline)
                 .foregroundColor(.paletteIvory)
-                .frame(maxWidth: .infinity, alignment: .center)
 
-            // Centered big number
             Text("\(appVM.streakCount)")
-                .font(.system(size: 44, weight: .bold, design: .rounded))
-                .frame(maxWidth: .infinity, alignment: .center)
+                .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.paletteIvory)
-
-            Spacer()
         }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.palettePewter.opacity(0.9))
+                .fill(Color.orange.opacity(0.9))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(tint.opacity(0.25), lineWidth: 1)
         )
+        .frame(height: 130)
     }
 }

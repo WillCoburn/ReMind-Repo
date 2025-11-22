@@ -10,4 +10,10 @@ extension Color {
     
     //purple
     static let palettePewter = Color(hex: "#7B78F7")
+    
+    //mom green
+    static let momGreen = Color(hex: "#73D962")
+    
+    //mom yellow
+    static let momYellow = Color(hex: "FFED29")
 }

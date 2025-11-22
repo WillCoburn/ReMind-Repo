@@ -19,7 +19,7 @@ struct CommunityView: View {
 
     var body: some View {
         ZStack {
-            Color.paletteTealGreen.ignoresSafeArea()
+            Color.blue.ignoresSafeArea()
 
             if isLoading {
                 ProgressView("Loading community…")
@@ -89,7 +89,7 @@ struct CommunityView: View {
             }
         }
         .navigationTitle("Community")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .overlay(alignment: .bottomTrailing) {
             Button {
                 showComposer = true
@@ -107,7 +107,7 @@ struct CommunityView: View {
             .padding(.trailing, 20)
             .padding(.bottom, 24)
         }
-        .toolbarBackground(isAtTop ? Color.paletteTealGreen : Color.palettePewter, for: .navigationBar)
+        .toolbarBackground(isAtTop ? Color.blue : Color.palettePewter, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
             
         .sheet(isPresented: $showComposer) {

@@ -81,21 +81,6 @@ struct RootView: View {
     private var mainPage: some View {
         MainView()
         
-            .navigationTitle("ReMind")
-            .toolbar {
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
-                            activePage = .right
-                        }
-                    } label: {
-                        Image(systemName: "gearshape.fill")
-                            .imageScale(.large)
-                            .accessibilityLabel("Settings")
-                    }
-                }
-            }
     }
     
 }
