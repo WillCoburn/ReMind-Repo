@@ -13,10 +13,6 @@ struct FeedbackSupportSection: View {
             Text("Feedback & Support")
                 .font(.subheadline.weight(.semibold))
 
-            Text("Have feedback, questions, or concerns?")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-
             Button {
                 openSupport()
             } label: {

@@ -71,6 +71,10 @@ struct SubscriptionSection: View {
             }
             .buttonStyle(.bordered)
 
+            Text("I'm truly sorry this can't be free, I hate it too - the backend and sms service costs me about the subscription fee to run. Hope it's worth it to you :)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            
             if let msg = restoreMessage {
                 Text(msg)
                     .font(.footnote)

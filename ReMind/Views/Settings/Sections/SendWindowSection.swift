@@ -22,7 +22,7 @@ struct SendWindowSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Send Window")
+                Text("Automated Send Window")
                     .font(.subheadline.weight(.semibold))
                 Spacer()
                 Text("\(hourLabel(startHour)) – \(hourLabel(endHour))")
@@ -35,38 +35,10 @@ struct SendWindowSection: View {
                     value: binding,
                     in: 0.0...23.0,
                     step: 1.0,
-                    minimumValueLabel: {
-                        Text(hourLabel(0.0))
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    },
-                    maximumValueLabel: {
-                        Text(hourLabel(23.0))
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
                 )
 
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Start")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Text(hourLabel(startHour)).font(.footnote.monospaced())
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("End")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Text(hourLabel(endHour)).font(.footnote.monospaced())
-                    }
-                }
             }
 
-            Text("Reminders will be scheduled only between these hours.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
         }
     }
 }

@@ -13,7 +13,7 @@ struct RemindersPerWeekSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Reminders per week")
+                Text("Automated ReMinders Per Weekk")
                     .font(.subheadline.weight(.semibold))
                 Spacer()
                 Text("\(SettingsHelpers.remindersDisplay(remindersPerWeek)) / week")
@@ -24,10 +24,6 @@ struct RemindersPerWeekSection: View {
             Slider(value: $remindersPerWeek,
                    in: minReminders...maxReminders,
                    step: stepReminders)
-
-            Text("How many ReMinders do you want to receive each week?")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
         }
     }
 }

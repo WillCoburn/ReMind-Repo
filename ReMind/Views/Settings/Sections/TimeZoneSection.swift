@@ -19,11 +19,6 @@ struct TimeZoneSection: View {
             }
             .pickerStyle(.menu)
             .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text("Used for scheduling sends at the right local time.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .padding(.top, 4)
         }
     }
 }
