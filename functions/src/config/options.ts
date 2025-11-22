@@ -35,8 +35,9 @@ function nextLocalTime(
   const meanHrs = (24 * 7) / clampWeeklyRate(s.remindersPerWeek);
   const candidate = new Date(nowLocal.getTime() + randExpHrs(meanHrs) * 3_600_000);
 
-  const start = s.quietStartHour;
-  const end = s.quietEndHour;
+  const clampHour = (h: number) => Math.min(24, Math.max(0, h));
+  const start = clampHour(s.quietStartHour);
+  const end = clampHour(s.quietEndHour);
 
   const atHour = (base: Date, h: number) => {
     const t = new Date(base);
