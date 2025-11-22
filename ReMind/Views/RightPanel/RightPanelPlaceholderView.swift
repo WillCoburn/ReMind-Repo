@@ -14,7 +14,10 @@ struct RightPanelPlaceholderView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                LazyVGrid(columns: Array(repeating: .init(.flexible(), spacing: 16), count: 2), spacing: 16) {
+                LazyVGrid(
+                    columns: Array(repeating: .init(.flexible(), spacing: 16), count: 2),
+                    spacing: 16
+                ) {
                     reminderCountTile
                     sentRemindersTile
                 }
@@ -25,7 +28,6 @@ struct RightPanelPlaceholderView: View {
             }
             .padding(.vertical, 16)
         }
-        
         .navigationTitle("Stats & Settings")
         .navigationBarTitleDisplayMode(.inline)
         .background(
@@ -34,7 +36,6 @@ struct RightPanelPlaceholderView: View {
         )
         .foregroundColor(.palettePewter)
     }
-
 
     private var settingsCard: some View {
         UserSettingsForm(
@@ -49,7 +50,7 @@ struct RightPanelPlaceholderView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.paletteTurquoise.opacity(0.18))
+                .fill(Color.paletteIvory.opacity(0.9))
         )
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
@@ -68,7 +69,6 @@ struct RightPanelPlaceholderView: View {
             }
         }
 
-
         pendingSaveWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: workItem)
     }
@@ -78,32 +78,37 @@ struct RightPanelPlaceholderView_Previews: PreviewProvider {
     static var previews: some View {
         RightPanelPlaceholderView()
             .environmentObject(AppViewModel())
-
     }
 }
 
 private extension RightPanelPlaceholderView {
+    
+    
+    
+    // MARK: - SAVED TILE
     var reminderCountTile: some View {
-        let tint: Color = .paletteTealGreen
-
-        return VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: "target")
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundColor(tint)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text("ReMinders saved")
+        let tint: Color = .palettePewter
+        
+        return VStack(spacing: 12) {
+            
+            // Centered icon
+            Image(systemName: "tray.full.fill")
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundColor(.paletteIvory)
+                .frame(maxWidth: .infinity, alignment: .center)
+            
+            // Centered "Saved" text
+            Text("Saved")
                 .font(.headline)
-                .foregroundColor(.palettePewter)
-
+                .foregroundColor(.paletteIvory)
+                .frame(maxWidth: .infinity, alignment: .center)
+            
+            // Centered big number
             Text("\(appVM.entries.count)")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(Color.palettePewter)
-
-            Text("Total so far")
-                .font(.subheadline)
-                .foregroundColor(.palettePewter.opacity(0.85))
-
+                .font(.system(size: 44, weight: .bold, design: .rounded))
+                .frame(maxWidth: .infinity, alignment: .center)
+                .foregroundColor(.paletteIvory)
+            
             Spacer()
         }
         .padding()
@@ -111,43 +116,7 @@ private extension RightPanelPlaceholderView {
         .aspectRatio(1, contentMode: .fit)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(tint.opacity(0.12))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(tint.opacity(0.25), lineWidth: 1)
-        )
-    }
-
-    var sentRemindersTile: some View {
-        let tint: Color = .paletteTealGreen
-
-        return VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: "chart.line.uptrend.xyaxis")
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundColor(tint)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text("ReMinders sent")
-                .font(.headline)
-                .foregroundColor(.palettePewter)
-
-            Text("\(appVM.sentEntriesCount)")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(Color.palettePewter)
-
-            Text("Delivered via auto + instant")
-                .font(.subheadline)
-                .foregroundColor(.palettePewter.opacity(0.85))
-
-            Spacer()
-        }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .aspectRatio(1, contentMode: .fit)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(tint.opacity(0.12))
+                .fill(Color.palettePewter.opacity(0.9))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -155,6 +124,43 @@ private extension RightPanelPlaceholderView {
         )
     }
     
+    
+    // MARK: - SENT TILE
+    var sentRemindersTile: some View {
+        let tint: Color = .palettePewter
+        
+        return VStack(spacing: 12) {
+            
+            // Centered icon
+            Image(systemName: "bubble.left.and.bubble.right.fill")
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundColor(.paletteIvory)
+                .frame(maxWidth: .infinity, alignment: .center)
+            
+            // Centered "Sent" text
+            Text("Sent")
+                .font(.headline)
+                .foregroundColor(.paletteIvory)
+                .frame(maxWidth: .infinity, alignment: .center)
+            
+            // Centered big number
+            Text("\(appVM.sentEntriesCount)")
+                .font(.system(size: 44, weight: .bold, design: .rounded))
+                .frame(maxWidth: .infinity, alignment: .center)
+                .foregroundColor(.paletteIvory)
+            
+            Spacer()
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .aspectRatio(1, contentMode: .fit)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.palettePewter.opacity(0.9))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(tint.opacity(0.25), lineWidth: 1)
+        )
+    }
 }
-
-

@@ -36,14 +36,14 @@ struct UserSettingsPanel: View {
          )
                 .padding(16)
             }
-            .background(.ultraThinMaterial)
+            .background(Color.paletteIvory) 
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .shadow(radius: 20, y: 8)
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity)
-        .background(.clear)
+        .background(Color.paletteIvory.ignoresSafeArea())
         .padding(.top, 8)
 }
 }
