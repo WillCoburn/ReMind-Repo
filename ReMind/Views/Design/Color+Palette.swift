@@ -12,8 +12,18 @@ extension Color {
     static let palettePewter = Color(hex: "#7B78F7")
     
     //mom green
-    static let momGreen = Color(hex: "#73D962")
+    static let momGreen = Color(hex: "#7dce82")
     
     //mom yellow
-    static let momYellow = Color(hex: "FFED29")
+    static let momYellow = Color(hex: "FFEA80")
+    
+    
+    //Grammy yellow
+    static let grammyYellow = Color(hex:"faff7f")
+    
+    static let momBlue = Color(hex: "3cdbd3")
+    
+    static let buttonGreen = Color(hex: "7dce82")
+    
+ 
 }

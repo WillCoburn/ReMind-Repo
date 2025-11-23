@@ -74,7 +74,7 @@ struct RangeSlider<MinimumLabel: View, MaximumLabel: View>: View {
 
     private var sliderHandle: some View {
         Circle()
-            .fill(Color(uiColor: .systemBackground))
+            .fill(Color(uiColor: .white))
             .overlay(Circle().stroke(Color.secondary.opacity(0.4), lineWidth: 1))
             .shadow(radius: 1, y: 1)
             .frame(width: handleDiameter, height: handleDiameter)

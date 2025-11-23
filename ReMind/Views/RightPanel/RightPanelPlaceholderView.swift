@@ -37,10 +37,16 @@ struct RightPanelPlaceholderView: View {
                     .font(.headline)
             }
         }
+        
+        
+        //BACKGROUND COLOR
         .background(
-            Color.momGreen.ignoresSafeArea()
+            Color.momBlue.ignoresSafeArea()
         )
-        .foregroundColor(.palettePewter)
+        
+        //SETTINGS PANEL TEXT COLOR
+        .foregroundColor(.black)
+        
     }
 
     private var settingsCard: some View {
@@ -110,7 +116,10 @@ private extension RightPanelPlaceholderView {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.blue.opacity(0.9))
+            
+            
+            //SAVED COLOR
+                .fill(Color.palettePewter)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -140,7 +149,10 @@ private extension RightPanelPlaceholderView {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.blue.opacity(0.9))
+            
+            
+            //SENT BACKGROUND
+                .fill(Color.palettePewter)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -174,7 +186,9 @@ private extension RightPanelPlaceholderView {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.orange.opacity(0.9))
+            
+            //STREAK BACKGROUND COLOR
+                .fill(Color.palettePewter)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
