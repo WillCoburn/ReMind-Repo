@@ -34,7 +34,9 @@ struct RightPanelPlaceholderView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text("Stats & Settings")
-                    .font(.headline)
+                    .font(.system(size: 25, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.vertical, 6)
             }
         }
         
@@ -102,6 +104,7 @@ private extension RightPanelPlaceholderView {
         return VStack(spacing: 8) {
             Image(systemName: "tray.full.fill")
                 .font(.system(size: 26, weight: .semibold))
+                .frame(width: 28, height: 28)
                 .foregroundColor(.paletteIvory)
 
             Text("Saved")
@@ -135,6 +138,7 @@ private extension RightPanelPlaceholderView {
         return VStack(spacing: 8) {
             Image(systemName: "bubble.left.and.bubble.right.fill")
                 .font(.system(size: 26, weight: .semibold))
+                .frame(width: 28, height: 28)
                 .foregroundColor(.paletteIvory)
 
             Text("Received")
@@ -168,7 +172,8 @@ private extension RightPanelPlaceholderView {
         return VStack(spacing: 8) {
             Image(systemName: "flame.fill")
                 .font(.system(size: 26, weight: .semibold))
-                .foregroundColor(.paletteIvory)
+                .frame(width: 28, height: 28)
+                .foregroundColor(.orange)
 
             Text("Entry Streak")
                 .font(.headline)
@@ -178,9 +183,9 @@ private extension RightPanelPlaceholderView {
                 .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.paletteIvory)
             
-            Text("days in a row")
-                .font(.subheadline)
-                .foregroundColor(.paletteIvory.opacity(0.75))
+          //  Text("days in a row")
+          //      .font(.subheadline)
+          //      .foregroundColor(.paletteIvory.opacity(0.75))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.vertical, 12)

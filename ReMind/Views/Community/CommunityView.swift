@@ -94,7 +94,9 @@ struct CommunityView: View {
          .toolbar {
              ToolbarItem(placement: .principal) {
                  Text("Community")
-                     .font(.headline)
+                     .font(.system(size: 25, weight: .bold))
+                     .foregroundColor(.white)
+                     .padding(.vertical, 6)
              }
          }
         .overlay(alignment: .bottomTrailing) {

@@ -15,7 +15,8 @@ struct EntryComposer: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            TextField("Type an entry…", text: $text, axis: .vertical)
+            TextField("Hey future me, remember…",text: $text,axis: .vertical).foregroundColor(Color.black)
+
                 .lineLimit(3...5)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
@@ -32,11 +33,11 @@ struct EntryComposer: View {
                     ProgressView()
                         .progressViewStyle(.circular)
                         .frame(width: 32, height: 32)
-                        .tint(.paletteTealGreen)
+                        .tint(.blue)
                 } else {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 32))
-                        .foregroundColor(.paletteTealGreen)
+                        .foregroundColor(.blue)
                 }
             }
             .disabled(isDisabled)

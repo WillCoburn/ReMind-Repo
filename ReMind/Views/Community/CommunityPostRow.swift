@@ -43,7 +43,7 @@ struct CommunityPostRow: View {
                         Capsule(style: .continuous)
                             .fill(Color.paletteTurquoise.opacity(isLiked ? 0.3 : 0.15))
                     )
-                    .foregroundColor(.palettePewter)
+                    .foregroundColor(.blue)
                 }
                 .buttonStyle(PlainButtonStyle())
 
@@ -62,7 +62,7 @@ struct CommunityPostRow: View {
                         Capsule(style: .continuous)
                             .fill(Color.paletteTurquoise.opacity(isReported ? 0.3 : 0.15))
                     )
-                    .foregroundColor(.palettePewter)
+                    .foregroundColor(.blue)
                 }
                 .buttonStyle(PlainButtonStyle())
 

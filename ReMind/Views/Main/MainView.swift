@@ -133,7 +133,7 @@ struct MainView: View {
         .onAppear {
             RevenueCatManager.shared.recomputeAndPersistActive()
         }
-        .tint(.paletteTealGreen)
+        .tint(.blue)
     }
 
     // MARK: - Background just for MainView
