@@ -50,11 +50,13 @@ struct RightPanelPlaceholderView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(Color.figmaBlue.opacity(0.08), for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text("Stats & Settings")
                     .font(.system(size: 25, weight: .bold))
-                    .foregroundColor(.primary) // default nav title color
+                    .foregroundColor(.black)
                     .padding(.vertical, 6)
             }
         }
@@ -352,7 +354,7 @@ struct SettingsRow: View {
 
                 if showsChevron {
                     Image(systemName: "chevron.right")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color(white: 0.45))
                 }
             }
             .padding(.vertical, 14)
