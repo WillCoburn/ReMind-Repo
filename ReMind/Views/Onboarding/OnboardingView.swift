@@ -35,6 +35,12 @@ struct OnboardingView: View {
     private var canContinueBase: Bool { isValidPhone && hasConsented }
     private var canContinueOnline: Bool { canContinueBase && net.isConnected } // 👈 disable when offline
 
+    private var formattedPhoneDisplay: String {
+        let formatted = PhoneField.Coordinator.format(phoneDigits)
+        let base = formatted.isEmpty ? phoneDigits : formatted
+        return "+1 \(base)"
+    }
+    
     private let consentMessage =
     """
     By tapping 'Continue', you consent to receive reminder text messages from ReMind.
@@ -51,80 +57,15 @@ struct OnboardingView: View {
             Color.figmaBlue.opacity(0.08)
                 .ignoresSafeArea()
 
-            VStack(spacing: 24) {
+            switch step {
+            case .enterPhone:
+                phoneEntryLayout
 
-                // MARK: - Header / Logo
-                VStack(spacing: isKeyboardVisible ? 4 : 10) {
-                    Image("FullLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 300, height: 120)   // tune as needed
-                        .padding(.top, 4)
-
-                    // 👇 Hide this text when keyboard is visible
-                    if !isKeyboardVisible {
-                        Text("Enter your phone number to continue.")
-                            .font(.title2.weight(.semibold))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 16)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-                }
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 24)
-
-                // MARK: - Main content
-                Group {
-                    switch step {
-                    case .enterPhone:
-                        PhoneEntrySection(
-                            phoneDigits: $phoneDigits,
-                            showErrorBorder: $showErrorBorder,
-                            errorText: $errorText,
-                            isValidPhone: isValidPhone
-                        )
-
-                    case .enterCode:
-                        CodeEntrySection(
-                            code: $code,
-                            isVerifying: isVerifying,
-                            onEditNumber: {
-                                step = .enterPhone
-                                errorText = ""
-                                code = ""
-                            },
-                            onVerify: {
-                                Task { await verifyCode() }
-                            }
-                        )
-                    }
-                }
-
-                if !errorText.isEmpty {
-                    Text(errorText)
-                        .font(.footnote)
-                        .foregroundColor(.red)
-                        .padding(.horizontal)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-
-                Spacer(minLength: 16)
-
-                // MARK: - Bottom consent + button
-                if step == .enterPhone {
-                    ConsentAndAgreeBottom(
-                        hasConsented: $hasConsented,
-                        consentMessage: consentMessage,
-                        canContinue: canContinueOnline, // 👈 pass online-aware flag
-                        isSending: isSending,
-                        onAgreeAndContinue: {
-                            Task { await sendCode() }
-                        }
-                    )
-                    .padding(.bottom, 24)
-                }
+            case .enterCode:
+                codeEntryLayout
+                
             }
-            .padding(.horizontal, 24)
+
         }
         .contentShape(Rectangle())
         .simultaneousGesture(
@@ -146,6 +87,13 @@ struct OnboardingView: View {
         .onChange(of: net.isConnected) { value in
             print("🔄 net.isConnected ->", value)
         }
+        
+        .onChange(of: code) { _ in
+            if step == .enterCode && !errorText.isEmpty {
+                errorText = ""
+            }
+        }
+
 
         // 👇 Track keyboard visibility to hide the subtitle
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -159,6 +107,86 @@ struct OnboardingView: View {
         .preferredColorScheme(.light)
     }
 
+    private var phoneEntryLayout: some View {
+         VStack(spacing: 24) {
+
+             // MARK: - Header / Logo
+             VStack(spacing: isKeyboardVisible ? 4 : 10) {
+                 Image("FullLogo")
+                     .resizable()
+                     .scaledToFit()
+                     .frame(width: 300, height: 120)   // tune as needed
+                     .padding(.top, 4)
+
+                 // 👇 Hide this text when keyboard is visible
+                 if !isKeyboardVisible {
+                     Text("Enter your phone number to continue.")
+                         .font(.title2.weight(.semibold))
+                         .multilineTextAlignment(.center)
+                         .padding(.horizontal, 16)
+                         .transition(.opacity.combined(with: .move(edge: .top)))
+                 }
+             }
+             .fixedSize(horizontal: false, vertical: true)
+             .padding(.top, 24)
+
+             PhoneEntrySection(
+                 phoneDigits: $phoneDigits,
+                 showErrorBorder: $showErrorBorder,
+                 errorText: $errorText,
+                 isValidPhone: isValidPhone
+             )
+
+             if !errorText.isEmpty {
+                 Text(errorText)
+                     .font(.footnote)
+                     .foregroundColor(.red)
+                     .padding(.horizontal)
+                     .transition(.opacity.combined(with: .move(edge: .top)))
+             }
+
+             Spacer(minLength: 16)
+
+             ConsentAndAgreeBottom(
+                 hasConsented: $hasConsented,
+                 consentMessage: consentMessage,
+                 canContinue: canContinueOnline, // 👈 pass online-aware flag
+                 isSending: isSending,
+                 onAgreeAndContinue: {
+                     Task { await sendCode() }
+                 }
+             )
+             .padding(.bottom, 24)
+         }
+         .padding(.horizontal, 24)
+     }
+
+     private var codeEntryLayout: some View {
+         VStack(alignment: .leading) {
+             CodeEntrySection(
+                 code: $code,
+                 phoneNumber: formattedPhoneDisplay,
+                 errorText: errorText,
+                 isVerifying: isVerifying,
+                 onEditNumber: {
+                     step = .enterPhone
+                     errorText = ""
+                     code = ""
+                 },
+                 onResend: {
+                     Task { await sendCode() }
+                 },
+                 onVerify: {
+                     Task { await verifyCode() }
+                 }
+             )
+             .padding(.horizontal, 24)
+             .padding(.top, 24)
+
+             Spacer()
+         }
+     }
+    
     // MARK: - Actions
 
     private func sendCode() async {
