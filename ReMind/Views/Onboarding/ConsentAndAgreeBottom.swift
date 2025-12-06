@@ -11,52 +11,69 @@ struct ConsentAndAgreeBottom: View {
     let onAgreeAndContinue: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
+        VStack(alignment: .center, spacing: 16) {
+
+            // MARK: - Terms & Privacy links (underlined + figmaBlue)
+            HStack(spacing: 4) {
+                Link(destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!) {
+                    Text("Terms & Conditions")
+                        .font(.footnote)
+                        .foregroundColor(.figmaBlue)
+                        .underline()
+                }
+
+                Text("and")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+
+                Link(destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!) {
+                    Text("Privacy Policy")
+                        .font(.footnote)
+                        .foregroundColor(.figmaBlue)
+                        .underline()
+                }
+            }
+            .multilineTextAlignment(.center)
+
+            // MARK: - Checkbox + consent message
+            HStack(alignment: .top, spacing: 10) {
                 Button {
                     hasConsented.toggle()
                 } label: {
                     Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
                         .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.black)
+                        .foregroundColor(hasConsented ? .figmaBlue : .secondary)
                 }
                 .buttonStyle(.plain)
 
                 Text(consentMessage)
                     .font(.caption2)
                     .multilineTextAlignment(.leading)
-                    .foregroundColor(.black)
+                    .foregroundColor(.black)   // 👈 explicitly black
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
+            // MARK: - Primary button
             Button {
                 onAgreeAndContinue()
             } label: {
                 ZStack {
-                    Text(isSending
-                         ? "Sending…"
-                         : (canContinue ? "Agree & Continue" : "Agree to Continue"))
+                    Text(isSending ? "Sending…" : "Continue")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
                         .opacity(isSending ? 0 : 1)
-                    if isSending { ProgressView().padding(.vertical) }
+
+                    if isSending {
+                        ProgressView()
+                            .padding(.vertical)
+                    }
                 }
-                .background(canContinue ? Color.black : Color.gray.opacity(0.4))
+                .background(canContinue ? Color.figmaBlue : Color.gray.opacity(0.4))
                 .foregroundColor(.white)
                 .cornerRadius(16)
             }
             .disabled(!canContinue || isSending)
-
-            HStack {
-                Link("Privacy Policy",
-                     destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
-                Spacer()
-                Link("Terms of Service",
-                     destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
-            }
-            .font(.caption2)
-            .foregroundColor(.secondary)
-            .padding(.top, 4)
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }

@@ -25,5 +25,5 @@ extension Color {
     
     static let buttonGreen = Color(hex: "7dce82")
     
- 
+    static let figmaBlue = Color(hex: "#3b46ad")
 }

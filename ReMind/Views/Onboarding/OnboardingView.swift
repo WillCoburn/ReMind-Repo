@@ -19,7 +19,6 @@ struct OnboardingView: View {
     @State private var errorText: String = ""
     @State private var hasConsented = false
     @State private var isKeyboardVisible = false
-    
 
     // Code entry
     @State private var verificationID: String?
@@ -38,28 +37,43 @@ struct OnboardingView: View {
 
     private let consentMessage =
     """
-    By tapping Agree, you consent to receive reminder text messages from ReMind to the phone number you provide. Message & data rates may apply. Reply STOP to opt out, or HELP for support.
+    By tapping 'Continue', you consent to receive reminder text messages from ReMind.
     """
 
     var body: some View {
         ZStack {
-            // ✅ Background sits *behind* everything and ignores safe areas
-            Color(hex: "#0A1222")
+
+            // 1) Solid white base
+            Color.white
                 .ignoresSafeArea()
 
-            // ✅ Your content stays padded without affecting the background bounds
+            // 2) Slight blue tint over white
+            Color.figmaBlue.opacity(0.08)
+                .ignoresSafeArea()
+
             VStack(spacing: 24) {
-                Spacer(minLength: 24)
 
-                Text("ReMind")
-                    .font(.system(size: 44, weight: .bold))
+                // MARK: - Header / Logo
+                VStack(spacing: isKeyboardVisible ? 4 : 10) {
+                    Image("FullLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 300, height: 120)   // tune as needed
+                        .padding(.top, 4)
 
-                Text("Celebrate when it's all clear, and prepare for when it's not.")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+                    // 👇 Hide this text when keyboard is visible
+                    if !isKeyboardVisible {
+                        Text("Enter your phone number to continue.")
+                            .font(.title2.weight(.semibold))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 16)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 24)
 
+                // MARK: - Main content
                 Group {
                     switch step {
                     case .enterPhone:
@@ -94,8 +108,9 @@ struct OnboardingView: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
-                Spacer()
+                Spacer(minLength: 16)
 
+                // MARK: - Bottom consent + button
                 if step == .enterPhone {
                     ConsentAndAgreeBottom(
                         hasConsented: $hasConsented,
@@ -106,11 +121,11 @@ struct OnboardingView: View {
                             Task { await sendCode() }
                         }
                     )
+                    .padding(.bottom, 24)
                 }
             }
-            .padding(.horizontal) // 👈 padding only affects the content, not the background
+            .padding(.horizontal, 24)
         }
-        // keep your animations & observers on the outer view
         .contentShape(Rectangle())
         .simultaneousGesture(
             TapGesture().onEnded {
@@ -123,16 +138,25 @@ struct OnboardingView: View {
         .animation(.default, value: step)
         .animation(.default, value: errorText)
         .animation(.easeInOut, value: isValidPhone)
-        .networkAware() // 👈 center popup while offline
+        .animation(.easeInOut, value: isKeyboardVisible)
+
+        // ✅ keep your offline popup behavior
+        .networkAware()
+
         .onChange(of: net.isConnected) { value in
             print("🔄 net.isConnected ->", value)
         }
+
+        // 👇 Track keyboard visibility to hide the subtitle
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             isKeyboardVisible = true
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             isKeyboardVisible = false
         }
+
+        // Force light appearance for this screen
+        .preferredColorScheme(.light)
     }
 
     // MARK: - Actions
