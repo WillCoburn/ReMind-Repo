@@ -50,14 +50,17 @@ struct RightPanelPlaceholderView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarBackground(Color.figmaBlue.opacity(0.08), for: .navigationBar)
+         // Make background transparent
+         .toolbarBackground(.clear, for: .navigationBar)
+         .toolbarBackground(.visible, for: .navigationBar)
+         // Improve contrast in all modes
+         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text("Stats & Settings")
                     .font(.system(size: 25, weight: .bold))
                     .foregroundColor(.black)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 12)
             }
         }
         .sheet(item: $activeSheet) { sheet in
@@ -196,6 +199,8 @@ struct RightPanelPlaceholderView: View {
                     action: {}
                 )
 
+                Color.clear.frame(height: 6)
+                
                 SettingsRow(
                     title: "Log Out",
                     value: nil,
@@ -305,26 +310,33 @@ private extension RightPanelPlaceholderView {
 
     // Shared card style
     func statTile(systemImage: String, title: String, value: String) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: systemImage)
-                .font(.system(size: 30, weight: .semibold))
-                .foregroundColor(.white)
+        VStack(alignment: .leading, spacing: 8) {
+             HStack {
+                 Text(title)
+                     .font(.subheadline)
+                     .foregroundColor(.black)
+                 Spacer()
+                 Image(systemName: systemImage)
+                     .font(.system(size: 18, weight: .semibold))
+                     .foregroundColor(.figmaBlue)
+             }
 
-            Text(title)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.white)
+            Spacer(minLength: 8)
 
             Text(value)
-                .font(.system(size: 42, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .foregroundColor(.figmaBlue)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity, minHeight: 110)
+                .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(Color.figmaBlue) // 👈 purple/blue card
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                           .fill(Color.white)
+                   )
+                   .overlay(
+                       RoundedRectangle(cornerRadius: 16, style: .continuous)
+                           .stroke(Color.gray.opacity(0.2), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.18), radius: 10, y: 6)
     }
 }
 
@@ -360,6 +372,12 @@ struct SettingsRow: View {
             .padding(.vertical, 14)
             .padding(.horizontal, 20)
             .background(Color.white)
+            .overlay(
+                Rectangle()
+                    .frame(height: 0.5)
+                    .foregroundColor(Color.gray.opacity(0.25)),
+                alignment: .bottom
+            )
         }
     }
 }
@@ -431,7 +449,7 @@ struct SendWindowSheet: View {
                 .frame(width: 44, height: 6)
                 .padding(.top, 8)
 
-            Text("Automated send window")
+            Text("Auto Send window")
                 .font(.headline)
 
             Text("\(SettingsHelpers.hourLabel(startHour)) – \(SettingsHelpers.hourLabel(endHour))")
