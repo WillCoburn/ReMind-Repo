@@ -50,8 +50,7 @@ struct RightPanelPlaceholderView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-         // Make background transparent
-         .toolbarBackground(.clear, for: .navigationBar)
+         .toolbarBackground(Color.figmaBlue.opacity(0.08), for: .navigationBar)
          .toolbarBackground(.visible, for: .navigationBar)
          // Improve contrast in all modes
          .toolbarColorScheme(.light, for: .navigationBar)
@@ -60,7 +59,7 @@ struct RightPanelPlaceholderView: View {
                 Text("Stats & Settings")
                     .font(.system(size: 25, weight: .bold))
                     .foregroundColor(.black)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 18)
             }
         }
         .sheet(item: $activeSheet) { sheet in
@@ -147,7 +146,7 @@ struct RightPanelPlaceholderView: View {
                 )
 
                 SettingsRow(
-                    title: "Automated send window",
+                    title: "Message Window",
                     value: "\(SettingsHelpers.hourLabel(quietStartHour)) - \(SettingsHelpers.hourLabel(quietEndHour))",
                     isDestructive: false,
                     action: { activeSheet = .sendWindow }
@@ -295,7 +294,7 @@ private extension RightPanelPlaceholderView {
         statTile(
             systemImage: "flame.fill",
             title: "Entry Streak",
-            value: "\(appVM.streakCount)"
+            value: "\(appVM.streakCount)", suffix: "days"
         )
     }
 
@@ -309,26 +308,30 @@ private extension RightPanelPlaceholderView {
     }
 
     // Shared card style
-    func statTile(systemImage: String, title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-             HStack {
-                 Text(title)
-                     .font(.subheadline)
-                     .foregroundColor(.black)
-                 Spacer()
-                 Image(systemName: systemImage)
-                     .font(.system(size: 18, weight: .semibold))
-                     .foregroundColor(.figmaBlue)
-             }
+    func statTile(systemImage: String, title: String, value: String, suffix: String? = nil) -> some View {
+        VStack(alignment: .center, spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(.figmaBlue)
 
-            Spacer(minLength: 8)
+            Text(title)
+                   .font(.subheadline)
+                   .foregroundColor(.black)
 
-            Text(value)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                                .foregroundColor(.figmaBlue)
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(value)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(.figmaBlue)
+
+                if let suffix = suffix {
+                    Text(suffix)
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(.black)
+                }
+            }
+            
         }
-        .frame(maxWidth: .infinity, minHeight: 110)
-                .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 110).padding(12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                            .fill(Color.white)
@@ -449,7 +452,7 @@ struct SendWindowSheet: View {
                 .frame(width: 44, height: 6)
                 .padding(.top, 8)
 
-            Text("Auto Send window")
+            Text("Automated Send window")
                 .font(.headline)
 
             Text("\(SettingsHelpers.hourLabel(startHour)) – \(SettingsHelpers.hourLabel(endHour))")
