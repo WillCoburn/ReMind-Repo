@@ -1,3 +1,9 @@
+// ============================
+// File: Views/RightPanel/RightPanelPlaceholderView.swift
+// ============================
+import MessageUI
+import PhotosUI
+import StoreKit
 import SwiftUI
 
 struct RightPanelPlaceholderView: View {
@@ -9,70 +15,224 @@ struct RightPanelPlaceholderView: View {
     @AppStorage("quietEndHour")    private var quietEndHour: Double = 22      // 0...24
     @AppStorage("bgImageBase64")   private var bgImageBase64: String = ""
 
+    @State private var photoItem: PhotosPickerItem?
+    @State private var loadError: String?
     @State private var pendingSaveWorkItem: DispatchWorkItem?
-    
+    @State private var activeSheet: ActiveSettingsSheet?
+    @State private var showPaywall = false
+    @State private var restoreMessage: String?
+    @State private var mailError: String?
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                LazyVGrid(
-                    columns: Array(repeating: .init(.flexible(), spacing: 12), count: 3),
-                    spacing: 12
-                ) {
-                    // Order: Saved (left), Streak (middle), Sent (right)
-                    reminderCountTile
-                    streakTile
-                    sentRemindersTile
+        ZStack {
+            // 👇 Light brand-tinted background (NOT solid black)
+            Color.white.ignoresSafeArea()
+            Color.figmaBlue.opacity(0.08).ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+
+                    // MARK: - Top stat tiles
+                    LazyVGrid(
+                        columns: Array(repeating: .init(.flexible(), spacing: 12), count: 3),
+                        spacing: 12
+                    ) {
+                        savedTile
+                        streakTile
+                        receivedTile
+                    }
+                    .padding(.top, 8)
+
+                    settingsList
                 }
                 .padding(.horizontal)
-
-                settingsCard
-                    .padding(.horizontal)
+                .padding(.bottom, 16)
             }
-            .padding(.vertical, 16)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text("Stats & Settings")
                     .font(.system(size: 25, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary) // default nav title color
                     .padding(.vertical, 6)
             }
         }
-        
-        
-        //BACKGROUND COLOR
-        .background(
-            Color.momBlue.ignoresSafeArea()
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .reminders:
+                RemindersPerWeekSheet(
+                    remindersPerWeek: $remindersPerWeek,
+                    onChange: persistSettingsDebounced,
+                    onDone: { activeSheet = nil; persistSettingsDebounced() }
+                )
+            case .sendWindow:
+                SendWindowSheet(
+                    startHour: $quietStartHour,
+                    endHour: $quietEndHour,
+                    onChange: persistSettingsDebounced,
+                    onDone: { activeSheet = nil; persistSettingsDebounced() }
+                )
+            case .timeZone:
+                TimeZoneSheet(
+                    tzIdentifier: $tzIdentifier,
+                    onChange: persistSettingsDebounced,
+                    onDone: { activeSheet = nil; persistSettingsDebounced() }
+                )
+            case .background:
+                BackgroundPickerSheet(
+                    photoItem: $photoItem,
+                    bgImageBase64: $bgImageBase64,
+                    loadError: $loadError,
+                    onChange: persistSettingsDebounced,
+                    onDone: { activeSheet = nil; persistSettingsDebounced() }
+                )
+            case .subscription:
+                SubscriptionOptionsSheet(
+                    appVM: appVM,
+                    showPaywall: $showPaywall,
+                    restoreMessage: $restoreMessage
+                )
+            case .contactUs:
+                ContactUsMailSheet()
+            }
+        }
+        .sheet(isPresented: $showPaywall) {
+            SubscriptionSheet()
+        }
+        .alert(
+            "Mail Error",
+            isPresented: Binding(
+                get: { mailError != nil },
+                set: { if !$0 { mailError = nil } }
+            ),
+            actions: {
+                Button("OK", role: .cancel) { mailError = nil }
+            },
+            message: {
+                Text(mailError ?? "")
+            }
         )
-        
-        //SETTINGS PANEL TEXT COLOR
-        .foregroundColor(.black)
-        
+        .onAppear {
+            RevenueCatManager.shared.refreshEntitlementState()
+            RevenueCatManager.shared.recomputeAndPersistActive()
+
+            Task {
+                do {
+                    let products = try await Product.products(for: ["remind.monthly.099.us"])
+                    print("🧪 SK2 products:", products.map { "\($0.id) • \($0.displayName) • \($0.displayPrice)" })
+                } catch {
+                    print("🧪 SK2 fetch error:", error.localizedDescription)
+                }
+            }
+        }
     }
 
-    private var settingsCard: some View {
-        UserSettingsForm(
-            remindersPerWeek: $remindersPerWeek,
-            tzIdentifier: $tzIdentifier,
-            quietStartHour: $quietStartHour,
-            quietEndHour: $quietEndHour,
-            bgImageBase64: $bgImageBase64,
-            onSettingsChanged: persistSettingsDebounced
-        )
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.paletteIvory.opacity(0.9))
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.paletteTurquoise.opacity(0.4), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.08), radius: 12, y: 6)
+    // MARK: - Settings list
+
+    private var settingsList: some View {
+        VStack(spacing: 12) {
+            // Top group
+            VStack(spacing: 0) {
+                SettingsRow(
+                    title: "Automated Reminders Per Week",
+                    value: "\(SettingsHelpers.remindersDisplay(remindersPerWeek))",
+                    isDestructive: false,
+                    action: { activeSheet = .reminders }
+                )
+
+                SettingsRow(
+                    title: "Automated send window",
+                    value: "\(SettingsHelpers.hourLabel(quietStartHour)) - \(SettingsHelpers.hourLabel(quietEndHour))",
+                    isDestructive: false,
+                    action: { activeSheet = .sendWindow }
+                )
+
+                SettingsRow(
+                    title: "Time Zone",
+                    value: SettingsHelpers.prettyTimeZone(tzIdentifier),
+                    isDestructive: false,
+                    action: { activeSheet = .timeZone }
+                )
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            // Middle group
+            VStack(spacing: 0) {
+                SettingsRow(
+                    title: "Personalize Background",
+                    value: nil,
+                    isDestructive: false,
+                    action: { activeSheet = .background }
+                )
+
+                SettingsRow(
+                    title: "Contact Us",
+                    value: nil,
+                    isDestructive: false,
+                    action: openSupport
+                )
+
+                SettingsRow(
+                    title: "Subscription",
+                    value: nil,
+                    isDestructive: false,
+                    action: { activeSheet = .subscription }
+                )
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+            // Bottom group
+            VStack(spacing: 0) {
+                SettingsRow(
+                    title: "Delete Account",
+                    value: nil,
+                    isDestructive: true,
+                    showsChevron: false,
+                    action: {}
+                )
+
+                SettingsRow(
+                    title: "Log Out",
+                    value: nil,
+                    isDestructive: true,
+                    showsChevron: false,
+                    action: { appVM.logout() }
+                )
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
     }
+
+    // MARK: - Mail
+
+    private func openSupport() {
+        mailError = nil
+
+        if MFMailComposeViewController.canSendMail() {
+            activeSheet = .contactUs
+            return
+        }
+
+        let addr = "remindapphelp@gmail.com"
+        let subject = "Re[Mind] Feedback"
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "Feedback"
+
+        if let url = URL(string: "mailto:\(addr)?subject=\(encodedSubject)") {
+            UIApplication.shared.open(url) { success in
+                if !success {
+                    mailError = "Couldn’t open Mail. Please email us at \(addr)."
+                }
+            }
+        } else {
+            mailError = "Couldn’t create email link. Please email us at \(addr)."
+        }
+    }
+
+    // MARK: - Settings sync
 
     private func persistSettingsDebounced() {
         pendingSaveWorkItem?.cancel()
@@ -88,6 +248,21 @@ struct RightPanelPlaceholderView: View {
     }
 }
 
+// MARK: - Active sheet enum
+
+enum ActiveSettingsSheet: Identifiable {
+    case reminders
+    case sendWindow
+    case timeZone
+    case background
+    case subscription
+    case contactUs
+
+    var id: Int { hashValue }
+}
+
+// MARK: - Preview
+
 struct RightPanelPlaceholderView_Previews: PreviewProvider {
     static var previews: some View {
         RightPanelPlaceholderView()
@@ -95,110 +270,298 @@ struct RightPanelPlaceholderView_Previews: PreviewProvider {
     }
 }
 
+// MARK: - Tiles (Figma-style cards)
+
 private extension RightPanelPlaceholderView {
-    
-    // MARK: - SAVED TILE (left)
-    var reminderCountTile: some View {
-        let tint: Color = .palettePewter
-        
-        return VStack(spacing: 8) {
-            Image(systemName: "tray.full.fill")
-                .font(.system(size: 26, weight: .semibold))
-                .frame(width: 28, height: 28)
-                .foregroundColor(.paletteIvory)
 
-            Text("Saved")
-                .font(.headline)
-                .foregroundColor(.paletteIvory)
-
-            Text("\(appVM.entries.count)")
-                .font(.system(size: 40, weight: .bold, design: .rounded))
-                .foregroundColor(.paletteIvory)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-            
-            
-            //SAVED COLOR
-                .fill(Color.palettePewter)
+    // Saved (left)
+    var savedTile: some View {
+        statTile(
+            systemImage: "tray.full.fill",
+            title: "Saved",
+            value: "\(appVM.entries.count)"
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(tint.opacity(0.25), lineWidth: 1)
-        )
-        .frame(height: 130) // consistent height for all three tiles
     }
-    
-    // MARK: - SENT TILE (right)
-    var sentRemindersTile: some View {
-        let tint: Color = .palettePewter
-        
-        return VStack(spacing: 8) {
-            Image(systemName: "bubble.left.and.bubble.right.fill")
-                .font(.system(size: 26, weight: .semibold))
-                .frame(width: 28, height: 28)
-                .foregroundColor(.paletteIvory)
 
-            Text("Received")
-                .font(.headline)
-                .foregroundColor(.paletteIvory)
-
-            Text("\(appVM.user?.receivedCount ?? appVM.sentEntriesCount)")
-                .font(.system(size: 40, weight: .bold, design: .rounded))
-                .foregroundColor(.paletteIvory)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-            
-            
-            //SENT BACKGROUND
-                .fill(Color.palettePewter)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(tint.opacity(0.25), lineWidth: 1)
-        )
-        .frame(height: 130)
-    }
-    
-    // MARK: - STREAK TILE (middle)
+    // Entry Streak (middle)
     var streakTile: some View {
-        let tint: Color = .palettePewter
+        statTile(
+            systemImage: "flame.fill",
+            title: "Entry Streak",
+            value: "\(appVM.streakCount)"
+        )
+    }
 
-        return VStack(spacing: 8) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 26, weight: .semibold))
-                .frame(width: 28, height: 28)
-                .foregroundColor(.orange)
+    // Received (right)
+    var receivedTile: some View {
+        statTile(
+            systemImage: "bubble.left.and.bubble.right.fill",
+            title: "Received",
+            value: "\(appVM.user?.receivedCount ?? appVM.sentEntriesCount)"
+        )
+    }
 
-            Text("Entry Streak")
-                .font(.headline)
-                .foregroundColor(.paletteIvory)
+    // Shared card style
+    func statTile(systemImage: String, title: String, value: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.system(size: 30, weight: .semibold))
+                .foregroundColor(.white)
 
-            Text("\(appVM.streakCount)")
-                .font(.system(size: 40, weight: .bold, design: .rounded))
-                .foregroundColor(.paletteIvory)
-            
-          //  Text("days in a row")
-          //      .font(.subheadline)
-          //      .foregroundColor(.paletteIvory.opacity(0.75))
+            Text(title)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.white)
+
+            Text(value)
+                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-            
-            //STREAK BACKGROUND COLOR
-                .fill(Color.palettePewter)
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(Color.figmaBlue) // 👈 purple/blue card
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(tint.opacity(0.25), lineWidth: 1)
+        .shadow(color: Color.black.opacity(0.18), radius: 10, y: 6)
+    }
+}
+
+// MARK: - SettingsRow
+
+struct SettingsRow: View {
+    let title: String
+    let value: String?
+    let isDestructive: Bool
+    var showsChevron: Bool = true
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(title)
+                    // 👇 force black so it’s visible on white even in Dark Mode
+                    .foregroundColor(isDestructive ? .red : .black)
+
+                Spacer()
+
+                if let value = value {
+                    Text(value)
+                        .foregroundColor(isDestructive ? .red : .figmaBlue)
+                        .lineLimit(1)
+                }
+
+                if showsChevron {
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.vertical, 14)
+            .padding(.horizontal, 20)
+            .background(Color.white)
+        }
+    }
+}
+
+// MARK: - Sheets (unchanged structurally)
+
+struct RemindersPerWeekSheet: View {
+    @Binding var remindersPerWeek: Double
+
+    var onChange: () -> Void
+    var onDone: () -> Void
+
+    private let minReminders: Double = 1
+    private let maxReminders: Double = 20
+    private let stepReminders: Double = 1
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Capsule()
+                .fill(Color.secondary.opacity(0.3))
+                .frame(width: 44, height: 6)
+                .padding(.top, 8)
+
+            Text("Automated Reminders Per Week")
+                .font(.headline)
+
+            Slider(
+                value: $remindersPerWeek,
+                in: minReminders...maxReminders,
+                step: stepReminders
+            )
+            .onChange(of: remindersPerWeek) { _ in onChange() }
+
+            Text("\(SettingsHelpers.remindersDisplay(remindersPerWeek)) reminders")
+                .font(.subheadline)
+                .foregroundColor(.figmaBlue)
+
+            Button("Done") { onDone() }
+                .buttonStyle(.borderedProminent)
+                .tint(.figmaBlue)
+                .padding(.bottom, 12)
+        }
+        .padding()
+        .presentationDetents([.medium])
+    }
+}
+
+struct SendWindowSheet: View {
+    @Binding var startHour: Double
+    @Binding var endHour: Double
+
+    var onChange: () -> Void
+    var onDone: () -> Void
+
+    private var binding: Binding<ClosedRange<Double>> {
+        Binding(
+            get: { startHour ... endHour },
+            set: { r in
+                startHour = max(0, min(24, r.lowerBound))
+                endHour = max(0, min(24, r.upperBound))
+            }
         )
-        .frame(height: 130)
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Capsule()
+                .fill(Color.secondary.opacity(0.3))
+                .frame(width: 44, height: 6)
+                .padding(.top, 8)
+
+            Text("Automated send window")
+                .font(.headline)
+
+            Text("\(SettingsHelpers.hourLabel(startHour)) – \(SettingsHelpers.hourLabel(endHour))")
+                .font(.subheadline)
+                .foregroundColor(.figmaBlue)
+
+            RangeSlider(
+                value: binding,
+                in: 0.0...24.0,
+                step: 1.0
+            )
+            .onChange(of: startHour) { _ in onChange() }
+            .onChange(of: endHour) { _ in onChange() }
+
+            Button("Done") { onDone() }
+                .buttonStyle(.borderedProminent)
+                .tint(.figmaBlue)
+                .padding(.bottom, 12)
+        }
+        .padding()
+        .presentationDetents([.medium])
+    }
+}
+
+struct TimeZoneSheet: View {
+    @Binding var tzIdentifier: String
+
+    var onChange: () -> Void
+    var onDone: () -> Void
+
+    private let usTimeZones = SettingsHelpers.usTimeZones()
+
+    var body: some View {
+        NavigationStack {
+            List(usTimeZones, id: \.self) { id in
+                Button {
+                    tzIdentifier = id
+                    onChange()
+                } label: {
+                    HStack {
+                        Text(SettingsHelpers.prettyTimeZone(id))
+                            .foregroundColor(.primary)
+                        Spacer()
+                        if id == tzIdentifier {
+                            Image(systemName: "checkmark")
+                                .foregroundColor(.figmaBlue)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Time Zone")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { onDone() }
+                        .foregroundColor(.figmaBlue)
+                }
+            }
+        }
+    }
+}
+
+struct BackgroundPickerSheet: View {
+    @Binding var photoItem: PhotosPickerItem?
+    @Binding var bgImageBase64: String
+    @Binding var loadError: String?
+
+    var onChange: () -> Void
+    var onDone: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Capsule()
+                .fill(Color.secondary.opacity(0.3))
+                .frame(width: 44, height: 6)
+                .padding(.top, 8)
+
+            Text("Personalize Background")
+                .font(.headline)
+
+            BackgroundPickerSection(
+                photoItem: $photoItem,
+                bgImageBase64: $bgImageBase64,
+                loadError: $loadError
+            )
+            .onChange(of: bgImageBase64) { _ in onChange() }
+
+            Button("Done") { onDone() }
+                .buttonStyle(.borderedProminent)
+                .tint(.figmaBlue)
+                .padding(.bottom, 12)
+        }
+        .padding()
+        .presentationDetents([.medium])
+    }
+}
+
+struct SubscriptionOptionsSheet: View {
+    var appVM: AppViewModel
+    @ObservedObject var revenueCat: RevenueCatManager = .shared
+
+    @Binding var showPaywall: Bool
+    @Binding var restoreMessage: String?
+
+    init(appVM: AppViewModel, showPaywall: Binding<Bool>, restoreMessage: Binding<String?>) {
+        self.appVM = appVM
+        self._showPaywall = showPaywall
+        self._restoreMessage = restoreMessage
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Subscription")
+                .font(.headline)
+
+            SubscriptionSection(
+                appVM: appVM,
+                revenueCat: revenueCat,
+                showPaywall: $showPaywall,
+                restoreMessage: $restoreMessage
+            )
+
+            Spacer(minLength: 8)
+        }
+        .padding()
+    }
+}
+
+struct ContactUsMailSheet: View {
+    var body: some View {
+        MailView(
+            recipients: ["remindapphelp@gmail.com"],
+            subject: "Re[Mind] Feedback"
+        )
     }
 }
