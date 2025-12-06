@@ -49,19 +49,12 @@ struct RightPanelPlaceholderView: View {
                 .padding(.bottom, 16)
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Stats & Settings")
+         .navigationBarTitleDisplayMode(.large)
          .toolbarBackground(Color.figmaBlue.opacity(0.08), for: .navigationBar)
          .toolbarBackground(.visible, for: .navigationBar)
          // Improve contrast in all modes
          .toolbarColorScheme(.light, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("Stats & Settings")
-                    .font(.system(size: 25, weight: .bold))
-                    .foregroundColor(.black)
-                    .padding(.vertical, 18)
-            }
-        }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .reminders:
