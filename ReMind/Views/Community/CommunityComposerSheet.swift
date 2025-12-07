@@ -32,7 +32,7 @@ struct CommunityComposerSheet: View {
                                 )
                                 .compositingGroup()
                         )
-                        .foregroundColor(.primary)
+                        .foregroundColor(.black)
                         .focused($isTextEditorFocused)
                         .overlay(alignment: .topLeading) {
                             if text.isEmpty {
@@ -49,16 +49,19 @@ struct CommunityComposerSheet: View {
                             .foregroundColor(.gray)
 
                         Text("Community posts expire automatically after 7 days.\nAnything rude or offensive will result in a ban.")
-                            .font(.footnote)
+                            .font(.caption)
                             .foregroundColor(.gray)
                     }
                     .padding(12)
-                    .background(Color.white)
+                    .background(
+                        Color.white // <-- ensures white base layer
+                    )
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.gray.opacity(0.25), lineWidth: 1)
                     )
                     .cornerRadius(10)
+
 
                     Spacer()
                     
@@ -89,9 +92,13 @@ struct CommunityComposerSheet: View {
                 // Ask for focus as soon as this view appears
                 isTextEditorFocused = true
             }
-            .navigationTitle("Community Note")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Community Note")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(.black)
+                }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                         .foregroundColor(.figmaBlue)
