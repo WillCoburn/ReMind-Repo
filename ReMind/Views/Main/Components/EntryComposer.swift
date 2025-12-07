@@ -14,34 +14,53 @@ struct EntryComposer: View {
     var onSubmit: () async -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            TextField("Hey future me, remember…",text: $text,axis: .vertical).foregroundColor(Color.black)
+        VStack(alignment: .leading, spacing: 12) {
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white.opacity(0.9))
+                    .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
 
-                .lineLimit(3...5)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(Color.white.opacity(0.85))
-                )
-                .focused($isEntryFieldFocused)
+                TextEditor(text: $text)
+                    .focused($isEntryFieldFocused)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .frame(minHeight: 150, alignment: .topLeading)
+                    .background(Color.clear)
+                    .scrollContentBackground(.hidden)
+                    .foregroundColor(.primary)
+
+                if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text("Hey Future me, remember…")
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 18)
+                }
+            }
 
             Button {
                 Task { await onSubmit() }
             } label: {
-                if isSubmitting {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .frame(width: 32, height: 32)
-                        .tint(.blue)
-                } else {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundColor(.blue)
+                ZStack {
+                    Text("Save")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .foregroundColor(.white)
+                        .opacity(isSubmitting ? 0 : 1)
+
+                    if isSubmitting {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.white)
+                    }
                 }
             }
+            
+            .frame(maxWidth: .infinity)
+            .background(isDisabled ? Color.figmaBlue.opacity(0.65) : Color.figmaBlue)
+            .cornerRadius(12)
             .disabled(isDisabled)
-            .opacity(isDisabled ? 0.4 : 1.0)
+            .opacity(isDisabled ? 0.6 : 1.0)
             .accessibilityLabel("Submit entry")
             .accessibilityHint(accessibilityHint)
         }
