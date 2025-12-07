@@ -124,24 +124,23 @@ struct MainView: View {
             .alert(alertTitle, isPresented: $showAlert) {
                 Button("OK", role: .cancel) { }
             } message: { Text(alertMessage) }
-                .onChange(of: net.isConnected) { value in
-                    print("🔄 net.isConnected (MainView) ->", value)
-                }
-                .onAppear {
-                    RevenueCatManager.shared.recomputeAndPersistActive()
-                }
-                .tint(.figmaBlue)
+            .onChange(of: net.isConnected) { value in
+                print("🔄 net.isConnected (MainView) ->", value)
+            }
+            .onAppear {
+                RevenueCatManager.shared.recomputeAndPersistActive()
+            }
+            .tint(.figmaBlue)
         }
     }
     
     // MARK: - Background just for MainView
     
-    
-    
     @ViewBuilder
     private var backgroundLayer: some View {
         GeometryReader { proxy in
             if let uiImage = decodeBase64ToImage(bgImageBase64) {
+                // User-selected background
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
@@ -150,15 +149,17 @@ struct MainView: View {
                         height: max(proxy.size.height, 1)
                     )
                     .clipped()
-                    .overlay(Color.black.opacity(0.15)) // subtle contrast for readability
                     .ignoresSafeArea()
             } else {
-                Color.white
-                    .overlay(Color.blue.opacity(0.04))
+                // Default background → MainBackground asset
+                Image("MainBackground")
+                    .resizable()
+                    .scaledToFill()
                     .frame(
                         width: max(proxy.size.width, 1),
                         height: max(proxy.size.height, 1)
                     )
+                    .clipped()
                     .ignoresSafeArea()
             }
         }
@@ -203,17 +204,16 @@ struct MainView: View {
     ) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
-
                 Spacer()   // <-- pushes text to center
-
+                
                 Text(title)
                     .font(.headline)
                     .fixedSize(horizontal: false, vertical: true)   // allow wrapping
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
-
+                
                 Spacer()   // <-- keeps text centered
-
+                
                 Image(systemName: systemImage)
                     .font(.headline)
             }
@@ -245,12 +245,10 @@ struct MainView: View {
         }
         .disabled(!isEnabled)
     }
-
-
     
     private struct ActionButtonHeightKey: PreferenceKey {
         static var defaultValue: CGFloat = 0
-
+        
         static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
             value = max(value, nextValue())
         }
@@ -343,5 +341,3 @@ struct MainView: View {
         showAlert = true
     }
 }
-
-
