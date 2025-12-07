@@ -49,7 +49,7 @@ struct MainView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 300, height: 120)   // tune as needed
-                            .padding(.top, 8)
+                            .padding(.top, 40)
                         
                         if showSuccessMessage {
                             Text("✅ Successfully stored!")
@@ -191,6 +191,7 @@ struct MainView: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 20)
+            .padding(.bottom, 20)
             .onPreferenceChange(ActionButtonHeightKey.self) { height in
                 actionButtonHeight = height
             }
