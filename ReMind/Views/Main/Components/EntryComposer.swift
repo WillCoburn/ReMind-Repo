@@ -27,11 +27,11 @@ struct EntryComposer: View {
                     .frame(minHeight: 150, alignment: .topLeading)
                     .background(Color.clear)
                     .scrollContentBackground(.hidden)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black)
 
                 if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Text("Hey future me, remember…")
-                        .foregroundColor(.black)
+                        .foregroundColor(.gray)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 18)
                 }

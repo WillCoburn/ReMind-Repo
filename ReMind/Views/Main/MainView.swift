@@ -18,6 +18,8 @@ struct MainView: View {
     @State private var isSubmitting = false
     @FocusState private var isEntryFieldFocused: Bool
     
+    @State private var actionButtonHeight: CGFloat = 0
+    
     // Alerts
     @State private var showAlert = false
     @State private var alertTitle = ""
@@ -169,20 +171,25 @@ struct MainView: View {
         return VStack(spacing: 0) {
             HStack(spacing: 12) {
                 bottomActionButton(
-                    title: "Send one now",
+                    title: "Send One",
                     systemImage: "envelope",
                     isEnabled: canSendNow,
+                    sharedHeight: actionButtonHeight,
                     action: handleSendNowTap
                 )
                 bottomActionButton(
-                    title: "Export PDF",
+                    title: "Full PDF",
                     systemImage: "doc.richtext",
                     isEnabled: canExport,
+                    sharedHeight: actionButtonHeight,
                     action: handleExportTap
                 )
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
+            .onPreferenceChange(ActionButtonHeightKey.self) { height in
+                actionButtonHeight = height
+            }
         }
         .background(
             LinearGradient(colors: [Color.white.opacity(0.92), Color.white.opacity(0.65)], startPoint: .top, endPoint: .bottom)
@@ -196,13 +203,22 @@ struct MainView: View {
         title: String,
         systemImage: String,
         isEnabled: Bool,
+        sharedHeight: CGFloat,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
+
+                Spacer()   // <-- pushes text to center
+
                 Text(title)
                     .font(.headline)
-                Spacer(minLength: 8)
+                    .fixedSize(horizontal: false, vertical: true)   // allow wrapping
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+
+                Spacer()   // <-- keeps text centered
+
                 Image(systemName: systemImage)
                     .font(.headline)
             }
@@ -210,6 +226,8 @@ struct MainView: View {
             .padding(.vertical, 14)
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity)
+            // 👇 use minHeight to allow wrapping while syncing heights
+            .frame(minHeight: sharedHeight > 0 ? sharedHeight : nil)
             .background(Color.blue.opacity(0.05))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
@@ -217,9 +235,26 @@ struct MainView: View {
             )
             .cornerRadius(12)
             .opacity(isEnabled ? 1 : 0.45)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .preference(key: ActionButtonHeightKey.self,
+                                    value: proxy.size.height)
+                }
+            )
         }
         .disabled(!isEnabled)
-    }d
+    }
+
+
+    
+    private struct ActionButtonHeightKey: PreferenceKey {
+        static var defaultValue: CGFloat = 0
+
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+            value = max(value, nextValue())
+        }
+    }
     
     private func decodeBase64ToImage(_ base64: String) -> UIImage? {
         guard !base64.isEmpty, let data = Data(base64Encoded: base64) else { return nil }
