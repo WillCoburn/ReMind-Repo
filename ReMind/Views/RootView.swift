@@ -44,6 +44,7 @@ struct RootView: View {
                         .zIndex(2)
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
         // Animate when the onboarding gate flips
@@ -76,6 +77,8 @@ struct RootView: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .never)) // Snapchat-style swipe
         // Keep bottom overlays (like MainView's action bar) pinned even when the keyboard shows
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea(.container, edges: [.top, .bottom])
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     

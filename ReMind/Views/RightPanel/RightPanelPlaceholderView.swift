@@ -125,6 +125,8 @@ struct RightPanelPlaceholderView: View {
                 }
             }
         }
+        // Hide the nav bar so the custom layout can use the full vertical space.
+                .toolbar(.hidden, for: .navigationBar)
     }
 
     // MARK: - Settings list

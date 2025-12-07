@@ -160,6 +160,8 @@ struct CommunityView: View {
         )
         .onAppear { startListeningIfNeeded() }
         .onDisappear { stopListening() }
+        // Hide the nav bar so the custom header/background fill the safe areas.
+                .toolbar(.hidden, for: .navigationBar)
     }
     
     private var header: some View {

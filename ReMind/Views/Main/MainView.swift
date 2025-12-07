@@ -49,7 +49,7 @@ struct MainView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 300, height: 120)   // tune as needed
-                            .padding(.top, 4)
+                            .padding(.top, 8)
                         
                         if showSuccessMessage {
                             Text("✅ Successfully stored!")
@@ -131,6 +131,9 @@ struct MainView: View {
                 RevenueCatManager.shared.recomputeAndPersistActive()
             }
             .tint(.figmaBlue)
+            // Hide the navigation bar so our custom header + background
+                        // can extend fully to the top/bottom without a white gap.
+                        .toolbar(.hidden, for: .navigationBar)
         }
     }
     
@@ -187,7 +190,7 @@ struct MainView: View {
                 )
             }
             .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+            .padding(.vertical, 20)
             .onPreferenceChange(ActionButtonHeightKey.self) { height in
                 actionButtonHeight = height
             }
