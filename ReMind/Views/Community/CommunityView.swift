@@ -168,7 +168,7 @@ struct CommunityView: View {
             .foregroundColor(.black)
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.top, 36)
-            .padding(.bottom, 20)
+            .padding(.bottom, 40)
     }
 
     // MARK: - Firestore Feed Listener
