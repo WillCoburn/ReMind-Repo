@@ -20,8 +20,9 @@ struct CommunityView: View {
     var body: some View {
         ZStack {
             
-            //background color
-            Color.momBlue.ignoresSafeArea()
+            // background color
+             Color.white.ignoresSafeArea()
+             Color.figmaBlue.opacity(0.04).ignoresSafeArea()
 
             if isLoading {
                 ProgressView("Loading community…")
@@ -94,9 +95,8 @@ struct CommunityView: View {
          .toolbar {
              ToolbarItem(placement: .principal) {
                  Text("Community")
-                     .font(.system(size: 25, weight: .bold))
-                     .foregroundColor(.white)
-                     .padding(.vertical, 6)
+                     .font(.system(size: 24, weight: .semibold))
+                     .foregroundColor(.black)
              }
          }
         .overlay(alignment: .bottomTrailing) {
@@ -111,7 +111,7 @@ struct CommunityView: View {
                         Circle()
                         
                         //BUTTON COLOR
-                            .fill(Color.palettePewter)
+                            .fill(Color.figmaBlue)
                     )
                     .shadow(radius: 4)
             }
@@ -120,8 +120,9 @@ struct CommunityView: View {
         }
         
         //toolbar color
-        .toolbarBackground(isAtTop ? Color.momBlue : Color.momBlue, for: .navigationBar)
+        .toolbarBackground(Color.figmaBlue.opacity(0.04), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.light, for: .navigationBar)
             
         .sheet(isPresented: $showComposer) {
             CommunityComposerSheet()

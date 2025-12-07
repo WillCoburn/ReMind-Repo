@@ -25,12 +25,20 @@ struct RightPanelPlaceholderView: View {
 
     var body: some View {
         ZStack {
-            // 👇 Light brand-tinted background (NOT solid black)
+            // 👇 Light brand-tinted background
             Color.white.ignoresSafeArea()
-            Color.figmaBlue.opacity(0.08).ignoresSafeArea()
+            Color.figmaBlue.opacity(0.04).ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+
+                    // Header text (replaces toolbar title)
+                    Text("Stats & Settings")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 36)      // ↑ more space from the very top
+                        .padding(.bottom, 20)   // ↑ space before the tiles
 
                     // MARK: - Top stat tiles
                     LazyVGrid(
@@ -41,7 +49,7 @@ struct RightPanelPlaceholderView: View {
                         streakTile
                         receivedTile
                     }
-                    .padding(.top, 24)
+                    .padding(.top, 4)
 
                     settingsList
                 }
@@ -49,19 +57,6 @@ struct RightPanelPlaceholderView: View {
                 .padding(.bottom, 16)
             }
         }
-        
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("Stats & Settings")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.black)
-            }
-        }
-         .toolbarBackground(Color.figmaBlue.opacity(0.08), for: .navigationBar)
-         .toolbarBackground(.visible, for: .navigationBar)
-         // Improve contrast in all modes
-         .toolbarColorScheme(.light, for: .navigationBar)
-        
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .reminders:
@@ -199,7 +194,7 @@ struct RightPanelPlaceholderView: View {
                 )
 
                 Color.clear.frame(height: 6)
-                
+
                 SettingsRow(
                     title: "Log Out",
                     value: nil,
@@ -315,8 +310,8 @@ private extension RightPanelPlaceholderView {
                 .foregroundColor(.figmaBlue)
 
             Text(title)
-                   .font(.subheadline)
-                   .foregroundColor(.black)
+                .font(.subheadline)
+                .foregroundColor(.black)
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(value)
@@ -329,16 +324,17 @@ private extension RightPanelPlaceholderView {
                         .foregroundColor(.black)
                 }
             }
-            
+
         }
-        .frame(maxWidth: .infinity, minHeight: 110).padding(12)
+        .frame(maxWidth: .infinity, minHeight: 110)
+        .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                           .fill(Color.white)
-                   )
-                   .overlay(
-                       RoundedRectangle(cornerRadius: 16, style: .continuous)
-                           .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                .fill(Color.white)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
         )
     }
 }

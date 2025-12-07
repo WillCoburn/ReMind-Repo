@@ -9,24 +9,14 @@ struct CommunityPostRow: View {
     var onReport: (() -> Void)? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
 
             Text(post.text)
                 .font(.body)
                 .foregroundColor(.black)
 
-            // Timestamp
+        
             HStack(spacing: 12) {
-                Label(timeAgoString(from: post.createdAt), systemImage: "clock")
-                    .font(.caption)
-                    .foregroundColor(.gray.opacity(0.9))
-
-                Spacer()
-            }
-
-            // Buttons
-            HStack(spacing: 12) {
-                Spacer()
 
                 // LIKE
                 Button {
@@ -34,7 +24,7 @@ struct CommunityPostRow: View {
                 } label: {
                     Label(
                         "\(post.likeCount)",
-                        systemImage: isLiked ? "arrow.up.square.fill" : "arrow.up.square"
+                        systemImage: isLiked ? "heart.fill" : "heart"
                     )
                     .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 12)
@@ -43,7 +33,7 @@ struct CommunityPostRow: View {
                         Capsule(style: .continuous)
                             .fill(Color.paletteTurquoise.opacity(isLiked ? 0.3 : 0.15))
                     )
-                    .foregroundColor(.blue)
+                    .foregroundColor(.figmaBlue)
                 }
                 .buttonStyle(PlainButtonStyle())
 
@@ -62,11 +52,15 @@ struct CommunityPostRow: View {
                         Capsule(style: .continuous)
                             .fill(Color.paletteTurquoise.opacity(isReported ? 0.3 : 0.15))
                     )
-                    .foregroundColor(.blue)
+                    .foregroundColor(.figmaBlue)
                 }
                 .buttonStyle(PlainButtonStyle())
 
                 Spacer()
+                
+                Label(timeAgoString(from: post.createdAt), systemImage: "clock")
+                    .font(.caption)
+                    .foregroundColor(.gray.opacity(0.9))
             }
         }
         .padding(16)
