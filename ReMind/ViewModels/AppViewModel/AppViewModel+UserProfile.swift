@@ -129,12 +129,7 @@ extension AppViewModel {
         try await authUser.delete()
         try? Auth.auth().signOut()
 
-        // Clear local state to return to onboarding/login.
-        self.user = nil
-        self.entries = []
-        self.smsOptOut = false
-        self.hasSeenFeatureTour = false
-        self.featureTourStep = .settings
-        self.showFeatureTour = false
+        // Clear local state immediately (so onboarding shows without waiting for the listener).
+        await loadUserAndEntries(nil)
     }
 }

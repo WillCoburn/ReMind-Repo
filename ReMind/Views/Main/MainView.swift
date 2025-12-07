@@ -25,7 +25,7 @@ struct MainView: View {
     @State private var alertTitle = ""
     @State private var alertMessage = ""
     
-    private let goal: Int = 5
+    private let goal: Int = 3
     
     private func isActive(trialEndsAt: Date?) -> Bool {
         let entitled = RevenueCatManager.shared.entitlementActive
