@@ -166,53 +166,24 @@ struct MainView: View {
         let canExport = net.isConnected && count >= goal
         let canSendNow = net.isConnected && count >= goal && active
         
-        return VStack(spacing: 12) {
-            Button(action: { handleSendNowTap() }) {
-                HStack {
-                    Spacer()
-                    Text("Send one now")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    Image(systemName: "envelope")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    Spacer()
-                }
-                .padding(.vertical, 14)
-                .background(Color.figmaBlue)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        return VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                bottomActionButton(
+                    title: "Send one now",
+                    systemImage: "envelope",
+                    isEnabled: canSendNow,
+                    action: handleSendNowTap
+                )
+                bottomActionButton(
+                    title: "Export PDF",
+                    systemImage: "doc.richtext",
+                    isEnabled: canExport,
+                    action: handleExportTap
                 )
             }
-            .disabled(!canSendNow)
-            .opacity(canSendNow ? 1 : 0.45)
-            
-            Button(action: { handleExportTap() }) {
-                HStack {
-                    Spacer()
-                    Text("Export PDF")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    Image(systemName: "doc.richtext")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    Spacer()
-                }
-                .padding(.vertical, 14)
-                .background(Color.figmaBlue)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-            }
-            .disabled(!canExport)
-            .opacity(canExport ? 1 : 0.45)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
         }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 24)
         .background(
             LinearGradient(colors: [Color.white.opacity(0.92), Color.white.opacity(0.65)], startPoint: .top, endPoint: .bottom)
                 .blur(radius: 12)
@@ -220,6 +191,35 @@ struct MainView: View {
         )
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
+    
+    private func bottomActionButton(
+        title: String,
+        systemImage: String,
+        isEnabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.headline)
+                Spacer(minLength: 8)
+                Image(systemName: systemImage)
+                    .font(.headline)
+            }
+            .foregroundColor(.figmaBlue)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity)
+            .background(Color.blue.opacity(0.05))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.figmaBlue, lineWidth: 1)
+            )
+            .cornerRadius(12)
+            .opacity(isEnabled ? 1 : 0.45)
+        }
+        .disabled(!isEnabled)
+    }d
     
     private func decodeBase64ToImage(_ base64: String) -> UIImage? {
         guard !base64.isEmpty, let data = Data(base64Encoded: base64) else { return nil }
