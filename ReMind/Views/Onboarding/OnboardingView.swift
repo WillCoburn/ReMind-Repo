@@ -54,7 +54,7 @@ struct OnboardingView: View {
                 .ignoresSafeArea()
 
             // 2) Slight blue tint over white
-            Color.figmaBlue.opacity(0.08)
+            Color.blue.opacity(0.04)
                 .ignoresSafeArea()
 
             switch step {

@@ -15,7 +15,7 @@ struct CommunityComposerSheet: View {
                 Color.white
                     .ignoresSafeArea()
 
-                Color.figmaBlue.opacity(0.04)
+                Color.blue.opacity(0.04)
                     .ignoresSafeArea()
 
                 VStack(alignment: .leading, spacing: 16) {
@@ -63,35 +63,6 @@ struct CommunityComposerSheet: View {
                     .cornerRadius(10)
 
 
-                    Spacer()
-                    
-                    
-                    HStack {
-                        Spacer()
-
-                        Button {
-                            Task { await handleSubmit() }
-                        } label: {
-                            HStack(spacing: 8) {
-                                if isSubmitting {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                }
-
-                                Text(isSubmitting ? "Posting…" : "Post")
-                            }
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(
-                                Capsule()
-                                    .fill(Color.figmaBlue)
-                            )
-                        }
-                        .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting)
-                        .opacity((text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting) ? 0.5 : 1.0)
-                    }
                 }
                 .padding()
             }
@@ -109,6 +80,30 @@ struct CommunityComposerSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                         .foregroundColor(.figmaBlue)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        Task { await handleSubmit() }
+                    } label: {
+                        HStack(spacing: 8) {
+                            if isSubmitting {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            }
+
+                            Text(isSubmitting ? "Posting…" : "Post")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule()
+                                .fill(Color.figmaBlue)
+                        )
+                    }
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting)
+                    .opacity((text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting) ? 0.5 : 1.0)
                 }
             }
 

@@ -17,7 +17,7 @@ struct SendNowSheet: View {
             ZStack {
                 // Base → white, then soft blue overlay (matches ExportSheet)
                 Color.white
-                Color.figmaBlue.opacity(0.08)
+                Color.blue.opacity(0.08)
 
                 VStack {
                     Spacer()

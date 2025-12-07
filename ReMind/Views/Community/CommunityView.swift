@@ -22,7 +22,7 @@ struct CommunityView: View {
             
             // background color
             Color.white.ignoresSafeArea()
-            Color.figmaBlue.opacity(0.04).ignoresSafeArea()
+            Color.blue.opacity(0.04).ignoresSafeArea()
 
             if isLoading {
                 VStack(spacing: 20) {
