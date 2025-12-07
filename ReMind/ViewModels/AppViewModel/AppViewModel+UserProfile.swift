@@ -97,4 +97,44 @@ extension AppViewModel {
         self.featureTourStep = .settings
         self.showFeatureTour = false
     }
+    // MARK: - Delete account
+    func deleteAccount() async throws {
+        guard let authUser = Auth.auth().currentUser else {
+            throw NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "No signed-in user."])
+        }
+
+        let uid = authUser.uid
+
+        detachUserListener()
+        detachEntriesListener()
+
+        // Remove the user's entries so data is purged alongside the profile.
+        let entriesSnapshot = try await db
+            .collection("users")
+            .document(uid)
+            .collection("entries")
+            .getDocuments()
+
+        for document in entriesSnapshot.documents {
+            try await document.reference.delete()
+        }
+
+        // Remove the user document itself.
+        let userRef = db.collection("users").document(uid)
+        if try await userRef.getDocument().exists {
+            try await userRef.delete()
+        }
+
+        // Delete the Firebase Auth user.
+        try await authUser.delete()
+        try? Auth.auth().signOut()
+
+        // Clear local state to return to onboarding/login.
+        self.user = nil
+        self.entries = []
+        self.smsOptOut = false
+        self.hasSeenFeatureTour = false
+        self.featureTourStep = .settings
+        self.showFeatureTour = false
+    }
 }

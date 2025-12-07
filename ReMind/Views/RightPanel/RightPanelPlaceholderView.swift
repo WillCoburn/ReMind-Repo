@@ -20,6 +20,7 @@ struct RightPanelPlaceholderView: View {
     @State private var pendingSaveWorkItem: DispatchWorkItem?
     @State private var activeSheet: ActiveSettingsSheet?
     @State private var showPaywall = false
+    @State private var showDeleteSheet = false
     @State private var restoreMessage: String?
     @State private var mailError: String?
 
@@ -98,6 +99,10 @@ struct RightPanelPlaceholderView: View {
         }
         .sheet(isPresented: $showPaywall) {
             SubscriptionSheet()
+        }
+        .sheet(isPresented: $showDeleteSheet) {
+            DeleteAccountSheet(isPresented: $showDeleteSheet)
+                .environmentObject(appVM)
         }
         .alert(
             "Mail Error",
@@ -188,21 +193,21 @@ struct RightPanelPlaceholderView: View {
             // Bottom group
             VStack(spacing: 0) {
                 SettingsRow(
-                    title: "Delete Account",
-                    value: nil,
-                    isDestructive: true,
-                    showsChevron: false,
-                    action: {}
-                )
-
-                Color.clear.frame(height: 6)
-
-                SettingsRow(
                     title: "Log Out",
                     value: nil,
                     isDestructive: true,
                     showsChevron: false,
                     action: { appVM.logout() }
+                )
+
+                Color.clear.frame(height: 6)
+
+                SettingsRow(
+                    title: "Delete Account",
+                    value: nil,
+                    isDestructive: true,
+                    showsChevron: false,
+                    action: { showDeleteSheet = true }
                 )
             }
             .background(Color.white)
