@@ -72,15 +72,22 @@ struct CommunityComposerSheet: View {
                         Button {
                             Task { await handleSubmit() }
                         } label: {
-                            Text("Post")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.figmaBlue)
-                                )
+                            HStack(spacing: 8) {
+                                if isSubmitting {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                }
+
+                                Text(isSubmitting ? "Posting…" : "Post")
+                            }
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(Color.figmaBlue)
+                            )
                         }
                         .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting)
                         .opacity((text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting) ? 0.5 : 1.0)
@@ -95,7 +102,7 @@ struct CommunityComposerSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("Community Note")
+                    Text("")
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(.black)
                 }
