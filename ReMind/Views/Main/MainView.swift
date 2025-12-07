@@ -191,11 +191,6 @@ struct MainView: View {
                 actionButtonHeight = height
             }
         }
-        .background(
-            LinearGradient(colors: [Color.white.opacity(0.92), Color.white.opacity(0.65)], startPoint: .top, endPoint: .bottom)
-                .blur(radius: 12)
-                .ignoresSafeArea(edges: .bottom)
-        )
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     
@@ -228,7 +223,12 @@ struct MainView: View {
             .frame(maxWidth: .infinity)
             // 👇 use minHeight to allow wrapping while syncing heights
             .frame(minHeight: sharedHeight > 0 ? sharedHeight : nil)
-            .background(Color.blue.opacity(0.05))
+            .background(
+                ZStack {
+                    Color.white                      // base layer
+                    Color.blue.opacity(0.05)         // tinted layer on top
+                }
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color.figmaBlue, lineWidth: 1)
