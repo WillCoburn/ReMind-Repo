@@ -18,64 +18,95 @@ struct ExportSheet: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 16) {
-                if isExporting {
-                    ProgressView("Generating PDF…")
-                        .progressViewStyle(.circular)
-                        .padding(.top, 8)
-                } else {
-                    Image(systemName: "doc.richtext")
-                        .font(.system(size: 40, weight: .semibold))
-                        .padding(.top, 8)
-                }
+            ZStack {
+                // Base → white, then soft blue overlay
+                Color.white
+                Color.figmaBlue.opacity(0.08)
 
-                if let error {
-                    Text(error)
-                        .font(.subheadline)
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                } else {
-                    Text("Compile your entries into a PDF and receive a text with the link.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
+                VStack {
+                    Spacer()
 
-                if let link {
-                    VStack(spacing: 10) {
-                        Button("Copy link") {
-                            UIPasteboard.general.string = link.absoluteString
+                    // --- Centered icon + message block ---
+                    VStack(spacing: 24) {
+                        if isExporting {
+                            ProgressView("Generating PDF…")
+                                .progressViewStyle(.circular)
+                        } else {
+                            Image("pdficon")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 240, height: 240)   // Larger icon
                         }
-                        .buttonStyle(.bordered)
 
-                        Link("Open link", destination: link)
-                            .buttonStyle(.bordered)
+                        if let error {
+                            Text(error)
+                                .font(.subheadline)
+                                .foregroundColor(.red)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                        } else {
+                            Text("Compile your entries into a PDF and receive a text with the link.")
+                                .font(.subheadline)
+                                .foregroundColor(Color.black.opacity(0.65))   // More visible gray
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                        }
+
+                        if let link {
+                            VStack(spacing: 10) {
+                                Button("Copy link") {
+                                    UIPasteboard.general.string = link.absoluteString
+                                }
+                                .buttonStyle(.bordered)
+
+                                Link("Open link", destination: link)
+                                    .buttonStyle(.bordered)
+                            }
+                            .padding(.top, 4)
+                        }
                     }
-                    .padding(.top, 4)
-                }
 
-                Spacer()
+                    Spacer()
 
-                Button {
-                    print("🧭 Export button tapped") // ✅ Step 3: start log
-                    Task {
-                        await runExport()
+                    // --- Bottom buttons ---
+                    VStack(spacing: 12) {
+                        Button {
+                            print("🧭 Export button tapped")
+                            Task { await runExport() }
+                        } label: {
+                            Text("Export")
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .font(.headline)
+                        }
+                        .foregroundColor(.white)
+                        .background(isExporting ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .disabled(isExporting)
+
+                        Button(action: { dismiss() }) {
+                            Text("Cancel")
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .font(.headline)
+                        }
+                        .foregroundColor(.white)
+                        .background(Color(.systemGray4))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
-                } label: {
-                    Text("Export & Text Me")
-                        .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(isExporting)
-
-                Button("Close") { dismiss() }
-                    .buttonStyle(.plain)
-                    .padding(.top, 2)
             }
-            .padding()
-            .navigationTitle("Export")
+            .ignoresSafeArea()
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Export")
+                        .font(.headline)
+                        .foregroundColor(.black)
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
         }
         .toast(isPresented: $showToast) {
             HStack {
@@ -88,7 +119,7 @@ struct ExportSheet: View {
     }
 
     private func runExport() async {
-        print("🚀 Starting runExport()") // ✅ New log
+        print("🚀 Starting runExport()")
         error = nil
         isExporting = true
         defer { isExporting = false }
@@ -104,6 +135,7 @@ struct ExportSheet: View {
         }
     }
 }
+
 
 // Simple toast view modifier
 fileprivate struct ToastOverlay<ToastView: View>: ViewModifier {

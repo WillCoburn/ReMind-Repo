@@ -12,6 +12,7 @@ struct MainView: View {
     
     @State private var input: String = ""
     @State private var showExportSheet = false
+    @State private var showSendNowSheet = false
     @State private var showSuccessMessage = false
     @State private var showPaywall = false
     @State private var isSubmitting = false
@@ -123,6 +124,7 @@ struct MainView: View {
             }
         }
         .sheet(isPresented: $showExportSheet) { ExportSheet() }
+        .sheet(isPresented: $showSendNowSheet) { SendNowSheet() }
         .sheet(isPresented: $showPaywall) { SubscriptionSheet() }
         .alert(alertTitle, isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
@@ -221,14 +223,7 @@ struct MainView: View {
                 showAlert = true
                 return
             }
-            do {
-                try await appVM.sendOneNow()
-                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
-            } catch {
-                alertTitle = "ReMind"
-                alertMessage = error.localizedDescription
-                showAlert = true
-            }
+            showSendNowSheet = true
         }
     }
 

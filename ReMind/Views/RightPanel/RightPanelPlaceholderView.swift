@@ -41,7 +41,7 @@ struct RightPanelPlaceholderView: View {
                         streakTile
                         receivedTile
                     }
-                    .padding(.top, 8)
+                    .padding(.top, 24)
 
                     settingsList
                 }
@@ -52,12 +52,9 @@ struct RightPanelPlaceholderView: View {
         
         .toolbar {
             ToolbarItem(placement: .principal) {
-                VStack(spacing: 0) {
-                    Text("Stats & Settings")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(.black)
-                }
-                .padding(.top, -14)  // centers vertically
+                Text("Stats & Settings")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(.black)
             }
         }
          .toolbarBackground(Color.figmaBlue.opacity(0.08), for: .navigationBar)

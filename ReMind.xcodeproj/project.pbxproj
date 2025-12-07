@@ -44,6 +44,7 @@
 		D23CFAF52ECAAAFE00FEBF3D /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF42ECAAAFC00FEBF3D /* CommunityView.swift */; };
 		D23CFAF72ECAAB0700FEBF3D /* CommunityPostRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF62ECAAB0300FEBF3D /* CommunityPostRow.swift */; };
 		D23CFAF92ECAAB0F00FEBF3D /* CommunityComposerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */; };
+		D257852F2EE53D80007D13FA /* SendNowSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D257852E2EE53D7C007D13FA /* SendNowSheet.swift */; };
 		D2BEC24C2E7E16AD009E3698 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24B2E7E16AD009E3698 /* FirebaseAnalytics */; };
 		D2BEC24E2E7E16AD009E3698 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24D2E7E16AD009E3698 /* FirebaseAuth */; };
 		D2BEC2502E7E16AD009E3698 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24F2E7E16AD009E3698 /* FirebaseCore */; };
@@ -161,6 +162,7 @@
 		D23CFAF42ECAAAFC00FEBF3D /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
 		D23CFAF62ECAAB0300FEBF3D /* CommunityPostRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityPostRow.swift; sourceTree = "<group>"; };
 		D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityComposerSheet.swift; sourceTree = "<group>"; };
+		D257852E2EE53D7C007D13FA /* SendNowSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendNowSheet.swift; sourceTree = "<group>"; };
 		D2BEC2572E7E17B5009E3698 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D2BEC2592E7E1897009E3698 /* FirebasePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebasePing.swift; sourceTree = "<group>"; };
 		D2BEC2602E7E293E009E3698 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -395,6 +397,7 @@
 		D22EF4982E7B30D800810204 /* Sheets */ = {
 			isa = PBXGroup;
 			children = (
+				D257852E2EE53D7C007D13FA /* SendNowSheet.swift */,
 				D22EF4992E7B30E700810204 /* ExportSheet.swift */,
 			);
 			path = Sheets;
@@ -748,6 +751,7 @@
 				D2D07BCF2EBC175C0078BAB0 /* PhoneField.swift in Sources */,
 				D2ED48322EC8FB020030CBA7 /* ReMindBackgrounds.swift in Sources */,
 				D21FF4BF2ECED5D70054E7F8 /* ArchivePlaceholderView.swift in Sources */,
+				D257852F2EE53D80007D13FA /* SendNowSheet.swift in Sources */,
 				D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */,
 				D23CFAF12ECAAADB00FEBF3D /* CommunityAPI.swift in Sources */,
 				D2BEC2682E7E3525009E3698 /* Haptics.swift in Sources */,
