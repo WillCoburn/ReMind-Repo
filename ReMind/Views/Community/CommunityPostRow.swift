@@ -27,12 +27,8 @@ struct CommunityPostRow: View {
                         systemImage: isLiked ? "heart.fill" : "heart"
                     )
                     .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 8)
                     .padding(.vertical, 6)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(Color.paletteTurquoise.opacity(isLiked ? 0.3 : 0.15))
-                    )
                     .foregroundColor(.figmaBlue)
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -46,12 +42,8 @@ struct CommunityPostRow: View {
                         systemImage: isReported ? "flag.fill" : "flag"
                     )
                     .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 8)
                     .padding(.vertical, 6)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(Color.paletteTurquoise.opacity(isReported ? 0.3 : 0.15))
-                    )
                     .foregroundColor(.figmaBlue)
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -67,6 +59,10 @@ struct CommunityPostRow: View {
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(Color.paletteIvory.opacity(0.9))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.figmaBlue, lineWidth: 1)
         )
     }
 

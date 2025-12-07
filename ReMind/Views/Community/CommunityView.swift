@@ -21,66 +21,84 @@ struct CommunityView: View {
         ZStack {
             
             // background color
-             Color.white.ignoresSafeArea()
-             Color.figmaBlue.opacity(0.04).ignoresSafeArea()
+            Color.white.ignoresSafeArea()
+            Color.figmaBlue.opacity(0.04).ignoresSafeArea()
 
             if isLoading {
-                ProgressView("Loading community…")
-                    .tint(.paletteTurquoise)
+                VStack(spacing: 20) {
+                     header
+                     ProgressView("Loading community…")
+                         .tint(.paletteTurquoise)
+                 }
 
             } else if let errorMessage, !errorMessage.isEmpty {
-                VStack(spacing: 8) {
-                    Text("Something went wrong")
-                        .foregroundColor(.palettePewter)
-                        .font(.headline)
-                    Text(errorMessage)
-                        .font(.subheadline)
-                        .foregroundColor(.palettePewter.opacity(0.8))
+                VStack(spacing: 12) {
+                    header
+                    VStack(spacing: 8) {
+                        Text("Something went wrong")
+                            .foregroundColor(.palettePewter)
+                            .font(.headline)
+                        Text(errorMessage)
+                            .font(.subheadline)
+                            .foregroundColor(.palettePewter.opacity(0.8))
+                    }
+                    .padding(.horizontal)
                 }
-                .padding()
+
 
             } else if posts.isEmpty {
-                VStack(spacing: 12) {
-                    if appVM.isGodModeUser {
-                        GodModeBanner()
+                ScrollView {
+                    VStack(spacing: 12) {
+                        header
+                        if appVM.isGodModeUser {
+                            GodModeBanner()
+                                .padding(.horizontal)
+                        }
+                        Text("No posts yet")
+                            .font(.headline)
+                            .foregroundColor(.palettePewter)
+                        Text("Be the first to share a reminder with the community.")
+                            .font(.subheadline)
+                            .foregroundColor(.palettePewter.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
                     }
-                    Text("No posts yet")
-                        .font(.headline)
-                        .foregroundColor(.palettePewter)
-                    Text("Be the first to share a reminder with the community.")
-                        .font(.subheadline)
-                        .foregroundColor(.palettePewter.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                        .frame(maxWidth: .infinity)
                 }
 
             } else {
-                if appVM.isGodModeUser {
-                    GodModeBanner()
-                        .padding(.horizontal)
-                        .padding(.top, 8)
-                }
+
 
                 ScrollView {
-                    GeometryReader { proxy in
-                        Color.clear
-                            .preference(key: ScrollOffsetPreferenceKey.self,
-                                        value: proxy.frame(in: .named("communityScroll")).minY)
-                    }
-                    .frame(height: 0)
-                    LazyVStack(spacing: 16) {
-                        ForEach(posts) { post in
-                            CommunityPostRow(
-                                post: post,
-                                isLiked: isLiked(post),
-                                isReported: isReported(post),
-                                onLike: { handleLike(post) },
-                                onReport: { handleReport(post) }
-                            )
+                    VStack(alignment: .leading, spacing: 0) {
+                         header
+                         if appVM.isGodModeUser {
+                             GodModeBanner()
+                                 .padding(.horizontal)
+                                 .padding(.bottom, 8)
+                         }
+
+                         GeometryReader { proxy in
+                             Color.clear
+                                 .preference(key: ScrollOffsetPreferenceKey.self,
+                                             value: proxy.frame(in: .named("communityScroll")).minY)
+                         }
+                         .frame(height: 0)
+
+                         LazyVStack(spacing: 16) {
+                             ForEach(posts) { post in
+                                 CommunityPostRow(
+                                     post: post,
+                                     isLiked: isLiked(post),
+                                     isReported: isReported(post),
+                                     onLike: { handleLike(post) },
+                                     onReport: { handleReport(post) }
+                                 )
+                             }
                         }
                     }
                     .padding(.horizontal)
-                    .padding(.vertical, 12)
+                    .padding(.bottom, 12)
                 }
                 .refreshable {
                     await refreshFeed()
@@ -91,14 +109,7 @@ struct CommunityView: View {
                 }
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
-         .toolbar {
-             ToolbarItem(placement: .principal) {
-                 Text("Community")
-                     .font(.system(size: 24, weight: .semibold))
-                     .foregroundColor(.black)
-             }
-         }
+
         .overlay(alignment: .bottomTrailing) {
             Button {
                 showComposer = true
@@ -119,10 +130,6 @@ struct CommunityView: View {
             .padding(.bottom, 24)
         }
         
-        //toolbar color
-        .toolbarBackground(Color.figmaBlue.opacity(0.04), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarColorScheme(.light, for: .navigationBar)
             
         .sheet(isPresented: $showComposer) {
             CommunityComposerSheet()
@@ -153,6 +160,15 @@ struct CommunityView: View {
         )
         .onAppear { startListeningIfNeeded() }
         .onDisappear { stopListening() }
+    }
+    
+    private var header: some View {
+        Text("Community")
+            .font(.system(size: 24, weight: .semibold))
+            .foregroundColor(.black)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.top, 36)
+            .padding(.bottom, 20)
     }
 
     // MARK: - Firestore Feed Listener
