@@ -30,8 +30,8 @@ struct EntryComposer: View {
                     .foregroundColor(.primary)
 
                 if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text("Hey Future me, remember…")
-                        .foregroundColor(.secondary)
+                    Text("Hey future me, remember…")
+                        .foregroundColor(.black)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 18)
                 }
