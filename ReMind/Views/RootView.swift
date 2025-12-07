@@ -75,6 +75,8 @@ struct RootView: View {
             .tag(Page.right)
         }
         .tabViewStyle(.page(indexDisplayMode: .never)) // Snapchat-style swipe
+        // Keep bottom overlays (like MainView's action bar) pinned even when the keyboard shows
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     
     @ViewBuilder

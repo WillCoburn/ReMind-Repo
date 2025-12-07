@@ -28,12 +28,14 @@ struct EntryComposer: View {
                     .background(Color.clear)
                     .scrollContentBackground(.hidden)
                     .foregroundColor(.black)
+                    .font(.system(size: 17))
 
                 if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Text("Hey future me, remember…")
                         .foregroundColor(.gray)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 18)
+                        .font(.system(size: 17)) 
                 }
             }
 
