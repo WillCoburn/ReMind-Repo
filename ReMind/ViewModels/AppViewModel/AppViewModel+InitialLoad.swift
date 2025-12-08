@@ -83,11 +83,51 @@ extension AppViewModel {
             applyFeatureTourFlag(false)
         }
 
+        await fetchAndApplyUserSettings(uid: uid)
         attachUserListener(uid)
         attachEntriesListener(uid)
         await refreshAll()
     }
 
+    // MARK: - User settings
+    private func fetchAndApplyUserSettings(uid: String) async {
+        do {
+            let settingsSnap = try await db.collection("users")
+                .document(uid)
+                .collection("meta")
+                .document("settings")
+                .getDocument()
+
+            guard settingsSnap.exists else { return }
+
+            let defaults = UserDefaults.standard
+
+            if let weekly = settingsSnap.get("remindersPerWeek") as? Double {
+                defaults.set(weekly, forKey: "remindersPerWeek")
+            }
+
+            if let tzIdentifier = settingsSnap.get("tzIdentifier") as? String {
+                defaults.set(tzIdentifier, forKey: "tzIdentifier")
+            }
+
+            func clampHour(_ raw: Any?) -> Double? {
+                if let value = raw as? Double { return max(0, min(24, value)) }
+                if let value = raw as? Int { return max(0, min(24, Double(value))) }
+                return nil
+            }
+
+            if let start = clampHour(settingsSnap.get("quietStartHour")) {
+                defaults.set(start, forKey: "quietStartHour")
+            }
+
+            if let end = clampHour(settingsSnap.get("quietEndHour")) {
+                defaults.set(end, forKey: "quietEndHour")
+            }
+        } catch {
+            print("⚠️ fetchAndApplyUserSettings error:", error.localizedDescription)
+        }
+    }
+    
     // MARK: - On-demand fresh read (used on every toolbar tap)
     /// Re-reads users/{uid}.smsOptOut and updates `smsOptOut`.
     /// Returns the fresh value (false if missing or signed out).
