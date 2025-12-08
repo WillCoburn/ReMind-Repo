@@ -27,8 +27,8 @@ struct CommunityView: View {
             if isLoading {
                 VStack(spacing: 20) {
                      header
-                     ProgressView("Loading community…")
-                         .tint(.paletteTurquoise)
+                     ProgressView("Loading…")
+                         .foregroundColor(.black)
                  }
 
             } else if let errorMessage, !errorMessage.isEmpty {
@@ -36,7 +36,7 @@ struct CommunityView: View {
                     header
                     VStack(spacing: 8) {
                         Text("Something went wrong")
-                            .foregroundColor(.palettePewter)
+                            .foregroundColor(.black)
                             .font(.headline)
                         Text(errorMessage)
                             .font(.subheadline)

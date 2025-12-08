@@ -14,7 +14,6 @@ struct MainView: View {
     @State private var showExportSheet = false
     @State private var showSendNowSheet = false
     @State private var showSuccessMessage = false
-    @State private var showPaywall = false
     @State private var isSubmitting = false
     @FocusState private var isEntryFieldFocused: Bool
     
@@ -69,10 +68,6 @@ struct MainView: View {
                         
                         HintBadge(count: count, goal: goal)
                         
-                        if !active {
-                            TrialBanner { showPaywall = true }
-                                .padding(.top, 8)
-                        }
                         
                         Spacer(minLength: 0)
                     }
@@ -112,7 +107,6 @@ struct MainView: View {
             }
             .sheet(isPresented: $showExportSheet) { ExportSheet() }
             .sheet(isPresented: $showSendNowSheet) { SendNowSheet() }
-            .sheet(isPresented: $showPaywall) { SubscriptionSheet() }
             .alert(alertTitle, isPresented: $showAlert) {
                 Button("OK", role: .cancel) { }
             } message: { Text(alertMessage) }

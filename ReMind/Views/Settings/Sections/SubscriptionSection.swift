@@ -11,7 +11,10 @@ struct SubscriptionSection: View {
     @Binding var restoreMessage: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+
+        // Center ALL content horizontally
+        VStack(alignment: .center, spacing: 12) {
+
             let isSubscribed = revenueCat.entitlementActive
             let willRenew = revenueCat.entitlementWillRenew
             let expiration = revenueCat.entitlementExpirationDate
@@ -20,6 +23,9 @@ struct SubscriptionSection: View {
             let trialEnd = appVM.user?.trialEndsAt
             let onTrial = (trialEnd ?? .distantPast) > now && !isSubscribed
 
+            // ============================
+            // Subscription Status / Trial
+            // ============================
             if isSubscribed {
                 if let expiration {
                     let dateString = DateFormatter.localizedString(
@@ -27,60 +33,77 @@ struct SubscriptionSection: View {
                         dateStyle: .medium,
                         timeStyle: .short
                     )
-                    if willRenew {
-                        Text("Subscription renews on: \(dateString)")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text("Subscription ends on: \(dateString)")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
+
+                    Text(willRenew
+                         ? "Subscription renews on: \(dateString)"
+                         : "Subscription ends on: \(dateString)")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
                 }
             } else {
                 if onTrial, let trialEnd {
                     let dateString = DateFormatter.localizedString(
                         from: trialEnd,
                         dateStyle: .medium,
-                        timeStyle: .short
+                        timeStyle: .none
                     )
+
                     Text("Free trial ends: \(dateString)")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
 
+                // Start Subscription Button
                 Button("Start Subscription") {
                     showPaywall = true
                 }
                 .buttonStyle(.borderedProminent)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
 
+            // ============================
+            // Manage Subscription Button
+            // ============================
             Button("Manage Subscription") {
                 if let url = RevenueCatManager.shared.managementURL {
                     UIApplication.shared.open(url)
-                } else if let url = URL(string: "itms-apps://apps.apple.com/account/subscriptions") {
-                    UIApplication.shared.open(url)
+                } else if let fallback = URL(string: "itms-apps://apps.apple.com/account/subscriptions") {
+                    UIApplication.shared.open(fallback)
                 }
             }
             .buttonStyle(.bordered)
+            .frame(maxWidth: .infinity, alignment: .center)
 
+            // ============================
+            // Restore Purchases Button
+            // ============================
             Button("Restore Purchases") {
                 RevenueCatManager.shared.restore { ok, err in
                     restoreMessage = err ?? (ok ? "Restored." : "Nothing to restore.")
                 }
             }
             .buttonStyle(.bordered)
+            .frame(maxWidth: .infinity, alignment: .center)
 
-            Text("I'm truly sorry this can't be free, I hate it too - the backend and sms service costs me about the subscription fee to run. Hope it's worth it to you :)")
+            // ============================
+            // Footer Text
+            // ============================
+            Text("I'm truly sorry this can't be free, I hate it too – the backend and SMS service costs me about the subscription fee to run. Hope it's worth it to you :)")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-            
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+
             if let msg = restoreMessage {
                 Text(msg)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
         }
         .padding(.top, 4)
+        .frame(maxWidth: .infinity)  // ensure center alignment works
     }
 }

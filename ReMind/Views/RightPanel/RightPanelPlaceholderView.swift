@@ -616,9 +616,15 @@ struct SubscriptionOptionsSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(spacing: 16) {
+            Capsule()
+                .fill(Color.secondary.opacity(0.3))
+                .frame(width: 44, height: 6)
+                .padding(.top, 8)
+            
             Text("Subscription")
                 .font(.headline)
+                .frame(maxWidth: .infinity)
 
             SubscriptionSection(
                 appVM: appVM,
@@ -626,10 +632,13 @@ struct SubscriptionOptionsSheet: View {
                 showPaywall: $showPaywall,
                 restoreMessage: $restoreMessage
             )
+            .frame(maxWidth: .infinity)
 
             Spacer(minLength: 8)
         }
         .padding()
+        .multilineTextAlignment(.center)
+                .presentationDetents([.medium])
     }
 }
 
