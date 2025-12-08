@@ -15,6 +15,8 @@ const REPORT_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const REPORT_LIMIT_MESSAGE =
   "Reports are limited to 5 per hour to avoid report-spamming.";
 
+const COMMUNITY_POST_LIMIT_PER_DAY = 5;
+
 interface CommunityReportLimitDoc {
   recentReports?: Timestamp[];
 }
@@ -47,18 +49,18 @@ export const createCommunityPost = onCall(async (request) => {
   const oneDayAgo = Timestamp.fromMillis(now.toMillis() - 24 * 60 * 60 * 1000);
 
   if (!godModeUser) {
-    // 1 post per user per 24h
+    // 5 post per user per 24h
     const recentSnap = await db
       .collection("communityPosts")
       .where("authorId", "==", uid)
       .where("createdAt", ">", oneDayAgo)
-      .limit(1)
+      .limit(COMMUNITY_POST_LIMIT_PER_DAY)
       .get();
 
-    if (!recentSnap.empty) {
+    if (recentSnap.size >= COMMUNITY_POST_LIMIT_PER_DAY) {
       throw new HttpsError(
         "failed-precondition",
-        "You can only post once per day."
+        "You can post up to 5 times per day."
       );
     }
   }
