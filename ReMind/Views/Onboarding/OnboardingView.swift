@@ -49,12 +49,9 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
 
-            // 1) Solid white base
-            Color.white
-                .ignoresSafeArea()
-
-            // 2) Slight blue tint over white
-            Color.blue.opacity(0.04)
+            Image("MainBackground")
+                .resizable()
+                .scaledToFill()
                 .ignoresSafeArea()
 
             switch step {
