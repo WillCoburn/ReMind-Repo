@@ -8,6 +8,7 @@ import SwiftUI
 
 struct RightPanelPlaceholderView: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @ObservedObject private var revenueCat = RevenueCatManager.shared
 
     @AppStorage("remindersPerWeek") private var remindersPerWeek: Double = 7.0 // 1...20
     @AppStorage("tzIdentifier")    private var tzIdentifier: String = TimeZone.current.identifier
@@ -138,6 +139,10 @@ struct RightPanelPlaceholderView: View {
 
     private var settingsList: some View {
         VStack(spacing: 12) {
+            if shouldShowTrialBanner, let trialEnd = appVM.user?.trialEndsAt {
+                trialBanner(trialEnd)
+            }
+            
             // Top group
             VStack(spacing: 0) {
                 SettingsRow(
@@ -253,6 +258,51 @@ struct RightPanelPlaceholderView: View {
 
         pendingSaveWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: workItem)
+    }
+    
+    private func trialBanner(_ trialEnd: Date) -> some View {
+        HStack(spacing: 12) {
+
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.footnote)
+                .foregroundColor(.red)
+
+            Text("Free trial is active until \(trialEndDateString(trialEnd)).")
+                .font(.footnote)
+                .foregroundColor(.red)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button(action: { showPaywall = true }) {
+                Text("Subscribe")
+                    .font(.footnote.weight(.semibold))
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
+                    .background(Color.figmaBlue)
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)   // IMPORTANT: prevents parent gestures from blocking taps
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.red.opacity(0.12))
+        )
+    }
+
+
+    private var shouldShowTrialBanner: Bool {
+        guard !revenueCat.entitlementActive else { return false }
+        guard let trialEnd = appVM.user?.trialEndsAt else { return false }
+        return Date() < trialEnd
+    }
+
+    private func trialEndDateString(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
 }
 
