@@ -277,7 +277,6 @@ export {
   // scheduling utilities
   clampWeeklyRate,
   randExpHrs,
-  MIN_ENTRIES_FOR_SCHEDULING,
   hasAtLeastEntries,
   nextLocalTime,
   loadSettings,
