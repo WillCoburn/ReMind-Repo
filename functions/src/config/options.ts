@@ -23,7 +23,7 @@ export const TWILIO_MSID = defineSecret("TWILIO_MSID"); // optional
 const clampWeeklyRate = (r: number) => Math.min(20, Math.max(1, r));
 const randExpHrs = (mean: number) => -Math.log(1 - Math.random()) * mean;
 
-async function hasAtLeastEntries(uid: string, min = 5) {
+async function hasAtLeastEntries(uid: string, min = 3) {
   const snap = await db.collection(`users/${uid}/entries`).limit(min).get();
   return snap.size >= min;
 }
@@ -81,7 +81,7 @@ async function loadSettings(uid: string) {
 }
 
 async function scheduleNext(uid: string, fromUtc = new Date()) {
-  if (!(await hasAtLeastEntries(uid, 5))) {
+  if (!(await hasAtLeastEntries(uid, 3))) {
     await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
     logger.info("[scheduleNext] threshold not met; nextSendAt=null", { uid });
     return;

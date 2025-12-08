@@ -12,7 +12,7 @@ export const onEntryCreated = onDocumentCreated(
     const user = await db.doc(`users/${uid}`).get();
     if (!user.exists || user.get("active") !== true) return;
 
-    if (await hasAtLeastEntries(uid, 5)) {
+    if (await hasAtLeastEntries(uid, 3)) {
       await scheduleNext(uid, new Date());
     }
   }

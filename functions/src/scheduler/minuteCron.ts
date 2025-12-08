@@ -85,7 +85,7 @@ export const minuteCron = onSchedule(
           continue;
         }
 
-        if (!(await hasAtLeastEntries(uid, 5))) {
+        if (!(await hasAtLeastEntries(uid, 3))) {
           await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
           continue;
         }
