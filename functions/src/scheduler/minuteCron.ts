@@ -8,6 +8,7 @@ import {
   logger,
   scheduleNext,
   hasAtLeastEntries,
+  MIN_ENTRIES_FOR_SCHEDULING,
   pickEntry,
   incrementReceivedCount,
   applyOptOut,
@@ -85,7 +86,7 @@ export const minuteCron = onSchedule(
           continue;
         }
 
-        if (!(await hasAtLeastEntries(uid, 3))) {
+        if (!(await hasAtLeastEntries(uid, MIN_ENTRIES_FOR_SCHEDULING))) {
           await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
           continue;
         }
