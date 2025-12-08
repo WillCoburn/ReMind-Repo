@@ -65,7 +65,7 @@ struct CommunityView: View {
             actions: {
                 Button("OK", role: .cancel) { showSubscribeAlert = false }
             },
-            message: { Text(subscribeAlertMessage ?? "Your free trial has ended. Start a subscription to send reminders.") }
+            message: { Text(subscribeAlertMessage ?? "Your free trial has ended. Start a subscription to use ReMind.") }
         )
         .alert(
             "Action Failed",
@@ -227,7 +227,7 @@ struct CommunityView: View {
     }
 
     private func presentSubscribeAlert() {
-        subscribeAlertMessage = "Your free trial has ended. Start a subscription to send reminders."
+        subscribeAlertMessage = "Your free trial has ended. Start a subscription to use ReMind."
         showSubscribeAlert = true
     }
     
