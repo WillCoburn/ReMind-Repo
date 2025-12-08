@@ -8,6 +8,8 @@ struct CommunityView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var showComposer = false
+    @State private var showSubscribeAlert = false
+    @State private var subscribeAlertMessage: String?
     @State private var actionErrorMessage: String?
     @State private var reportLimitMessage: String?
 
@@ -18,6 +20,83 @@ struct CommunityView: View {
     @State private var isAtTop = true
 
     var body: some View {
+        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
+
+        ZStack(alignment: .bottomTrailing) {
+            content
+                .blur(radius: active ? 0 : 12)
+                .overlay {
+                    if !active {
+                        Color.white.opacity(0.35).ignoresSafeArea()
+                    }
+                }
+                .allowsHitTesting(active)
+
+            Button {
+                guard active else {
+                    presentSubscribeAlert()
+                    return
+                }
+                showComposer = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 56, height: 56)
+                    .background(
+                        Circle()
+
+                        //BUTTON COLOR
+                            .fill(Color.figmaBlue)
+                    )
+                    .shadow(radius: 4)
+            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 24)
+        }
+
+        .sheet(isPresented: $showComposer) {
+            CommunityComposerSheet()
+        }
+        .alert(
+            "Subscribe to Continue",
+            isPresented: $showSubscribeAlert,
+            actions: {
+                Button("OK", role: .cancel) { showSubscribeAlert = false }
+            },
+            message: { Text(subscribeAlertMessage ?? "Your free trial has ended. Start a subscription to send reminders.") }
+        )
+        .alert(
+            "Action Failed",
+            isPresented: Binding(
+                get: { actionErrorMessage != nil },
+                set: { if !$0 { actionErrorMessage = nil } }
+            ),
+            actions: {
+                Button("OK", role: .cancel) { actionErrorMessage = nil }
+            },
+            message: { Text(actionErrorMessage ?? "") }
+        )
+        .alert(
+            "Reports Temporarily Limited",
+            isPresented: Binding(
+                get: { reportLimitMessage != nil },
+                set: { if !$0 { reportLimitMessage = nil } }
+            ),
+            actions: {
+                Button("OK", role: .cancel) { reportLimitMessage = nil }
+            },
+            message: {
+                Text(reportLimitMessage ?? "Reports are limited to avoid report-spamming. Please try again later.")
+            }
+        )
+        .onAppear { startListeningIfNeeded() }
+        .onDisappear { stopListening() }
+        // Hide the nav bar so the custom header/background fill the safe areas.
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var content: some View {
         ZStack {
             
             // background color
@@ -26,10 +105,10 @@ struct CommunityView: View {
 
             if isLoading {
                 VStack(spacing: 20) {
-                     header
-                     ProgressView("Loading…")
-                         .foregroundColor(.black)
-                 }
+                    header
+                    ProgressView("Loading…")
+                        .foregroundColor(.black)
+                }
 
             } else if let errorMessage, !errorMessage.isEmpty {
                 VStack(spacing: 12) {
@@ -63,7 +142,7 @@ struct CommunityView: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                     }
-                        .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity)
                 }
 
             } else {
@@ -71,30 +150,30 @@ struct CommunityView: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                         header
-                         if appVM.isGodModeUser {
-                             GodModeBanner()
-                                 .padding(.horizontal)
-                                 .padding(.bottom, 8)
-                         }
+                        header
+                        if appVM.isGodModeUser {
+                            GodModeBanner()
+                                .padding(.horizontal)
+                                .padding(.bottom, 8)
+                        }
 
-                         GeometryReader { proxy in
-                             Color.clear
-                                 .preference(key: ScrollOffsetPreferenceKey.self,
-                                             value: proxy.frame(in: .named("communityScroll")).minY)
-                         }
-                         .frame(height: 0)
+                        GeometryReader { proxy in
+                            Color.clear
+                                .preference(key: ScrollOffsetPreferenceKey.self,
+                                            value: proxy.frame(in: .named("communityScroll")).minY)
+                        }
+                        .frame(height: 0)
 
-                         LazyVStack(spacing: 16) {
-                             ForEach(posts) { post in
-                                 CommunityPostRow(
-                                     post: post,
-                                     isLiked: isLiked(post),
-                                     isReported: isReported(post),
-                                     onLike: { handleLike(post) },
-                                     onReport: { handleReport(post) }
-                                 )
-                             }
+                        LazyVStack(spacing: 16) {
+                            ForEach(posts) { post in
+                                CommunityPostRow(
+                                    post: post,
+                                    isLiked: isLiked(post),
+                                    isReported: isReported(post),
+                                    onLike: { handleLike(post) },
+                                    onReport: { handleReport(post) }
+                                )
+                            }
                         }
                     }
                     .padding(.horizontal)
@@ -110,58 +189,7 @@ struct CommunityView: View {
             }
         }
 
-        .overlay(alignment: .bottomTrailing) {
-            Button {
-                showComposer = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 56, height: 56)
-                    .background(
-                        Circle()
-                        
-                        //BUTTON COLOR
-                            .fill(Color.figmaBlue)
-                    )
-                    .shadow(radius: 4)
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 24)
-        }
-        
-            
-        .sheet(isPresented: $showComposer) {
-            CommunityComposerSheet()
-        }
-        .alert(
-            "Action Failed",
-            isPresented: Binding(
-                get: { actionErrorMessage != nil },
-                set: { if !$0 { actionErrorMessage = nil } }
-            ),
-            actions: {
-                Button("OK", role: .cancel) { actionErrorMessage = nil }
-            },
-            message: { Text(actionErrorMessage ?? "") }
-        )
-        .alert(
-            "Reports Temporarily Limited",
-            isPresented: Binding(
-                get: { reportLimitMessage != nil },
-                set: { if !$0 { reportLimitMessage = nil } }
-            ),
-            actions: {
-                Button("OK", role: .cancel) { reportLimitMessage = nil }
-            },
-            message: {
-                Text(reportLimitMessage ?? "Reports are limited to avoid report-spamming. Please try again later.")
-            }
-        )
-        .onAppear { startListeningIfNeeded() }
-        .onDisappear { stopListening() }
-        // Hide the nav bar so the custom header/background fill the safe areas.
-                .toolbar(.hidden, for: .navigationBar)
+
     }
     
     private var header: some View {
@@ -190,6 +218,17 @@ struct CommunityView: View {
         listener = nil
     }
 
+    private func isActive(trialEndsAt: Date?) -> Bool {
+        let entitled = RevenueCatManager.shared.entitlementActive
+        let onTrial = trialEndsAt.map { Date() < $0 } ?? false
+        return entitled || onTrial
+    }
+
+    private func presentSubscribeAlert() {
+        subscribeAlertMessage = "Your free trial has ended. Start a subscription to send reminders."
+        showSubscribeAlert = true
+    }
+    
     // MARK: - Actions
 
     private func handleLike(_ post: CommunityPost) {

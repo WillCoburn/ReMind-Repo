@@ -278,8 +278,15 @@ struct MainView: View {
     
     private func handleExportTap() {
         let count = appVM.entries.count
+        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
         guard net.isConnected else { presentOfflineAlert(); return }
         if count < goal { presentLockedAlert(feature: "Export PDF"); return }
+        guard active else {
+            alertTitle = "Subscribe to Continue"
+            alertMessage = "Your free trial has ended. Start a subscription to use ReMind."
+            showAlert = true
+            return
+        }
         Task {
             let freshOptOut = await appVM.reloadSmsOptOut()
             if freshOptOut { presentOptOutAlert(); return }
