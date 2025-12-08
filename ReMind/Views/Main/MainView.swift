@@ -13,6 +13,7 @@ struct MainView: View {
     @State private var input: String = ""
     @State private var showExportSheet = false
     @State private var showSendNowSheet = false
+    @State private var showPaywall = false
     @State private var showSuccessMessage = false
     @State private var isSubmitting = false
     @FocusState private var isEntryFieldFocused: Bool
@@ -30,6 +31,12 @@ struct MainView: View {
         let entitled = RevenueCatManager.shared.entitlementActive
         let onTrial = trialEndsAt.map { Date() < $0 } ?? false
         return entitled || onTrial
+    }
+
+    private var hasExpiredTrialWithoutSubscription: Bool {
+        guard !RevenueCatManager.shared.entitlementActive else { return false }
+        guard let trialEnd = appVM.user?.trialEndsAt else { return false }
+        return Date() >= trialEnd
     }
     
     var body: some View {
@@ -57,7 +64,14 @@ struct MainView: View {
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                                 .animation(.easeInOut(duration: 0.3), value: showSuccessMessage)
                         }
-                        
+
+                        if hasExpiredTrialWithoutSubscription {
+                            SubscriptionReminderBanner(
+                                message: "Your free trial has ended - please start a subscription to use ReMind.",
+                                onSubscribe: { showPaywall = true }
+                            )
+                        }
+
                         EntryComposer(
                             text: $input,
                             isSubmitting: $isSubmitting,
@@ -107,6 +121,7 @@ struct MainView: View {
             }
             .sheet(isPresented: $showExportSheet) { ExportSheet() }
             .sheet(isPresented: $showSendNowSheet) { SendNowSheet() }
+            .sheet(isPresented: $showPaywall) { SubscriptionSheet() }
             .alert(alertTitle, isPresented: $showAlert) {
                 Button("OK", role: .cancel) { }
             } message: { Text(alertMessage) }
@@ -156,7 +171,7 @@ struct MainView: View {
     
     private func bottomActionBar(active: Bool, count: Int) -> some View {
         let canExport = net.isConnected && count >= goal
-        let canSendNow = net.isConnected && count >= goal && active
+        let canSendNow = net.isConnected && count >= goal
         
         return VStack(spacing: 0) {
             HStack(spacing: 12) {
@@ -297,18 +312,18 @@ struct MainView: View {
     private func handleSendNowTap() {
         let count = appVM.entries.count
         let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
-        
+
         guard net.isConnected else { presentOfflineAlert(); return }
         if count < goal { presentLockedAlert(feature: "Send One Now"); return }
+        guard active else {
+            alertTitle = "Subscribe to Continue"
+            alertMessage = "Your free trial has ended. Start a subscription to send reminders."
+            showAlert = true
+            return
+        }
         Task {
             let freshOptOut = await appVM.reloadSmsOptOut()
             if freshOptOut { presentOptOutAlert(); return }
-            guard active else {
-                alertTitle = "Subscribe to Continue"
-                alertMessage = "Your free trial has ended. Start a subscription to send reminders."
-                showAlert = true
-                return
-            }
             showSendNowSheet = true
         }
     }

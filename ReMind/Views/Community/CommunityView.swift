@@ -19,21 +19,22 @@ struct CommunityView: View {
     @State private var listener: ListenerRegistration?
     @State private var isAtTop = true
 
-    var body: some View {
-        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
+    private var isUserActive: Bool {
+        isActive(trialEndsAt: appVM.user?.trialEndsAt)
+    }
 
+    var body: some View {
         ZStack(alignment: .bottomTrailing) {
             content
-                .blur(radius: active ? 0 : 12)
                 .overlay {
-                    if !active {
+                    if !isUserActive {
                         Color.white.opacity(0.35).ignoresSafeArea()
                     }
                 }
-                .allowsHitTesting(active)
+                .allowsHitTesting(isUserActive)
 
             Button {
-                guard active else {
+                guard isUserActive else {
                     presentSubscribeAlert()
                     return
                 }
@@ -173,6 +174,7 @@ struct CommunityView: View {
                                     onLike: { handleLike(post) },
                                     onReport: { handleReport(post) }
                                 )
+                                .blur(radius: isUserActive ? 0 : 12)
                             }
                         }
                     }

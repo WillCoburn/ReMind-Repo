@@ -101,6 +101,7 @@
 		D2ED48292EC8F9390030CBA7 /* EntryComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */; };
 		D2ED482B2EC8F9420030CBA7 /* TopBarActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */; };
 		D2ED482D2EC8F94D0030CBA7 /* TrialBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */; };
+		40CB27E3AC55486ABA2BCA09 /* SubscriptionReminderBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */; };
 		D2ED48322EC8FB020030CBA7 /* ReMindBackgrounds.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */; };
 /* End PBXBuildFile section */
 
@@ -208,6 +209,7 @@
 		D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryComposer.swift; sourceTree = "<group>"; };
 		D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBarActions.swift; sourceTree = "<group>"; };
 		D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialBanner.swift; sourceTree = "<group>"; };
+		D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionReminderBanner.swift; sourceTree = "<group>"; };
 		D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindBackgrounds.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -533,12 +535,13 @@
 		};
 		D2ED48252EC8F9080030CBA7 /* Components */ = {
 			isa = PBXGroup;
-			children = (
-				D2D07BE22EBC1CD30078BAB0 /* OfflineBanner.swift */,
-				D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */,
-				D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */,
-				D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */,
-			);
+                        children = (
+                                D2D07BE22EBC1CD30078BAB0 /* OfflineBanner.swift */,
+                                D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */,
+                                D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */,
+                                D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */,
+                                D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */,
+                        );
 			path = Components;
 			sourceTree = "<group>";
 		};
@@ -742,6 +745,7 @@
 				D21FF4D32ECED6C80054E7F8 /* WinsPlaceholderView.swift in Sources */,
 				D21FF4CF2ECED6A20054E7F8 /* SleepPlaceholderView.swift in Sources */,
 				D2ED482D2EC8F94D0030CBA7 /* TrialBanner.swift in Sources */,
+				40CB27E3AC55486ABA2BCA09 /* SubscriptionReminderBanner.swift in Sources */,
 				D22EF48E2E7B2FEE00810204 /* AppViewModel.swift in Sources */,
 				D2D07BDF2EBC1C7F0078BAB0 /* NetworkMonitor.swift in Sources */,
 				D2ED481A2EC8F3580030CBA7 /* SendWindowSection.swift in Sources */,
