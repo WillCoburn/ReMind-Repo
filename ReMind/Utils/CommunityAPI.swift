@@ -13,6 +13,24 @@ struct CommunityPost: Identifiable, Hashable {
     let reportCount: Int
     let isHidden: Bool
     let expiresAt: Date
+    
+    init(
+         id: String,
+         text: String,
+         createdAt: Date,
+         likeCount: Int,
+         reportCount: Int,
+         isHidden: Bool,
+         expiresAt: Date
+     ) {
+         self.id = id
+         self.text = text
+         self.createdAt = createdAt
+         self.likeCount = likeCount
+         self.reportCount = reportCount
+         self.isHidden = isHidden
+         self.expiresAt = expiresAt
+     }
 
     init?(from doc: DocumentSnapshot) {
         guard let data = doc.data() else { return nil }

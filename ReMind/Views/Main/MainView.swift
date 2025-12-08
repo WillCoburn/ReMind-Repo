@@ -89,14 +89,6 @@ struct MainView: View {
                     },
                     including: .gesture
                 )
-                .overlay(alignment: .center) {
-                    if !net.isConnected {
-                        OfflineBanner()
-                            .transition(.opacity)
-                            .zIndex(999)
-                    }
-                }
-                .allowsHitTesting(net.isConnected)
                 
                 bottomActionBar(active: active, count: count)
             }

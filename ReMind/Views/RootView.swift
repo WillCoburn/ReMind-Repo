@@ -51,6 +51,7 @@ struct RootView: View {
         .animation(.default, value: appVM.shouldShowOnboarding)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: appVM.featureTourStep)
         .animation(.easeInOut(duration: 0.25), value: appVM.showFeatureTour)
+        .networkAware()
     }
     
     // MARK: - Pager (3 horizontal screens)

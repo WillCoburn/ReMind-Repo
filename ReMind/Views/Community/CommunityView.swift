@@ -194,17 +194,26 @@ struct CommunityView: View {
 
     private func handleLike(_ post: CommunityPost) {
         let godModeEnabled = appVM.isGodModeUser
+        let previouslyLiked = likedPostIds.contains(post.id)
+
+        if !godModeEnabled {
+            // Optimistically update UI so the heart fills immediately
+            Task { await MainActor.run { applyLikeState(for: post, isLiked: !previouslyLiked) } }
+        }
+
+        
         Task {
             do {
                 try await CommunityAPI.shared.toggleLike(postId: post.id)
                 if godModeEnabled {
                     await refreshFeed()
-                } else {
-                    await MainActor.run {
-                        toggle(id: post.id, in: &likedPostIds)
-                    }
+
                 }
             } catch {
+                if !godModeEnabled {
+                    // Roll back optimistic update
+                    await MainActor.run { applyLikeState(for: post, isLiked: previouslyLiked) }
+                }
                 await MainActor.run {
                     actionErrorMessage = "Unable to like post. Please try again."
                 }
@@ -214,18 +223,26 @@ struct CommunityView: View {
 
     private func handleReport(_ post: CommunityPost) {
         let godModeEnabled = appVM.isGodModeUser
+        let previouslyReported = reportedPostIds.contains(post.id)
+
+        if !godModeEnabled {
+            // Optimistically update UI so the flag fills immediately
+            Task { await MainActor.run { applyReportState(for: post, isReported: !previouslyReported) } }
+        }
+
         Task {
             do {
                 try await CommunityAPI.shared.toggleReport(postId: post.id)
                 if godModeEnabled {
                     await refreshFeed()
-                } else {
-                    await MainActor.run {
-                        toggle(id: post.id, in: &reportedPostIds)
-                    }
+
                 }
             } catch {
                 await MainActor.run {
+                    if !godModeEnabled {
+                        // Roll back optimistic update
+                        applyReportState(for: post, isReported: previouslyReported)
+                    }
                     if let limitMessage = reportLimitAlertMessage(for: error) {
                         reportLimitMessage = limitMessage
                     } else {
@@ -246,14 +263,6 @@ struct CommunityView: View {
         return reportedPostIds.contains(post.id)
     }
 
-    @MainActor
-    private func toggle(id: String, in set: inout Set<String>) {
-        if set.contains(id) {
-            set.remove(id)
-        } else {
-            set.insert(id)
-        }
-    }
 
     // MARK: - Refresh
 
@@ -286,6 +295,56 @@ struct CommunityView: View {
         }
 
         return "Reports are limited to avoid report-spamming. Please try again later."
+    }
+    
+    // MARK: - Optimistic UI helpers
+
+    @MainActor
+    private func applyLikeState(for post: CommunityPost, isLiked: Bool) {
+        if isLiked {
+            likedPostIds.insert(post.id)
+        } else {
+            likedPostIds.remove(post.id)
+        }
+
+        updatePosts(for: post.id) { current in
+            current.withUpdatedCounts(likeDelta: isLiked ? 1 : -1)
+        }
+    }
+
+    @MainActor
+    private func applyReportState(for post: CommunityPost, isReported: Bool) {
+        if isReported {
+            reportedPostIds.insert(post.id)
+        } else {
+            reportedPostIds.remove(post.id)
+        }
+
+        updatePosts(for: post.id) { current in
+            current.withUpdatedCounts(reportDelta: isReported ? 1 : -1)
+        }
+    }
+
+    @MainActor
+    private func updatePosts(for postId: String, transform: (CommunityPost) -> CommunityPost) {
+        posts = posts.map { post in
+            guard post.id == postId else { return post }
+            return transform(post)
+        }
+    }
+}
+
+private extension CommunityPost {
+    func withUpdatedCounts(likeDelta: Int = 0, reportDelta: Int = 0) -> CommunityPost {
+        CommunityPost(
+            id: id,
+            text: text,
+            createdAt: createdAt,
+            likeCount: max(0, likeCount + likeDelta),
+            reportCount: max(0, reportCount + reportDelta),
+            isHidden: isHidden,
+            expiresAt: expiresAt
+        )
     }
 }
 

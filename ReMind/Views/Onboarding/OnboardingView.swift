@@ -78,8 +78,7 @@ struct OnboardingView: View {
         .animation(.easeInOut, value: isValidPhone)
         .animation(.easeInOut, value: isKeyboardVisible)
 
-        // ✅ keep your offline popup behavior
-        .networkAware()
+
 
         .onChange(of: net.isConnected) { value in
             print("🔄 net.isConnected ->", value)
