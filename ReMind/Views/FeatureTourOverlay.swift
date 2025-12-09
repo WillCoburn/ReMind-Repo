@@ -16,7 +16,7 @@ struct FeatureTourOverlay: View {
             title: "Welcome in!",
             message: "Your future self appreciates it.",
             imageName: "OnboardMeditate",
-            textAlignment: .leading
+            textAlignment: .center
         ),
         .init(
             step: .export,
@@ -27,19 +27,23 @@ struct FeatureTourOverlay: View {
         ),
         .init(
             step: .sendNow,
-            title: "Or if you have something the world needs to hear, the Community Page is the place to uplift others.",
-            message: "",
+            title: "",
+            message: "Or if you have something you want to share, the community page is the place to uplift others.",
             imageName: "OnboardCommunity",
             textAlignment: .leading
         )
     ]
 
     private var isOnLastPage: Bool { step == .sendNow }
+    private var orderedSteps: [AppViewModel.FeatureTourStep] { pages.map { $0.step } }
+    private var currentIndex: Int { orderedSteps.firstIndex(of: step) ?? 0 }
+    private var totalPages: Int { pages.count }
 
     // MARK: - Body
     var body: some View {
         ZStack {
-            Color.blue.opacity(0.05)
+            // OPAQUE, LIGHT BLUE-TINTED BACKGROUND
+            Color(red: 244/255, green: 248/255, blue: 255/255)
                 .ignoresSafeArea()
 
             VStack(spacing: 24) {
@@ -62,9 +66,23 @@ struct FeatureTourOverlay: View {
                             .tag(page.step)
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .always))
-                .indexViewStyle(.page(backgroundDisplayMode: .interactive))
-                .tint(.figmaBlue)
+                .tabViewStyle(.page(indexDisplayMode: .never))   // custom dots instead
+                .animation(.easeInOut(duration: 0.25), value: step)
+
+                // MARK: - Progress Dots
+                HStack(spacing: 8) {
+                    ForEach(0..<totalPages, id: \.self) { idx in
+                        Circle()
+                            .frame(width: 8, height: 8)
+                            .foregroundColor(
+                                idx == currentIndex
+                                ? Color.figmaBlue
+                                : Color.figmaBlue.opacity(0.3)
+                            )
+                    }
+                }
+                .padding(.bottom, 4)
+                .animation(.easeInOut(duration: 0.25), value: step)
 
                 // MARK: - Final Button
                 if isOnLastPage {
@@ -79,6 +97,8 @@ struct FeatureTourOverlay: View {
                     }
                     .padding(.horizontal, 8)
                 }
+
+                Spacer(minLength: 12)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
@@ -119,33 +139,60 @@ private struct FeatureTourPage: Identifiable {
 private struct FeatureTourPageView: View {
     let page: FeatureTourPage
 
+    private var isTextAboveImage: Bool {
+        // First page has copy at top, image below
+        page.step == .settings
+    }
+
     var body: some View {
-        VStack(alignment: page.textAlignment, spacing: 20) {
-
-            VStack(alignment: page.textAlignment, spacing: 12) {
-                Text(page.title)
-                    .font(.title2.weight(.semibold))
-                    .multilineTextAlignment(.leading)
-
-                if !page.message.isEmpty {
-                    Text(page.message)
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.leading)
-                }
-            }
-            .frame(maxWidth: .infinity,
-                   alignment: Alignment(horizontal: page.textAlignment, vertical: .center))
-
+        VStack(spacing: 24) {
             Spacer()
 
-            Image(page.imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: 360)
-                .frame(maxWidth: .infinity)
+            if isTextAboveImage {
+                textBlock
+                illustration
+            } else {
+                illustration
+                textBlock
+            }
+
+            Spacer()
         }
         .padding(.top, 16)
+    }
+
+    private var textBlock: some View {
+        VStack(alignment: page.textAlignment, spacing: 12) {
+            Text(page.title)
+                .font(.title2.weight(.semibold))
+                .multilineTextAlignment(
+                    page.textAlignment == .center ? .center : .leading
+                )
+
+            if !page.message.isEmpty {
+                Text(page.message)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(
+                        page.textAlignment == .center ? .center : .leading
+                    )
+            }
+        }
+        .frame(
+            maxWidth: .infinity,
+            alignment: Alignment(
+                horizontal: page.textAlignment,
+                vertical: .center
+            )
+        )
+    }
+
+    private var illustration: some View {
+        Image(page.imageName)
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: 360)
+            .frame(maxWidth: .infinity)
     }
 }
 

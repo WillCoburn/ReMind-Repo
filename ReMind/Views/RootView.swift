@@ -55,7 +55,15 @@ struct RootView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: appVM.featureTourStep)
         .animation(.easeInOut(duration: 0.25), value: appVM.showFeatureTour)
         .networkAware()
+        
+        // Always drop users into the main page once onboarding finishes
+        .onChange(of: appVM.shouldShowOnboarding) { shouldShow in
+            if !shouldShow {
+                activePage = .main
+            }
+        }
     }
+    
     
     // MARK: - Pager (3 horizontal screens)
     

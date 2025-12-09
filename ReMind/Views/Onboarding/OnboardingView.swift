@@ -19,6 +19,7 @@ struct OnboardingView: View {
     @State private var errorText: String = ""
     @State private var hasConsented = false
     @State private var isKeyboardVisible = false
+    @State private var keyboardHeight: CGFloat = 0     // 👈 track keyboard height
 
     // Code entry
     @State private var verificationID: String?
@@ -60,7 +61,6 @@ struct OnboardingView: View {
 
             case .enterCode:
                 codeEntryLayout
-                
             }
 
         }
@@ -78,8 +78,6 @@ struct OnboardingView: View {
         .animation(.easeInOut, value: isValidPhone)
         .animation(.easeInOut, value: isKeyboardVisible)
 
-
-
         .onChange(of: net.isConnected) { value in
             print("🔄 net.isConnected ->", value)
         }
@@ -90,98 +88,114 @@ struct OnboardingView: View {
             }
         }
 
-
-        // 👇 Track keyboard visibility to hide the subtitle
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+        // 👇 Track keyboard visibility & height
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
             isKeyboardVisible = true
+            if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                keyboardHeight = frame.height
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             isKeyboardVisible = false
+            keyboardHeight = 0
         }
 
         // Force light appearance for this screen
         .preferredColorScheme(.light)
+
+        // 👇 Prevent system from pushing the whole layout up when the keyboard appears
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 
+    // MARK: - Phone Entry Layout (Page 1)
+
     private var phoneEntryLayout: some View {
-         VStack(spacing: 24) {
+        VStack(spacing: 24) {
 
-             // MARK: - Header / Logo
-             VStack(spacing: isKeyboardVisible ? 4 : 10) {
-                 Image("FullLogo")
-                     .resizable()
-                     .scaledToFit()
-                     .frame(width: 300, height: 120)   // tune as needed
-                     .padding(.top, 4)
+            // MARK: - Header / Logo
+            VStack(spacing: isKeyboardVisible ? 4 : 10) {
+                Image("FullLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 300, height: 120)   // tune as needed
+                    .padding(.top, 4)
 
-                 // 👇 Hide this text when keyboard is visible
-                 if !isKeyboardVisible {
-                     Text("Enter your phone number to continue.")
-                         .font(.title2.weight(.semibold))
-                         .multilineTextAlignment(.center)
-                         .padding(.horizontal, 16)
-                         .transition(.opacity.combined(with: .move(edge: .top)))
-                 }
-             }
-             .fixedSize(horizontal: false, vertical: true)
-             .padding(.top, 24)
+                // 👇 Hide this text when keyboard is visible, but keep logo fixed
+                if !isKeyboardVisible {
+                    Text("Enter your phone number to continue.")
+                        .font(.title2.weight(.semibold))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 24)
 
-             PhoneEntrySection(
-                 phoneDigits: $phoneDigits,
-                 showErrorBorder: $showErrorBorder,
-                 errorText: $errorText,
-                 isValidPhone: isValidPhone
-             )
+            PhoneEntrySection(
+                phoneDigits: $phoneDigits,
+                showErrorBorder: $showErrorBorder,
+                errorText: $errorText,
+                isValidPhone: isValidPhone
+            )
 
-             if !errorText.isEmpty {
-                 Text(errorText)
-                     .font(.footnote)
-                     .foregroundColor(.red)
-                     .padding(.horizontal)
-                     .transition(.opacity.combined(with: .move(edge: .top)))
-             }
+            if !errorText.isEmpty {
+                Text(errorText)
+                    .font(.footnote)
+                    .foregroundColor(.red)
+                    .padding(.horizontal)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
 
-             Spacer(minLength: 16)
+            Spacer(minLength: 16)
 
-             ConsentAndAgreeBottom(
-                 hasConsented: $hasConsented,
-                 consentMessage: consentMessage,
-                 canContinue: canContinueOnline, // 👈 pass online-aware flag
-                 isSending: isSending,
-                 onAgreeAndContinue: {
-                     Task { await sendCode() }
-                 }
-             )
-             .padding(.bottom, 24)
-         }
-         .padding(.horizontal, 24)
-     }
+            // 👇 Float above keyboard by adding its height to the bottom padding
+            ConsentAndAgreeBottom(
+                hasConsented: $hasConsented,
+                consentMessage: consentMessage,
+                canContinue: canContinueOnline, // 👈 pass online-aware flag
+                isSending: isSending,
+                onAgreeAndContinue: {
+                    Task { await sendCode() }
+                }
+            )
+            .padding(.bottom, 24 + (isKeyboardVisible ? keyboardHeight : 0))
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
 
-     private var codeEntryLayout: some View {
-         VStack(alignment: .leading) {
-             CodeEntrySection(
-                 code: $code,
-                 phoneNumber: formattedPhoneDisplay,
-                 errorText: errorText,
-                 isVerifying: isVerifying,
-                 onEditNumber: {
-                     step = .enterPhone
-                     errorText = ""
-                     code = ""
-                 },
-                 onResend: {
-                     Task { await sendCode() }
-                 },
-                 onVerify: {
-                     Task { await verifyCode() }
-                 }
-             )
-             .padding(.horizontal, 24)
-             .padding(.top, 24)
+    // MARK: - Code Entry Layout (Page 2)
 
-             Spacer()
-         }
-     }
+    private var codeEntryLayout: some View {
+        VStack(alignment: .leading) {
+            CodeEntrySection(
+                code: $code,
+                phoneNumber: formattedPhoneDisplay,
+                errorText: errorText,
+                isVerifying: isVerifying,
+                onEditNumber: {
+                    step = .enterPhone
+                    errorText = ""
+                    code = ""
+                },
+                onResend: {
+                    Task { await sendCode() }
+                },
+                onVerify: {
+                    Task { await verifyCode() }
+                }
+            )
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+
+            Spacer()
+        }
+        // 👇 Shift the whole content (including the internal "Continue" button)
+        // up by the keyboard height so it floats above the keyboard.
+        .padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 0)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
     
     // MARK: - Actions
 
