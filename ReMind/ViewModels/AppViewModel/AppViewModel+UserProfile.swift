@@ -28,7 +28,9 @@ extension AppViewModel {
             let existingSnapshot = try await docRef.getDocument()
 
             if existingSnapshot.exists {
-                let existingCreatedAt = existingSnapshot.data()?["createdAt"] as? Timestamp
+                let existingData = existingSnapshot.data() ?? [:]
+                let existingCreatedAt = existingData["createdAt"] as? Timestamp
+                let existingTrialEnds = existingData["trialEndsAt"] as? Timestamp
                 // Only repair a missing createdAt once; never overwrite a historical timestamp
                 var mergePayload: [String: Any] = [
                     "uid": uid,
@@ -40,6 +42,25 @@ extension AppViewModel {
                     mergePayload["createdAt"] = FieldValue.serverTimestamp()
                 }
 
+                // If the doc exists but is missing the baseline onboarding fields (e.g., was
+                // created by a background writer), seed the trial + active + status so the app
+                // has everything it needs to load without freezing.
+                if existingTrialEnds == nil {
+                    let now = Date()
+                    let trialEnd = Calendar.current.date(byAdding: .day, value: 30, to: now)
+                        ?? now.addingTimeInterval(60 * 60 * 24 * 30)
+
+                    mergePayload["trialEndsAt"] = Timestamp(date: trialEnd)
+                    mergePayload["active"] = true
+
+                    self.user?.trialEndsAt = trialEnd
+                    self.user?.active = true
+                }
+
+                if existingData["subscriptionStatus"] == nil {
+                    mergePayload["subscriptionStatus"] = SubscriptionStatus.unsubscribed.rawValue
+                }
+                
                 try await docRef.setData(mergePayload, merge: true)
 
                 if let createdAtDate = existingCreatedAt?.dateValue() {
@@ -108,28 +129,51 @@ extension AppViewModel {
         detachUserListener()
         detachEntriesListener()
 
+        var firstError: Error?
+        
         // Remove the user's entries so data is purged alongside the profile.
-        let entriesSnapshot = try await db
-            .collection("users")
-            .document(uid)
-            .collection("entries")
-            .getDocuments()
+        do {
+            let entriesSnapshot = try await db
+                .collection("users")
+                .document(uid)
+                .collection("entries")
+                .getDocuments()
 
-        for document in entriesSnapshot.documents {
-            try await document.reference.delete()
+            for document in entriesSnapshot.documents {
+                do {
+                    try await document.reference.delete()
+                } catch {
+                    if firstError == nil { firstError = error }
+                }
+            }
+        } catch {
+            if firstError == nil { firstError = error }
         }
 
         // Remove the user document itself.
-        let userRef = db.collection("users").document(uid)
-        if try await userRef.getDocument().exists {
-            try await userRef.delete()
+        // Remove the user document itself (best-effort).
+        do {
+            let userRef = db.collection("users").document(uid)
+            if try await userRef.getDocument().exists {
+                try await userRef.delete()
+            }
+        } catch {
+            if firstError == nil { firstError = error }
         }
 
-        // Delete the Firebase Auth user.
-        try await authUser.delete()
-        try? Auth.auth().signOut()
+        // Delete the Firebase Auth user, or at least sign out so the UI can recover.
+        do {
+            try await authUser.delete()
+            try? Auth.auth().signOut()
+        } catch {
+            if firstError == nil { firstError = error }
+            try? Auth.auth().signOut()
+        }
 
         // Clear local state immediately (so onboarding shows without waiting for the listener).
         await loadUserAndEntries(nil)
+        if let firstError {
+            throw firstError
+        }
     }
 }

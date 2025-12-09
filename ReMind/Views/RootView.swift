@@ -32,9 +32,12 @@ struct RootView: View {
                     // Feature tour overlay (only on main page)
                     if appVM.showFeatureTour, activePage == .main {
                         FeatureTourOverlay(
-                            step: appVM.featureTourStep,
-                            onNext: {
-                                Task { await appVM.advanceFeatureTour() }
+                            step: Binding(
+                                get: { appVM.featureTourStep },
+                                set: { appVM.featureTourStep = $0 }
+                            ),
+                            onComplete: {
+                                Task { await appVM.completeFeatureTour(markAsSeen: true) }
                             },
                             onSkip: {
                                 Task { await appVM.skipFeatureTour() }
