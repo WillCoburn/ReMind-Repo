@@ -14,12 +14,11 @@ struct CodeEntryScreen: View {
     let onResend: () -> Void
     let onVerify: () -> Void
 
-    @StateObject private var keyboard = KeyboardOverlapObserver()
+    @StateObject private var keyboard = KeyboardObserver()
 
     var body: some View {
         GeometryReader { geo in
-            let safeBottom = geo.safeAreaInsets.bottom
-            let lift = max(0, keyboard.overlapHeight - safeBottom)
+            let lift = keyboard.height(in: geo)
 
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
@@ -30,9 +29,9 @@ struct CodeEntryScreen: View {
                         onResend: onResend
                     )
                     .padding(.horizontal, 24)
-                    .padding(.top, keyboard.isVisible ? 16 : 24)
+                    .padding(.top, keyboard.isVisible ? 12 : 24)
 
-                    Spacer(minLength: 0)
+                    Spacer(minLength: keyboard.isVisible ? 10 : 0)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
@@ -74,10 +73,10 @@ struct CodeEntryScreen: View {
                     .disabled(code.count < 6 || isVerifying)
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 12 + lift)
+                .padding(.bottom, max(16, 16 + lift))
             }
-            .ignoresSafeArea(.keyboard, edges: .bottom)
-            .animation(.easeInOut(duration: 0.22), value: keyboard.isVisible)
+            .ignoresSafeArea(.keyboard)
+            .animation(.easeInOut(duration: keyboard.animationContext.duration), value: keyboard.isVisible)
         }
     }
 }
