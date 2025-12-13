@@ -19,13 +19,12 @@ struct PhoneEntryScreen: View {
 
     var body: some View {
         GeometryReader { geo in
-            let safeBottom = geo.safeAreaInsets.bottom
-            let lift = max(0, keyboard.height - safeBottom)
+            let lift = keyboard.overlap(in: geo)
 
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
                     topContent
-                        .padding(.top, keyboard.isVisible ? 8 : 36)
+                        .padding(.top, 36)
                         .padding(.horizontal, 24)
 
                     VStack(alignment: .leading, spacing: 14) {
@@ -48,7 +47,7 @@ struct PhoneEntryScreen: View {
                     .padding(.horizontal, 24)
                     .padding(.top, keyboard.isVisible ? 14 : 24)
 
-                    Spacer(minLength: keyboard.isVisible ? 6 : 0)
+                    Spacer(minLength: 0)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
@@ -62,7 +61,8 @@ struct PhoneEntryScreen: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16 + lift)
             }
-            .ignoresSafeArea(.keyboard, edges: .bottom)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .ignoresSafeArea(.keyboard, edges: .all)
             .animation(.easeInOut(duration: keyboard.animationContext.duration), value: keyboard.isVisible)
         }
     }

@@ -49,6 +49,7 @@
 		D25785312EE6212F007D13FA /* Deleting Account Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25785302EE62128007D13FA /* Deleting Account Sheet.swift */; };
 		D25C557E2EED16C300A5240E /* CodeEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */; };
 		D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */; };
+		D25C55822EED206400A5240E /* KeyboardObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C55812EED206400A5240E /* KeyboardObserver.swift */; };
 		D2BEC24C2E7E16AD009E3698 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24B2E7E16AD009E3698 /* FirebaseAnalytics */; };
 		D2BEC24E2E7E16AD009E3698 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24D2E7E16AD009E3698 /* FirebaseAuth */; };
 		D2BEC2502E7E16AD009E3698 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24F2E7E16AD009E3698 /* FirebaseCore */; };
@@ -170,6 +171,7 @@
 		D25785302EE62128007D13FA /* Deleting Account Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Deleting Account Sheet.swift"; sourceTree = "<group>"; };
 		D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeEntryScreen.swift; sourceTree = "<group>"; };
 		D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEntryScreen.swift; sourceTree = "<group>"; };
+		D25C55812EED206400A5240E /* KeyboardObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardObserver.swift; sourceTree = "<group>"; };
 		D2BEC2572E7E17B5009E3698 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D2BEC2592E7E1897009E3698 /* FirebasePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebasePing.swift; sourceTree = "<group>"; };
 		D2BEC2602E7E293E009E3698 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -462,6 +464,7 @@
 			children = (
 				D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */,
 				D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */,
+				D25C55812EED206400A5240E /* KeyboardObserver.swift */,
 				D2D07BCE2EBC17570078BAB0 /* PhoneField.swift */,
 				D2D07BCC2EBC17420078BAB0 /* CodeEntrySection.swift */,
 				D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */,
@@ -746,6 +749,7 @@
 				D2BEC2662E7E334B009E3698 /* FirestoreDataStore.swift in Sources */,
 				D23CFAF72ECAAB0700FEBF3D /* CommunityPostRow.swift in Sources */,
 				D22EF47E2E7B2F1300810204 /* Affirmation.swift in Sources */,
+				D25C55822EED206400A5240E /* KeyboardObserver.swift in Sources */,
 				D22EF4902E7B302900810204 /* RootView.swift in Sources */,
 				D23CFAF52ECAAAFE00FEBF3D /* CommunityView.swift in Sources */,
 				D2ED48182EC8F3470030CBA7 /* TimeZoneSection.swift in Sources */,

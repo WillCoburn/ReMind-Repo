@@ -18,8 +18,7 @@ struct CodeEntryScreen: View {
 
     var body: some View {
         GeometryReader { geo in
-            let safeBottom = geo.safeAreaInsets.bottom
-            let lift = max(0, keyboard.height - safeBottom)
+            let lift = keyboard.overlap(in: geo)
 
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
@@ -76,7 +75,8 @@ struct CodeEntryScreen: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16 + lift)
             }
-            .ignoresSafeArea(.keyboard, edges: .bottom)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .ignoresSafeArea(.keyboard, edges: .all)
             .animation(.easeInOut(duration: keyboard.animationContext.duration), value: keyboard.isVisible)
         }
     }
