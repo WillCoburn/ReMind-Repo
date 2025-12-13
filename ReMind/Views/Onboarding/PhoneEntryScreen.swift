@@ -15,74 +15,62 @@ struct PhoneEntryScreen: View {
     let canContinue: Bool
     let onContinue: () -> Void
 
-    @StateObject private var keyboard = KeyboardObserver()
-
     var body: some View {
-        GeometryReader { geo in
-            let lift = keyboard.overlap(in: geo)
-
-            ZStack(alignment: .bottom) {
-                VStack(spacing: 0) {
-                    topContent
-                        .padding(.top, 36)
-                        .padding(.horizontal, 24)
-
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("Phone")
-                            .font(.headline)
-
-                        PhoneEntrySection(
-                            phoneDigits: $phoneDigits,
-                            showErrorBorder: $showErrorBorder,
-                            errorText: $errorText,
-                            isValidPhone: isValidPhone
-                        )
-
-                        if !errorText.isEmpty {
-                            Text(errorText)
-                                .font(.footnote)
-                                .foregroundColor(.red)
-                        }
-                    }
+        ZStack {
+            VStack(spacing: 0) {
+                topContent
+                    .padding(.top, 36)
                     .padding(.horizontal, 24)
-                    .padding(.top, keyboard.isVisible ? 14 : 24)
 
-                    Spacer(minLength: 0)
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Phone")
+                        .font(.headline)
+
+                    PhoneEntrySection(
+                        phoneDigits: $phoneDigits,
+                        showErrorBorder: $showErrorBorder,
+                        errorText: $errorText,
+                        isValidPhone: isValidPhone
+                    )
+
+                    if !errorText.isEmpty {
+                        Text(errorText)
+                            .font(.footnote)
+                            .foregroundColor(.red)
+                    }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
-                ConsentAndAgreeBottom(
-                    hasConsented: $hasConsented,
-                    consentMessage: consentMessage,
-                    canContinue: canContinue,
-                    isSending: isSending,
-                    onAgreeAndContinue: onContinue
-                )
                 .padding(.horizontal, 24)
-                .padding(.bottom, 16 + lift)
+                .padding(.top, 24)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .ignoresSafeArea(.keyboard, edges: .all)
-            .animation(.easeInOut(duration: keyboard.animationContext.duration), value: keyboard.isVisible)
+
+            ConsentAndAgreeBottom(
+                hasConsented: $hasConsented,
+                consentMessage: consentMessage,
+                canContinue: canContinue,
+                isSending: isSending,
+                onAgreeAndContinue: onContinue
+            )
+            .padding(.horizontal, 24)
+            .padding(.bottom, 16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .ignoresSafeArea(.keyboard, edges: .all)
     }
 
     private var topContent: some View {
-        VStack(spacing: keyboard.isVisible ? 6 : 10) {
+        VStack(spacing: 10) {
             Image("FullLogo")
                 .resizable()
                 .scaledToFit()
-                .frame(width: keyboard.isVisible ? 170 : 220, height: keyboard.isVisible ? 72 : 110)
-                .animation(.easeInOut(duration: 0.2), value: keyboard.isVisible)
+                .frame(width: 220, height: 110)
 
-            if !keyboard.isVisible {
-                Text("Enter your phone number to continue.")
-                    .font(.title2.weight(.semibold))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 2)
-                    .transition(.opacity)
-            }
+            Text("Enter your phone number to continue.")
+                .font(.title2.weight(.semibold))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .padding(.top, 2)
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }
