@@ -91,7 +91,6 @@ struct RootView: View {
         // Keep bottom overlays (like MainView's action bar) pinned even when the keyboard shows
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(.container, edges: [.top, .bottom])
-        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     
     @ViewBuilder

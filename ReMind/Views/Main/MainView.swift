@@ -103,7 +103,6 @@ struct MainView: View {
             }
             // 👇 This makes the whole screen (including background) extend under the status bar + home indicator
             .ignoresSafeArea()
-            .ignoresSafeArea(.keyboard, edges: .bottom)
             .toolbar {
                 // Keyboard toolbar
                 ToolbarItemGroup(placement: .keyboard) {
