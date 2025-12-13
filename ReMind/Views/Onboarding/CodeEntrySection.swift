@@ -24,16 +24,7 @@ struct CodeEntrySection: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 24) {
-
-            HStack {
-                Button(action: onEditNumber) {
-                    Image(systemName: "chevron.left")
-                        .font(.title3.weight(.semibold))
-                        .foregroundColor(.primary)
-                        .padding(8)
-                }
-                Spacer()
-            }
+            topBar
 
             VStack(alignment: .center, spacing: 8) {
                 Text("Phone Verification")
@@ -54,10 +45,23 @@ struct CodeEntrySection: View {
             Button("Resend code", action: onResend)
                 .font(.body.weight(.medium))
                 .foregroundColor(.figmaBlue)
+                .underline()
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(.top, 4)
         .onAppear { isCodeFieldFocused = true }
+    }
+
+    private var topBar: some View {
+        HStack {
+            Button(action: onEditNumber) {
+                Image(systemName: "chevron.left")
+                    .font(.title3.weight(.semibold))
+                    .foregroundColor(.primary)
+                    .padding(8)
+            }
+            Spacer()
+        }
     }
 
     private var codeBoxes: some View {
