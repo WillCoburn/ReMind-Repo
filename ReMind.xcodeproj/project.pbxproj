@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		40CB27E3AC55486ABA2BCA09 /* SubscriptionReminderBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */; };
 		D21FF4BD2ECED5BB0054E7F8 /* ActivityPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D21FF4BC2ECED5B40054E7F8 /* ActivityPlaceholderView.swift */; };
 		D21FF4BF2ECED5D70054E7F8 /* ArchivePlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D21FF4BE2ECED5D10054E7F8 /* ArchivePlaceholderView.swift */; };
 		D21FF4C12ECED5E80054E7F8 /* EnergyPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D21FF4C02ECED5E50054E7F8 /* EnergyPlaceholderView.swift */; };
@@ -46,6 +47,8 @@
 		D23CFAF92ECAAB0F00FEBF3D /* CommunityComposerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */; };
 		D257852F2EE53D80007D13FA /* SendNowSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D257852E2EE53D7C007D13FA /* SendNowSheet.swift */; };
 		D25785312EE6212F007D13FA /* Deleting Account Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25785302EE62128007D13FA /* Deleting Account Sheet.swift */; };
+		D25C557E2EED16C300A5240E /* CodeEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */; };
+		D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */; };
 		D2BEC24C2E7E16AD009E3698 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24B2E7E16AD009E3698 /* FirebaseAnalytics */; };
 		D2BEC24E2E7E16AD009E3698 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24D2E7E16AD009E3698 /* FirebaseAuth */; };
 		D2BEC2502E7E16AD009E3698 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24F2E7E16AD009E3698 /* FirebaseCore */; };
@@ -101,7 +104,6 @@
 		D2ED48292EC8F9390030CBA7 /* EntryComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */; };
 		D2ED482B2EC8F9420030CBA7 /* TopBarActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */; };
 		D2ED482D2EC8F94D0030CBA7 /* TrialBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */; };
-		40CB27E3AC55486ABA2BCA09 /* SubscriptionReminderBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */; };
 		D2ED48322EC8FB020030CBA7 /* ReMindBackgrounds.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */; };
 /* End PBXBuildFile section */
 
@@ -166,6 +168,8 @@
 		D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityComposerSheet.swift; sourceTree = "<group>"; };
 		D257852E2EE53D7C007D13FA /* SendNowSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendNowSheet.swift; sourceTree = "<group>"; };
 		D25785302EE62128007D13FA /* Deleting Account Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Deleting Account Sheet.swift"; sourceTree = "<group>"; };
+		D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeEntryScreen.swift; sourceTree = "<group>"; };
+		D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEntryScreen.swift; sourceTree = "<group>"; };
 		D2BEC2572E7E17B5009E3698 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D2BEC2592E7E1897009E3698 /* FirebasePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebasePing.swift; sourceTree = "<group>"; };
 		D2BEC2602E7E293E009E3698 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -209,8 +213,8 @@
 		D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryComposer.swift; sourceTree = "<group>"; };
 		D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBarActions.swift; sourceTree = "<group>"; };
 		D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialBanner.swift; sourceTree = "<group>"; };
-		D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionReminderBanner.swift; sourceTree = "<group>"; };
 		D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindBackgrounds.swift; sourceTree = "<group>"; };
+		D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionReminderBanner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -456,6 +460,8 @@
 		D2D07BC32EBC16C90078BAB0 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
+				D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */,
+				D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */,
 				D2D07BCE2EBC17570078BAB0 /* PhoneField.swift */,
 				D2D07BCC2EBC17420078BAB0 /* CodeEntrySection.swift */,
 				D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */,
@@ -535,13 +541,13 @@
 		};
 		D2ED48252EC8F9080030CBA7 /* Components */ = {
 			isa = PBXGroup;
-                        children = (
-                                D2D07BE22EBC1CD30078BAB0 /* OfflineBanner.swift */,
-                                D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */,
-                                D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */,
-                                D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */,
-                                D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */,
-                        );
+			children = (
+				D2D07BE22EBC1CD30078BAB0 /* OfflineBanner.swift */,
+				D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */,
+				D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */,
+				D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */,
+				D2ED48282EC8F9360030CBA7 /* EntryComposer.swift */,
+			);
 			path = Components;
 			sourceTree = "<group>";
 		};
@@ -694,6 +700,7 @@
 				D2D07BD52EBC18F60078BAB0 /* AppViewModel+InitialLoad.swift in Sources */,
 				D2D07BDF2EBC1A8D0078BAB0 /* AppViewModel+GodMode.swift in Sources */,
 				D2ED48102EC8F2F00030CBA7 /* SettingsHelpers.swift in Sources */,
+				D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */,
 				D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
 				D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
 				D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */,
@@ -719,6 +726,7 @@
 				D2D07BF02EC3F6A50078BAB0 /* RevenueCatManager.swift in Sources */,
 				D2D07BE52EBC1D2E0078BAB0 /* NetworkAwareModifier.swift in Sources */,
 				D2ED48212EC8F3810030CBA7 /* SubscriptionSection.swift in Sources */,
+				D25C557E2EED16C300A5240E /* CodeEntryScreen.swift in Sources */,
 				D2D07BCD2EBC17470078BAB0 /* CodeEntrySection.swift in Sources */,
 				D2BEC2582E7E17B5009E3698 /* AppDelegate.swift in Sources */,
 				D2BEC25A2E7E1897009E3698 /* FirebasePing.swift in Sources */,

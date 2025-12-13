@@ -2,54 +2,44 @@
 // File: Views/Onboarding/OnboardingView.swift
 // ============================
 import SwiftUI
-import UIKit
 import FirebaseAuth
 import FirebaseFunctions
 
 struct OnboardingView: View {
     @EnvironmentObject private var appVM: AppViewModel
-    @EnvironmentObject private var net: NetworkMonitor   // 👈 network state
+    @EnvironmentObject private var net: NetworkMonitor
 
     enum Step { case enterPhone, enterCode }
     @State private var step: Step = .enterPhone
 
-    // Phone entry (store DIGITS ONLY; format only for display)
-    @State private var phoneDigits: String = ""        // "5551234567"
+    // Shared state
+    @State private var phoneDigits: String = ""
+    @State private var hasConsented = false
     @State private var showErrorBorder = false
     @State private var errorText: String = ""
-    @State private var hasConsented = false
-    @State private var isKeyboardVisible = false
-    @State private var keyboardHeight: CGFloat = 0     // 👈 track keyboard height
 
-    // Code entry
     @State private var verificationID: String?
     @State private var code: String = ""
 
-    // Spinners
     @State private var isSending = false
     @State private var isVerifying = false
 
-    // ✅ Firebase Functions client
     private let functions = Functions.functions(region: "us-central1")
 
     private var isValidPhone: Bool { phoneDigits.count == 10 }
     private var canContinueBase: Bool { isValidPhone && hasConsented }
-    private var canContinueOnline: Bool { canContinueBase && net.isConnected } // 👈 disable when offline
+    private var canContinueOnline: Bool { canContinueBase && net.isConnected }
 
     private var formattedPhoneDisplay: String {
         let formatted = PhoneField.Coordinator.format(phoneDigits)
         let base = formatted.isEmpty ? phoneDigits : formatted
         return "+1 \(base)"
     }
-    
-    private let consentMessage =
-    """
-    By tapping 'Continue', you consent to receive reminder text messages from ReMind.
-    """
+
+    private let consentMessage = "By tapping 'Continue', you consent to receive reminder text messages from ReMind."
 
     var body: some View {
         ZStack {
-
             Image("MainBackground")
                 .resizable()
                 .scaledToFill()
@@ -57,146 +47,49 @@ struct OnboardingView: View {
 
             switch step {
             case .enterPhone:
-                phoneEntryLayout
+                PhoneEntryScreen(
+                    phoneDigits: $phoneDigits,
+                    showErrorBorder: $showErrorBorder,
+                    errorText: $errorText,
+                    hasConsented: $hasConsented,
+                    isSending: isSending,
+                    isValidPhone: isValidPhone,
+                    consentMessage: consentMessage,
+                    canContinue: canContinueOnline,
+                    onContinue: { Task { await sendCode() } }
+                )
+                .transition(.asymmetric(insertion: .move(edge: .trailing),
+                                        removal: .move(edge: .leading)))
 
             case .enterCode:
-                codeEntryLayout
+                CodeEntryScreen(
+                    code: $code,
+                    phoneNumber: formattedPhoneDisplay,
+                    errorText: errorText,
+                    isVerifying: isVerifying,
+                    onBack: {
+                        step = .enterPhone
+                        errorText = ""
+                        code = ""
+                    },
+                    onResend: { Task { await sendCode() } },
+                    onVerify: { Task { await verifyCode() } }
+                )
+                .transition(.asymmetric(insertion: .move(edge: .trailing),
+                                        removal: .move(edge: .leading)))
             }
-
         }
         .contentShape(Rectangle())
-        .simultaneousGesture(
-            TapGesture().onEnded {
-                if isKeyboardVisible {
-                    hideKeyboard()
-                }
-            },
-            including: .gesture
-        )
-        .animation(.default, value: step)
-        .animation(.default, value: errorText)
-        .animation(.easeInOut, value: isValidPhone)
-        .animation(.easeInOut, value: isKeyboardVisible)
-
-        .onChange(of: net.isConnected) { value in
-            print("🔄 net.isConnected ->", value)
-        }
-        
+        .onTapGesture { hideKeyboard() }
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: step)
         .onChange(of: code) { _ in
             if step == .enterCode && !errorText.isEmpty {
                 errorText = ""
             }
         }
-
-        // 👇 Track keyboard visibility & height
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
-            isKeyboardVisible = true
-            if let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-                keyboardHeight = frame.height
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            isKeyboardVisible = false
-            keyboardHeight = 0
-        }
-
-        // Force light appearance for this screen
         .preferredColorScheme(.light)
-
-        // 👇 Prevent system from pushing the whole layout up when the keyboard appears
-        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 
-    // MARK: - Phone Entry Layout (Page 1)
-
-    private var phoneEntryLayout: some View {
-        VStack(spacing: 24) {
-
-            // MARK: - Header / Logo
-            VStack(spacing: isKeyboardVisible ? 4 : 10) {
-                Image("FullLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 300, height: 120)   // tune as needed
-                    .padding(.top, 4)
-
-                // 👇 Hide this text when keyboard is visible, but keep logo fixed
-                if !isKeyboardVisible {
-                    Text("Enter your phone number to continue.")
-                        .font(.title2.weight(.semibold))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 16)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 24)
-
-            PhoneEntrySection(
-                phoneDigits: $phoneDigits,
-                showErrorBorder: $showErrorBorder,
-                errorText: $errorText,
-                isValidPhone: isValidPhone
-            )
-
-            if !errorText.isEmpty {
-                Text(errorText)
-                    .font(.footnote)
-                    .foregroundColor(.red)
-                    .padding(.horizontal)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
-            Spacer(minLength: 16)
-
-            // 👇 Float above keyboard by adding its height to the bottom padding
-            ConsentAndAgreeBottom(
-                hasConsented: $hasConsented,
-                consentMessage: consentMessage,
-                canContinue: canContinueOnline, // 👈 pass online-aware flag
-                isSending: isSending,
-                onAgreeAndContinue: {
-                    Task { await sendCode() }
-                }
-            )
-            .padding(.bottom, 24 + (isKeyboardVisible ? keyboardHeight : 0))
-        }
-        .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    // MARK: - Code Entry Layout (Page 2)
-
-    private var codeEntryLayout: some View {
-        VStack(alignment: .leading) {
-            CodeEntrySection(
-                code: $code,
-                phoneNumber: formattedPhoneDisplay,
-                errorText: errorText,
-                isVerifying: isVerifying,
-                onEditNumber: {
-                    step = .enterPhone
-                    errorText = ""
-                    code = ""
-                },
-                onResend: {
-                    Task { await sendCode() }
-                },
-                onVerify: {
-                    Task { await verifyCode() }
-                }
-            )
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-
-            Spacer()
-        }
-        // 👇 Shift the whole content (including the internal "Continue" button)
-        // up by the keyboard height so it floats above the keyboard.
-        .padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 0)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-    
     // MARK: - Actions
 
     private func sendCode() async {
@@ -240,17 +133,15 @@ struct OnboardingView: View {
             _ = try await Auth.auth().signIn(with: credential)
             await appVM.setPhoneProfileAndLoad(phoneDigits)
 
-            // ✅ Trigger welcome message after onboarding completes
             do {
-                let result = try await functions.httpsCallable("triggerWelcome").call([:])
-                print("✅ triggerWelcome result:", result.data)
+                _ = try await functions.httpsCallable("triggerWelcome").call([:])
             } catch {
-                print("❌ triggerWelcome error:", error.localizedDescription)
+                print("triggerWelcome error:", error.localizedDescription)
             }
-
         } catch {
             self.errorText = "Invalid or expired code. Please try again."
             print("signIn error:", error)
         }
     }
 }
+
