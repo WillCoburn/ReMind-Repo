@@ -9,6 +9,9 @@ struct CodeEntrySection: View {
     let onEditNumber: () -> Void
     let onResend: () -> Void
 
+    // ✅ NEW: allow parent to control whether the top bar is shown here
+    var showTopBar: Bool = true
+
     @FocusState private var isCodeFieldFocused: Bool
 
     // Only allow digits & max length 6
@@ -24,7 +27,9 @@ struct CodeEntrySection: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 24) {
-            topBar
+            if showTopBar {
+                topBar
+            }
 
             VStack(alignment: .center, spacing: 8) {
                 Text("Phone Verification")
@@ -48,7 +53,7 @@ struct CodeEntrySection: View {
                 .underline()
                 .frame(maxWidth: .infinity, alignment: .center)
         }
-        .padding(.top, 4)
+        .padding(.top, showTopBar ? 4 : 0)
         .onAppear { isCodeFieldFocused = true }
     }
 
