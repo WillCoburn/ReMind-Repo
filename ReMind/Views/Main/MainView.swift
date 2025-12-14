@@ -142,16 +142,19 @@ struct MainView: View {
     
     @ViewBuilder
     private var backgroundLayer: some View {
-        GeometryReader { proxy in
+
+        // Use the full screen bounds so the background doesn't resize
+        // when the keyboard appears. GeometryReader would shrink
+        // alongside the keyboard, causing the image to jump.
+        let screen = UIScreen.main.bounds
+
+        GeometryReader { _ in
             if let uiImage = decodeBase64ToImage(bgImageBase64) {
                 // User-selected background
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
-                    .frame(
-                        width: max(proxy.size.width, 1),
-                        height: max(proxy.size.height, 1)
-                    )
+                    .frame(width: max(screen.width, 1), height: max(screen.height, 1))
                     .clipped()
                     .ignoresSafeArea()
             } else {
@@ -159,10 +162,7 @@ struct MainView: View {
                 Image("MainBackground")
                     .resizable()
                     .scaledToFill()
-                    .frame(
-                        width: max(proxy.size.width, 1),
-                        height: max(proxy.size.height, 1)
-                    )
+                    .frame(width: max(screen.width, 1), height: max(screen.height, 1))
                     .clipped()
                     .ignoresSafeArea()
             }
@@ -197,7 +197,7 @@ struct MainView: View {
                 actionButtonHeight = height
             }
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        
     }
     
     private func bottomActionButton(
