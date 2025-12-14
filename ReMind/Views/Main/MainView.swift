@@ -6,10 +6,10 @@ import SwiftUI
 struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var net: NetworkMonitor   // 👈 network state
-    
+
     // User-selected background image (Base64)
     @AppStorage("bgImageBase64") private var bgImageBase64: String = ""
-    
+
     @State private var input: String = ""
     @State private var showExportSheet = false
     @State private var showSendNowSheet = false
@@ -17,16 +17,16 @@ struct MainView: View {
     @State private var showSuccessMessage = false
     @State private var isSubmitting = false
     @FocusState private var isEntryFieldFocused: Bool
-    
+
     @State private var actionButtonHeight: CGFloat = 0
-    
+
     // Alerts
     @State private var showAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
-    
+
     private let goal: Int = 3
-    
+
     private func isActive(trialEndsAt: Date?) -> Bool {
         let entitled = RevenueCatManager.shared.entitlementActive
         let onTrial = trialEndsAt.map { Date() < $0 } ?? false
@@ -38,25 +38,25 @@ struct MainView: View {
         guard let trialEnd = appVM.user?.trialEndsAt else { return false }
         return Date() >= trialEnd
     }
-    
+
     var body: some View {
         let count = appVM.entries.count
         let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
         let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected || !active
-        
+
         ZStack {
             ZStack(alignment: .bottom) {
                 backgroundLayer
-                
+
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
                         Image("FullLogo")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 300, height: 120)   // tune as needed
+                            .frame(width: 300, height: 120)
                             .padding(.top, 40)
-                        
+
                         if showSuccessMessage {
                             Text("✅ Successfully stored!")
                                 .font(.footnote)
@@ -79,14 +79,16 @@ struct MainView: View {
                             isEntryFieldFocused: _isEntryFieldFocused,
                             onSubmit: { await sendEntry() }
                         )
-                        
+
                         HintBadge(count: count, goal: goal)
-                        
-                        
+
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 180)
+
+                    // ✅ When bottom bar is visible, leave a little room so content isn't hidden behind it.
+                    // ✅ When keyboard is open, bar is gone, so we don't need the extra padding.
+                    .padding(.bottom, isEntryFieldFocused ? 24 : 180)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .contentShape(Rectangle())
@@ -98,14 +100,17 @@ struct MainView: View {
                     },
                     including: .gesture
                 )
-                
-                bottomActionBar(active: active, count: count)
+
+                // ✅ INSTANT hide/show of bottom bar when keyboard opens/closes
+                if !isEntryFieldFocused {
+                    bottomActionBar(active: active, count: count)
+                        .transition(.identity) // no animation, no fade
+                        .animation(nil, value: isEntryFieldFocused)
+                }
             }
-            // 👇 This makes the whole screen (including background) extend under the status bar + home indicator
             .ignoresSafeArea()
             .ignoresSafeArea(.keyboard, edges: .bottom)
             .toolbar {
-                // Keyboard toolbar
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     Button {
@@ -117,7 +122,6 @@ struct MainView: View {
                     }
                     .accessibilityLabel("Dismiss keyboard")
                 }
-                
             }
             .sheet(isPresented: $showExportSheet) { ExportSheet() }
             .sheet(isPresented: $showSendNowSheet) { SendNowSheet() }
@@ -132,25 +136,20 @@ struct MainView: View {
                 RevenueCatManager.shared.recomputeAndPersistActive()
             }
             .tint(.figmaBlue)
-            // Hide the navigation bar so our custom header + background
-                        // can extend fully to the top/bottom without a white gap.
-                        .toolbar(.hidden, for: .navigationBar)
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
-    
+
     // MARK: - Background just for MainView
-    
     @ViewBuilder
     private var backgroundLayer: some View {
 
         // Use the full screen bounds so the background doesn't resize
-        // when the keyboard appears. GeometryReader would shrink
-        // alongside the keyboard, causing the image to jump.
+        // when the keyboard appears.
         let screen = UIScreen.main.bounds
 
         GeometryReader { _ in
             if let uiImage = decodeBase64ToImage(bgImageBase64) {
-                // User-selected background
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
@@ -158,7 +157,6 @@ struct MainView: View {
                     .clipped()
                     .ignoresSafeArea()
             } else {
-                // Default background → MainBackground asset
                 Image("MainBackground")
                     .resizable()
                     .scaledToFill()
@@ -168,11 +166,11 @@ struct MainView: View {
             }
         }
     }
-    
+
     private func bottomActionBar(active: Bool, count: Int) -> some View {
         let canExport = net.isConnected && count >= goal
         let canSendNow = net.isConnected && count >= goal
-        
+
         return VStack(spacing: 0) {
             HStack(spacing: 12) {
                 bottomActionButton(
@@ -197,9 +195,8 @@ struct MainView: View {
                 actionButtonHeight = height
             }
         }
-        
     }
-    
+
     private func bottomActionButton(
         title: String,
         systemImage: String,
@@ -209,16 +206,16 @@ struct MainView: View {
     ) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Spacer()   // <-- pushes text to center
-                
+                Spacer()
+
                 Text(title)
                     .font(.headline)
-                    .fixedSize(horizontal: false, vertical: true)   // allow wrapping
+                    .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
-                
-                Spacer()   // <-- keeps text centered
-                
+
+                Spacer()
+
                 Image(systemName: systemImage)
                     .font(.headline)
             }
@@ -226,12 +223,11 @@ struct MainView: View {
             .padding(.vertical, 14)
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity)
-            // 👇 use minHeight to allow wrapping while syncing heights
             .frame(minHeight: sharedHeight > 0 ? sharedHeight : nil)
             .background(
                 ZStack {
-                    Color.white                      // base layer
-                    Color.blue.opacity(0.05)         // tinted layer on top
+                    Color.white
+                    Color.blue.opacity(0.05)
                 }
             )
             .overlay(
@@ -250,47 +246,46 @@ struct MainView: View {
         }
         .disabled(!isEnabled)
     }
-    
+
     private struct ActionButtonHeightKey: PreferenceKey {
         static var defaultValue: CGFloat = 0
-        
         static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
             value = max(value, nextValue())
         }
     }
-    
+
     private func decodeBase64ToImage(_ base64: String) -> UIImage? {
         guard !base64.isEmpty, let data = Data(base64Encoded: base64) else { return nil }
         return UIImage(data: data)
     }
-    
+
     // MARK: - Actions
-    
+
     @MainActor
     private func sendEntry() async {
         guard !isSubmitting else { return }
         isSubmitting = true
         defer { isSubmitting = false }
-        
+
         guard net.isConnected else {
             presentOfflineAlert()
             return
         }
-        
+
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        
+
         await appVM.submit(text: text)
         input = ""
         isEntryFieldFocused = false
         hideKeyboard()
-        
+
         withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = false }
         }
     }
-    
+
     private func handleExportTap() {
         let count = appVM.entries.count
         let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
@@ -308,7 +303,7 @@ struct MainView: View {
             showExportSheet = true
         }
     }
-    
+
     private func handleSendNowTap() {
         let count = appVM.entries.count
         let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
@@ -327,29 +322,30 @@ struct MainView: View {
             showSendNowSheet = true
         }
     }
-    
+
     // MARK: - Alerts
-    
+
     private func presentLockedAlert(feature: String) {
         alertTitle = "Keep going!"
         alertMessage = "You need at least \(goal) entries to use “\(feature)”. Add more entries to unlock this feature."
         showAlert = true
     }
-    
+
     private func presentOptOutAlert() {
         alertTitle = "SMS Sending Is Blocked"
         alertMessage =
         """
         It looks like you’ve opted out of SMS for this number, so texts can’t be delivered.
-        
+
         To re-enable messages, reply START or UNSTOP to the last ReMind text. After that, try again.
         """
         showAlert = true
     }
-    
+
     private func presentOfflineAlert() {
         alertTitle = "No Internet Connection"
         alertMessage = "Please reconnect to the internet to use this feature."
         showAlert = true
     }
 }
+
