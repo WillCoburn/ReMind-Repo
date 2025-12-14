@@ -19,18 +19,21 @@ struct PhoneEntryScreen: View {
     @State private var keyboardHeight: CGFloat = 0
     @State private var bottomBarHeight: CGFloat = 0
 
+    private var isKeyboardVisible: Bool { keyboardHeight > 0 }
+
     var body: some View {
         ZStack(alignment: .top) {
 
-            // ✅ Main content (never moves with keyboard)
+            // ============================
+            // MAIN CONTENT
+            // ============================
             VStack(spacing: 0) {
                 topContent
                     .padding(.top, 36)
                     .padding(.horizontal, 24)
 
+                // 🔑 This container now owns vertical positioning
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Phone")
-                        .font(.headline)
 
                     PhoneEntrySection(
                         phoneDigits: $phoneDigits,
@@ -46,15 +49,26 @@ struct PhoneEntryScreen: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 24)
+                .padding(.top, isKeyboardVisible ? 0 : 24)
 
-                // ✅ Reserve room equal to the bottom bar’s visible height
-                // so lifting the bar won’t overlap the phone field/header.
+                // Give vertical room for centering logic
+                .frame(
+                    maxHeight: .infinity,
+                    alignment: isKeyboardVisible
+                        ? .center        // ⬅️ KEY CHANGE: optical centering when keyboard is open
+                        : .top
+                )
+                .offset(y: isKeyboardVisible ? -180 : 0)
+
+
+                // Reserve space so bottom bar never overlaps content
                 Spacer(minLength: bottomBarHeight + 24)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-            // ✅ Bottom bar, lifted exactly by the keyboard overlap
+            // ============================
+            // BOTTOM BAR (KEYBOARD-AWARE)
+            // ============================
             VStack {
                 Spacer(minLength: 0)
 
@@ -68,19 +82,17 @@ struct PhoneEntryScreen: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
                 .readSize { size in
-                    // capture the natural height of the bottom component
                     bottomBarHeight = size.height + 16
                 }
             }
             .padding(.bottom, keyboardHeight)
-            .animation(.spring(response: 0.35, dampingFraction: 0.9), value: keyboardHeight)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-        // ✅ Critical: stop SwiftUI from also auto-insetting for keyboard
         .ignoresSafeArea(.keyboard, edges: .all)
 
-        // ✅ Keyboard tracking (overlap height)
+        // ============================
+        // KEYBOARD TRACKING
+        // ============================
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { note in
             keyboardHeight = Self.keyboardOverlapHeight(from: note)
         }
@@ -89,23 +101,33 @@ struct PhoneEntryScreen: View {
         }
     }
 
+    // ============================
+    // HEADER (INSTANT HIDE)
+    // ============================
     private var topContent: some View {
         VStack(spacing: 10) {
-            Image("FullLogo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 220, height: 110)
 
-            Text("Enter your phone number to continue.")
-                .font(.title2.weight(.semibold))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 16)
-                .padding(.top, 2)
+            if !isKeyboardVisible {
+                Image("FullLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 220, height: 110)
+            }
+
+            if !isKeyboardVisible {
+                Text("Enter your phone number to continue.")
+                    .font(.title2.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 2)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Keyboard overlap calculation
+    // ============================
+    // KEYBOARD OVERLAP CALC
+    // ============================
     private static func keyboardOverlapHeight(from note: Notification) -> CGFloat {
         guard
             let info = note.userInfo,
@@ -122,16 +144,15 @@ struct PhoneEntryScreen: View {
 
         let screenHeight = window.bounds.height
         let safeBottom = window.safeAreaInsets.bottom
+        let covered = max(0, screenHeight - endFrame.minY)
 
-        let keyboardTopY = endFrame.minY
-        let covered = max(0, screenHeight - keyboardTopY)
-
-        // subtract home indicator inset so we don’t over-lift
         return max(0, covered - safeBottom)
     }
 }
 
-// MARK: - Measure child size
+// ============================
+// SIZE READER
+// ============================
 private struct SizePreferenceKey: PreferenceKey {
     static var defaultValue: CGSize = .zero
     static func reduce(value: inout CGSize, nextValue: () -> CGSize) { value = nextValue() }
