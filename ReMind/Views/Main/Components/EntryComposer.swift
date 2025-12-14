@@ -29,13 +29,16 @@ struct EntryComposer: View {
                     .scrollContentBackground(.hidden)
                     .foregroundColor(.black)
                     .font(.system(size: 17))
+                    // ✅ CRITICAL FIX: stop inner UITextView from scrolling-to-caret and fighting the outer ScrollView
+                    .scrollDisabled(true)
 
                 if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Text("Hey future me, remember…")
                         .foregroundColor(.gray)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 18)
-                        .font(.system(size: 17)) 
+                        .font(.system(size: 17))
+                        .allowsHitTesting(false) // ✅ prevents taps on placeholder from causing extra focus/layout weirdness
                 }
             }
 
@@ -57,7 +60,6 @@ struct EntryComposer: View {
                     }
                 }
             }
-            
             .frame(maxWidth: .infinity)
             .background(isDisabled ? Color.figmaBlue.opacity(0.65) : Color.figmaBlue)
             .cornerRadius(12)
@@ -69,9 +71,7 @@ struct EntryComposer: View {
     }
 
     private var accessibilityHint: String {
-        if isDisabled {
-            return "Type something to enable."
-        }
+        if isDisabled { return "Type something to enable." }
         return "Saves your entry."
     }
 }
