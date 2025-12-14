@@ -62,6 +62,11 @@ struct RootView: View {
                 activePage = .main
             }
         }
+        // Dismiss keyboard if user swipes away from the main page
+        .onChange(of: activePage) { newPage in
+            guard newPage != .main else { return }
+            hideKeyboard()
+        }
     }
     
     
@@ -91,7 +96,6 @@ struct RootView: View {
         // Keep bottom overlays (like MainView's action bar) pinned even when the keyboard shows
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(.container, edges: [.top, .bottom])
-        //.ignoresSafeArea(.keyboard, edges: .bottom)
     }
     
     @ViewBuilder
