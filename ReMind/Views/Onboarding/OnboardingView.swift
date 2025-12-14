@@ -23,6 +23,9 @@ struct OnboardingView: View {
 
     @State private var isSending = false
     @State private var isVerifying = false
+    
+    // Track whether we're moving forward (entering code) or backward (editing phone)
+      @State private var isAdvancing = true
 
     private let functions = Functions.functions(region: "us-central1")
 
@@ -34,6 +37,16 @@ struct OnboardingView: View {
         let formatted = PhoneField.Coordinator.format(phoneDigits)
         let base = formatted.isEmpty ? phoneDigits : formatted
         return "+1 \(base)"
+    }
+    
+    private var forwardTransition: AnyTransition {
+        .asymmetric(insertion: .move(edge: .trailing),
+                    removal: .move(edge: .leading))
+    }
+
+    private var backwardTransition: AnyTransition {
+        .asymmetric(insertion: .move(edge: .leading),
+                    removal: .move(edge: .trailing))
     }
 
     private let consentMessage = "By tapping 'Continue', you consent to receive reminder text messages from ReMind."
@@ -58,8 +71,7 @@ struct OnboardingView: View {
                     canContinue: canContinueOnline,
                     onContinue: { Task { await sendCode() } }
                 )
-                .transition(.asymmetric(insertion: .move(edge: .trailing),
-                                        removal: .move(edge: .leading)))
+                .transition(isAdvancing ? forwardTransition : backwardTransition)
 
             case .enterCode:
                 CodeEntryScreen(
@@ -68,6 +80,7 @@ struct OnboardingView: View {
                     errorText: errorText,
                     isVerifying: isVerifying,
                     onBack: {
+                        isAdvancing = false
                         step = .enterPhone
                         errorText = ""
                         code = ""
@@ -75,8 +88,7 @@ struct OnboardingView: View {
                     onResend: { Task { await sendCode() } },
                     onVerify: { Task { await verifyCode() } }
                 )
-                .transition(.asymmetric(insertion: .move(edge: .trailing),
-                                        removal: .move(edge: .leading)))
+                .transition(isAdvancing ? forwardTransition : backwardTransition)
             }
         }
         .contentShape(Rectangle())
@@ -108,6 +120,7 @@ struct OnboardingView: View {
         do {
             let verID = try await PhoneAuthProvider.provider().verifyPhoneNumber(e164, uiDelegate: nil)
             self.verificationID = verID
+            self.isAdvancing = true
             self.step = .enterCode
         } catch {
             self.errorText = "Failed to send code. Please try again."

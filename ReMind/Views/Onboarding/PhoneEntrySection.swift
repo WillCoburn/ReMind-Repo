@@ -32,10 +32,10 @@ struct PhoneEntrySection: View {
 
                 PhoneField(digits: $phoneDigits)
                     .frame(height: 44)
-                    .frame(maxWidth: .infinity)   // ✅ FIX: expand to fill remaining width
-                    .layoutPriority(1)            // ✅ FIX: prevent compression/overflow
+                    .frame(maxWidth: .infinity)
+                    .layoutPriority(1)
             }
-            .frame(maxWidth: .infinity)           // ✅ FIX: ensure the row never exceeds container
+            .frame(maxWidth: .infinity)           
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 12)
