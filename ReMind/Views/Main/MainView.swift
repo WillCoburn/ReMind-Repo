@@ -27,21 +27,23 @@ struct MainView: View {
 
     private let goal: Int = 3
 
-    private func isActive(trialEndsAt: Date?) -> Bool {
+    private func isActive(trialEndsAt: Date?, activeFlag: Bool?) -> Bool {
         let entitled = RevenueCatManager.shared.entitlementActive
         let onTrial = trialEndsAt.map { Date() < $0 } ?? false
-        return entitled || onTrial
+        let activeFromBackend = activeFlag == true
+        return entitled || onTrial || activeFromBackend
     }
 
     private var hasExpiredTrialWithoutSubscription: Bool {
         guard !RevenueCatManager.shared.entitlementActive else { return false }
+        if appVM.user?.active == true { return false }
         guard let trialEnd = appVM.user?.trialEndsAt else { return false }
         return Date() >= trialEnd
     }
 
     var body: some View {
         let count = appVM.entries.count
-        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
+        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt, activeFlag: appVM.user?.active)
         let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected || !active
 
@@ -288,7 +290,7 @@ struct MainView: View {
 
     private func handleExportTap() {
         let count = appVM.entries.count
-        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
+        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt, activeFlag: appVM.user?.active)
         guard net.isConnected else { presentOfflineAlert(); return }
         if count < goal { presentLockedAlert(feature: "Export PDF"); return }
         guard active else {
@@ -306,7 +308,7 @@ struct MainView: View {
 
     private func handleSendNowTap() {
         let count = appVM.entries.count
-        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt)
+        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt, activeFlag: appVM.user?.active)
 
         guard net.isConnected else { presentOfflineAlert(); return }
         if count < goal { presentLockedAlert(feature: "Send One Now"); return }

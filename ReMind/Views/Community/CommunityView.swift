@@ -20,7 +20,7 @@ struct CommunityView: View {
     @State private var isAtTop = true
 
     private var isUserActive: Bool {
-        isActive(trialEndsAt: appVM.user?.trialEndsAt)
+        isActive(trialEndsAt: appVM.user?.trialEndsAt, activeFlag: appVM.user?.active)
     }
 
     var body: some View {
@@ -220,10 +220,11 @@ struct CommunityView: View {
         listener = nil
     }
 
-    private func isActive(trialEndsAt: Date?) -> Bool {
+    private func isActive(trialEndsAt: Date?, activeFlag: Bool?) -> Bool {
         let entitled = RevenueCatManager.shared.entitlementActive
         let onTrial = trialEndsAt.map { Date() < $0 } ?? false
-        return entitled || onTrial
+        let activeFromBackend = activeFlag == true
+        return entitled || onTrial || activeFromBackend
     }
 
     private func presentSubscribeAlert() {
