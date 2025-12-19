@@ -252,7 +252,7 @@ struct RightPanelPlaceholderView: View {
     private func persistSettingsDebounced() {
         saveTask?.cancel()
 
-        saveTask = Task {
+        saveTask = Task.detached(priority: .userInitiated) {
             try? await Task.sleep(nanoseconds: 600_000_000) // 0.6s debounce
 
             do {

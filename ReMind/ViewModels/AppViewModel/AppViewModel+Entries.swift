@@ -83,21 +83,24 @@ extension AppViewModel {
             return
         }
 
-        let ref = db.collection("users")
-            .document(uid)
-            .collection("entries")
-            .document()
-
-        print("🧪 submit writing to:", ref.path)
-
         do {
-            try await ref.setData([
-                "text": trimmed,
-                "createdAt": FieldValue.serverTimestamp(),
-                "sent": false
-            ])
+            try await Task.detached(priority: .userInitiated) {
+                let db = Firestore.firestore()
+                let ref = db.collection("users")
+                    .document(uid)
+                    .collection("entries")
+                    .document()
 
-            print("✅ submit write success")
+                print("🧪 submit writing to:", ref.path)
+
+                try await ref.setData([
+                    "text": trimmed,
+                    "createdAt": FieldValue.serverTimestamp(),
+                    "sent": false
+                ])
+
+                print("✅ submit write success")
+            }.value
         } catch {
             print("❌ submit write failed:", error.localizedDescription)
         }
