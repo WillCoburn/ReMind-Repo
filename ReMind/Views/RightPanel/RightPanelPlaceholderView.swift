@@ -303,7 +303,7 @@ struct RightPanelPlaceholderView: View {
 
 
     private var shouldShowTrialBanner: Bool {
-        guard !revenueCat.entitlementActive else { return false }
+        guard !appVM.isEntitled else { return false }
         guard let trialEnd = appVM.user?.trialEndsAt else { return false }
         return Date() < trialEnd
     }

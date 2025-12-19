@@ -15,20 +15,20 @@ struct SubscriptionSection: View {
         // Center ALL content horizontally
         VStack(alignment: .center, spacing: 12) {
 
-            
-            let isSubscribed = revenueCat.entitlementActive
+
+            let isEntitled = appVM.isEntitled
             let willRenew = revenueCat.entitlementWillRenew
             let expiration = revenueCat.entitlementExpirationDate
 
 
             let now = Date()
             let trialEnd = appVM.user?.trialEndsAt
-            let onTrial = (trialEnd ?? .distantPast) > now && !isSubscribed
+            let onTrial = (trialEnd ?? .distantPast) > now
 
             // ============================
             // Subscription Status / Trial
             // ============================
-            if isSubscribed {
+            if isEntitled {
                 if let expiration {
                     let dateString = DateFormatter.localizedString(
                         from: expiration,

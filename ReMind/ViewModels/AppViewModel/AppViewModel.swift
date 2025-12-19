@@ -2,6 +2,7 @@
 // File: App/ViewModels/AppViewModel/AppViewModel.swift
 // ============================
 import Foundation
+import Combine
 import FirebaseAuth
 import FirebaseFirestore
 import FirebaseFunctions
@@ -13,6 +14,7 @@ final class AppViewModel: ObservableObject {
     @Published var entries: [Entry] = []
     @Published var isLoading = false
     @Published var hasLoadedInitialProfile = false
+    @Published private(set) var isEntitled = false
 
     // Current SMS opt-out state for the signed-in user
     @Published var smsOptOut: Bool = false
@@ -42,6 +44,10 @@ final class AppViewModel: ObservableObject {
 
     // Keep a handle so we can remove the auth listener & avoid warnings.
     private var authHandle: AuthStateDidChangeListenerHandle?
+    private var entitlementCancellables: Set<AnyCancellable> = []
+    private var trialExpiryTimer: Timer?
+
+    let revenueCat: RevenueCatManager = .shared
 
     /// Legacy convenience; true when a profile is loaded.
     var isOnboarded: Bool { user != nil }
@@ -70,11 +76,54 @@ final class AppViewModel: ObservableObject {
 
             }
         }
+
+        observeEntitlementSources()
     }
 
     deinit {
         if let handle = authHandle {
             Auth.auth().removeStateDidChangeListener(handle)
         }
+    }
+
+    private func observeEntitlementSources() {
+        revenueCat.$entitlementActive
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.recomputeEntitlement()
+            }
+            .store(in: &entitlementCancellables)
+
+        $user
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.scheduleTrialExpiryTimer()
+                self?.recomputeEntitlement()
+            }
+            .store(in: &entitlementCancellables)
+    }
+
+    private func scheduleTrialExpiryTimer() {
+        trialExpiryTimer?.invalidate()
+        trialExpiryTimer = nil
+
+        guard let trialEndsAt = user?.trialEndsAt else { return }
+        let interval = trialEndsAt.timeIntervalSinceNow
+        guard interval > 0 else { return }
+
+        trialExpiryTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.recomputeEntitlement()
+            }
+        }
+    }
+
+    private func recomputeEntitlement() {
+        let entitlementActive = revenueCat.entitlementActive
+        let onTrial = user?.trialEndsAt.map { Date() < $0 } ?? false
+        let newValue = entitlementActive || onTrial
+
+        guard newValue != isEntitled else { return }
+        isEntitled = newValue
     }
 }
