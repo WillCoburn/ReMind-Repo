@@ -89,7 +89,11 @@ enum UserSettingsSync {
 
             // MARK: - Read user state (subscription / trial)
 
-            let snapshot = try await userRef.getDocument()
+            let snapshot = try await withTimeout(seconds: 3, label: "settings getDocument") {
+                try await runOffMain(label: "settings getDocument") {
+                    try await userRef.getDocument()
+                }
+            }
 
             var shouldSetActiveTrue = false
             if snapshot.exists {
@@ -130,13 +134,21 @@ enum UserSettingsSync {
                 )
             }
 
-            try await batch.commit()
+            try await withTimeout(seconds: 3, label: "settings batch commit") {
+                try await runOffMain(label: "settings batch commit") {
+                    try await batch.commit()
+                }
+            }
             print("✅ settings batch COMMITTED")
 
             // MARK: - Callable
 
             let callable = functions.httpsCallable("applyUserSettings")
-            _ = try await callable.call([:])
+            _ = try await withTimeout(seconds: 3, label: "applyUserSettings callable") {
+                try await runOffMain(label: "applyUserSettings callable") {
+                    try await callable.call([:])
+                }
+            }
             print("✅ applyUserSettings success")
         }.value
     }

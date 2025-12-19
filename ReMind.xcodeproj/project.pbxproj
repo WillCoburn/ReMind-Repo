@@ -50,6 +50,7 @@
 		D25C557E2EED16C300A5240E /* CodeEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */; };
 		D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */; };
 		D25C55822EED206400A5240E /* KeyboardObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C55812EED206400A5240E /* KeyboardObserver.swift */; };
+		D25C55842EF4D8BA00A5240E /* Concurrency+Timeouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C55832EF4D8B300A5240E /* Concurrency+Timeouts.swift */; };
 		D2BEC24C2E7E16AD009E3698 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24B2E7E16AD009E3698 /* FirebaseAnalytics */; };
 		D2BEC24E2E7E16AD009E3698 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24D2E7E16AD009E3698 /* FirebaseAuth */; };
 		D2BEC2502E7E16AD009E3698 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC24F2E7E16AD009E3698 /* FirebaseCore */; };
@@ -172,6 +173,7 @@
 		D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeEntryScreen.swift; sourceTree = "<group>"; };
 		D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEntryScreen.swift; sourceTree = "<group>"; };
 		D25C55812EED206400A5240E /* KeyboardObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardObserver.swift; sourceTree = "<group>"; };
+		D25C55832EF4D8B300A5240E /* Concurrency+Timeouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Concurrency+Timeouts.swift"; sourceTree = "<group>"; };
 		D2BEC2572E7E17B5009E3698 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D2BEC2592E7E1897009E3698 /* FirebasePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebasePing.swift; sourceTree = "<group>"; };
 		D2BEC2602E7E293E009E3698 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -385,6 +387,7 @@
 		D22EF47A2E7B2EA100810204 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				D25C55832EF4D8B300A5240E /* Concurrency+Timeouts.swift */,
 				D23CFAF02ECAAAD100FEBF3D /* CommunityAPI.swift */,
 				D2ED48052EC6F8C80030CBA7 /* FunctionsErrorHandling.swift */,
 				D2D07BE42EBC1D290078BAB0 /* NetworkAwareModifier.swift */,
@@ -767,6 +770,7 @@
 				D22EF4922E7B303E00810204 /* OnboardingView.swift in Sources */,
 				D2BEC26A2E7E37C1009E3698 /* DataStore.swift in Sources */,
 				D2ED48232EC8F3F80030CBA7 /* UserSettingsPanel.swift in Sources */,
+				D25C55842EF4D8BA00A5240E /* Concurrency+Timeouts.swift in Sources */,
 				D22EF4972E7B30C000810204 /* HintBadge.swift in Sources */,
 				D2D07BCF2EBC175C0078BAB0 /* PhoneField.swift in Sources */,
 				D2ED48322EC8FB020030CBA7 /* ReMindBackgrounds.swift in Sources */,
