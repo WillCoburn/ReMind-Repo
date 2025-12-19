@@ -6,6 +6,7 @@ import SwiftUI
 struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var net: NetworkMonitor   // 👈 network state
+    @ObservedObject private var revenueCat: RevenueCatManager = .shared
 
     // User-selected background image (Base64)
     @AppStorage("bgImageBase64") private var bgImageBase64: String = ""
@@ -27,23 +28,17 @@ struct MainView: View {
 
     private let goal: Int = 3
 
-    private func isActive(trialEndsAt: Date?, activeFlag: Bool?) -> Bool {
-        let entitled = RevenueCatManager.shared.entitlementActive
-        let onTrial = trialEndsAt.map { Date() < $0 } ?? false
-        let activeFromBackend = activeFlag == true
-        return entitled || onTrial || activeFromBackend
-    }
-
     private var hasExpiredTrialWithoutSubscription: Bool {
-        guard !RevenueCatManager.shared.entitlementActive else { return false }
-        if appVM.user?.active == true { return false }
+        guard !appVM.isEntitled else { return false }
         guard let trialEnd = appVM.user?.trialEndsAt else { return false }
         return Date() >= trialEnd
     }
 
     var body: some View {
+        // Observe RevenueCat updates so entitlement changes redraw instantly.
+        let _ = revenueCat.entitlementActive
         let count = appVM.entries.count
-        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt, activeFlag: appVM.user?.active)
+        let active = appVM.isEntitled
         let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected || !active
 
@@ -293,7 +288,7 @@ struct MainView: View {
 
     private func handleExportTap() {
         let count = appVM.entries.count
-        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt, activeFlag: appVM.user?.active)
+        let active = appVM.isEntitled
         guard net.isConnected else { presentOfflineAlert(); return }
         if count < goal { presentLockedAlert(feature: "Export PDF"); return }
         guard active else {
@@ -311,7 +306,7 @@ struct MainView: View {
 
     private func handleSendNowTap() {
         let count = appVM.entries.count
-        let active = isActive(trialEndsAt: appVM.user?.trialEndsAt, activeFlag: appVM.user?.active)
+        let active = appVM.isEntitled
 
         guard net.isConnected else { presentOfflineAlert(); return }
         if count < goal { presentLockedAlert(feature: "Send One Now"); return }

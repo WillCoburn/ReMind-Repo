@@ -4,6 +4,7 @@ import FirebaseFunctions
 
 struct CommunityView: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @ObservedObject private var revenueCat: RevenueCatManager = .shared
     @State private var posts: [CommunityPost] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
@@ -19,11 +20,11 @@ struct CommunityView: View {
     @State private var listener: ListenerRegistration?
     @State private var isAtTop = true
 
-    private var isUserActive: Bool {
-        isActive(trialEndsAt: appVM.user?.trialEndsAt, activeFlag: appVM.user?.active)
-    }
+    private var isUserActive: Bool { appVM.isEntitled }
 
     var body: some View {
+        // Observe RevenueCat directly so entitlement changes update interaction instantly.
+        let _ = revenueCat.entitlementActive
         ZStack(alignment: .bottomTrailing) {
             content
                 .overlay {
@@ -218,13 +219,6 @@ struct CommunityView: View {
     private func stopListening() {
         listener?.remove()
         listener = nil
-    }
-
-    private func isActive(trialEndsAt: Date?, activeFlag: Bool?) -> Bool {
-        let entitled = RevenueCatManager.shared.entitlementActive
-        let onTrial = trialEndsAt.map { Date() < $0 } ?? false
-        let activeFromBackend = activeFlag == true
-        return entitled || onTrial || activeFromBackend
     }
 
     private func presentSubscribeAlert() {
