@@ -83,8 +83,10 @@ extension AppViewModel {
         }
 
         await fetchAndApplyUserSettings(uid: uid)
-        attachUserListener(uid)
-        attachEntriesListener(uid)
+        
+        //attachUserListener(uid)
+        //attachEntriesListener(uid)
+        
         await refreshAll()
     }
 

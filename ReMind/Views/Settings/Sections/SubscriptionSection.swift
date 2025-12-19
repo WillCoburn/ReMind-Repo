@@ -15,9 +15,11 @@ struct SubscriptionSection: View {
         // Center ALL content horizontally
         VStack(alignment: .center, spacing: 12) {
 
+            
             let isSubscribed = revenueCat.entitlementActive
             let willRenew = revenueCat.entitlementWillRenew
             let expiration = revenueCat.entitlementExpirationDate
+
 
             let now = Date()
             let trialEnd = appVM.user?.trialEndsAt
@@ -57,11 +59,11 @@ struct SubscriptionSection: View {
 
                 // Start Subscription Button
                 Button("Start Subscription") {
-                    RevenueCatManager.shared.forceIdentify {
-                        showPaywall = true
-                    }
+                    
+                     RevenueCatManager.shared.forceIdentify {
+                         showPaywall = true
+                     }
                 }
-
                 .buttonStyle(.borderedProminent)
                 .frame(maxWidth: .infinity, alignment: .center)
             }
@@ -70,11 +72,12 @@ struct SubscriptionSection: View {
             // Manage Subscription Button
             // ============================
             Button("Manage Subscription") {
-                if let url = RevenueCatManager.shared.managementURL {
-                    UIApplication.shared.open(url)
-                } else if let fallback = URL(string: "itms-apps://apps.apple.com/account/subscriptions") {
-                    UIApplication.shared.open(fallback)
-                }
+                
+                 if let url = RevenueCatManager.shared.managementURL {
+                     UIApplication.shared.open(url)
+                 } else if let fallback = URL(string: "itms-apps://apps.apple.com/account/subscriptions") {
+                     UIApplication.shared.open(fallback)
+                 }
             }
             .buttonStyle(.bordered)
             .frame(maxWidth: .infinity, alignment: .center)
@@ -83,9 +86,10 @@ struct SubscriptionSection: View {
             // Restore Purchases Button
             // ============================
             Button("Restore Purchases") {
-                RevenueCatManager.shared.restore { ok, err in
-                    restoreMessage = err ?? (ok ? "Restored." : "Nothing to restore.")
-                }
+                
+                 RevenueCatManager.shared.restore { ok, err in
+                     restoreMessage = err ?? (ok ? "Restored." : "Nothing to restore.")
+                 }
             }
             .buttonStyle(.bordered)
             .frame(maxWidth: .infinity, alignment: .center)
@@ -107,6 +111,6 @@ struct SubscriptionSection: View {
             }
         }
         .padding(.top, 4)
-        .frame(maxWidth: .infinity)  // ensure center alignment works
+        .frame(maxWidth: .infinity)
     }
 }
