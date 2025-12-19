@@ -200,6 +200,13 @@ final class RevenueCatManager: NSObject, ObservableObject {
                 status = "unsubscribed"
             }
 
+            
+            let existingActive = data["active"] as? Bool
+            let existingStatus = data["subscriptionStatus"] as? String
+
+            // Avoid spamming writes when nothing changed (e.g., Settings onAppear)
+            guard existingActive != isActive || existingStatus != status else { return }
+            
             docRef.setData([
                 "active": isActive,
                 "subscriptionStatus": status
