@@ -632,7 +632,7 @@ struct SubscriptionOptionsSheet: View {
                 .frame(width: 44, height: 6)
                 .padding(.top, 8)
             
-            Text("Subscription")
+            Text("Subscription Status: \(revenueCat.entitlementActive ? "Subscribed" : "Unsubscribed")")
                 .font(.headline)
                 .frame(maxWidth: .infinity)
 
