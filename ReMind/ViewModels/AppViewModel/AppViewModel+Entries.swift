@@ -84,27 +84,21 @@ extension AppViewModel {
         }
 
         do {
-            // Run Firestore work off the main actor so SwiftUI animations (e.g., post-paywall)
-            // cannot starve the gRPC callbacks and hang the write.
-            try await withTimeout(seconds: 3, label: "entry setData") {
-                try await runOffMain(label: "submit setData") {
-                    let db = Firestore.firestore()
-                    let ref = db.collection("users")
-                        .document(uid)
-                        .collection("entries")
-                        .document()
+            let db = Firestore.firestore()
+            let ref = db.collection("users")
+                .document(uid)
+                .collection("entries")
+                .document()
 
-                    print("🧪 submit writing to:", ref.path)
+            print("🧪 submit writing to:", ref.path)
 
-                    try await ref.setData([
-                        "text": trimmed,
-                        "createdAt": FieldValue.serverTimestamp(),
-                        "sent": false
-                    ])
+            try await ref.setData([
+                "text": trimmed,
+                "createdAt": FieldValue.serverTimestamp(),
+                "sent": false
+            ])
 
-                    print("✅ submit write success")
-                }
-            }
+            print("✅ submit write success")
         } catch {
             print("❌ submit write failed:", error.localizedDescription)
         }

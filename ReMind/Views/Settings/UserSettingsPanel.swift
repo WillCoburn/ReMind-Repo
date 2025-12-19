@@ -139,8 +139,7 @@ struct UserSettingsForm: View {
             )
         }
         .onAppear {
-            RevenueCatManager.shared.refreshEntitlementState()
-            RevenueCatManager.shared.recomputeAndPersistActive()
+            //no RC calls
 
             // Optional SK2 sanity check
             Task {

@@ -24,6 +24,9 @@ final class RevenueCatManager: NSObject, ObservableObject {
     @Published var entitlementExpirationDate: Date?
     @Published var managementURL: URL?
     @Published var lastCustomerInfo: CustomerInfo?
+    @MainActor private var lastActiveRecomputeAt: Date? = nil
+    private let activeRecomputeCooldownSec: TimeInterval = 10
+
 
     // MARK: - Infra
 
@@ -139,47 +142,99 @@ final class RevenueCatManager: NSObject, ObservableObject {
     private func syncToFirestore(info: CustomerInfo, uid: String) {
         let ent = info.entitlements[PaywallConfig.entitlementId]
 
-        let rcPayload: [String: Any?] = [
+        // IMPORTANT: do NOT include changing timestamps in the comparison payload
+        let rcStable: [String: Any] = [
             "entitlementActive": ent?.isActive ?? false,
             "willRenew": ent?.willRenew ?? false,
-            "productId": ent?.productIdentifier,
-            "expiresAt": ent?.expirationDate?.timeIntervalSince1970,
-            "latestPurchaseAt": ent?.latestPurchaseDate?.timeIntervalSince1970,
-            "store": "app_store",
-            "lastSyncedAt": Date().timeIntervalSince1970
+            "productId": ent?.productIdentifier as Any,
+            "expiresAt": ent?.expirationDate?.timeIntervalSince1970 as Any,
+            "latestPurchaseAt": ent?.latestPurchaseDate?.timeIntervalSince1970 as Any,
+            "store": "app_store"
         ]
 
         let userRef = db.collection("users").document(uid)
 
-        userRef.getDocument { snap, _ in
-            guard snap?.exists == true else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let snap = try await userRef.getDocument()
+                guard snap.exists, let data = snap.data() else { return }
 
-            userRef.setData(["rc": rcPayload], merge: true) { _ in
-                self.recomputeAndPersistActive(
-                    uid: uid,
-                    entitlement: ent?.isActive ?? false
-                )
+                // Compare existing rc (ignoring lastSyncedAt)
+                let existingRC = (data["rc"] as? [String: Any]) ?? [:]
+                var existingStable = existingRC
+                existingStable.removeValue(forKey: "lastSyncedAt")
+
+                // If nothing changed, do nothing (prevents spam)
+                guard NSDictionary(dictionary: existingStable).isEqual(to: rcStable) == false else {
+                    return
+                }
+
+                // Write rc + a timestamp ONLY when rc actually changed
+                
+                
+                try await userRef.setData([
+                    
+                    
+                    "rc": rcStable.merging(["lastSyncedAt": Date().timeIntervalSince1970]) { _, new in new }
+                ], merge: true)
+
+                await self._recomputeAndPersistActiveAsync(uid: uid, entitlement: ent?.isActive ?? false)
+
+            } catch {
+                print("⚠️ syncToFirestore error:", error.localizedDescription)
             }
         }
     }
 
+
     // MARK: - Derived state
 
+    // Drop-in replacement (same name/params) — no callbacks, no detaching, no cancellation.
+    // Requires: import FirebaseAuth, import FirebaseFirestore
+
+    @MainActor
+    private var _recomputeActiveInFlight = false
+
+    @MainActor
     func recomputeAndPersistActive(uid: String? = nil, entitlement: Bool? = nil) {
+        let now = Date()
+        if let last = lastActiveRecomputeAt, now.timeIntervalSince(last) < activeRecomputeCooldownSec {
+            return
+        }
+        lastActiveRecomputeAt = now
+
+        Task { [weak self] in
+            await self?._recomputeAndPersistActiveAsync(uid: uid, entitlement: entitlement)
+        }
+    }
+
+
+    @MainActor
+    private func _recomputeAndPersistActiveAsync(
+        uid: String? = nil,
+        entitlement: Bool? = nil
+    ) async {
+        guard !_recomputeActiveInFlight else { return }
+        _recomputeActiveInFlight = true
+        defer { _recomputeActiveInFlight = false }
+
         let uidValue = uid ?? Auth.auth().currentUser?.uid
         guard let uidValue else { return }
 
         let docRef = db.collection("users").document(uidValue)
 
-        docRef.getDocument { [weak self] snap, _ in
-            guard let self,
-                  let data = snap?.data()
-            else { return }
+        do {
+            // Read once to compute derived state
+            let snap = try await docRef.getDocument()
+            guard let data = snap.data() else { return }
 
             let trialEndsAt = (data["trialEndsAt"] as? Timestamp)?.dateValue()
             let onTrial = trialEndsAt.map { Date() < $0 } ?? false
 
-            self.scheduleTrialExpiryTimer(trialEndsAt: trialEndsAt)
+            if let trialEndsAt {
+                scheduleTrialExpiryTimer(trialEndsAt: trialEndsAt)
+            }
 
             let rc = data["rc"] as? [String: Any] ?? [:]
             let entitled = entitlement ?? (rc["entitlementActive"] as? Bool ?? false)
@@ -200,21 +255,46 @@ final class RevenueCatManager: NSObject, ObservableObject {
                 status = "unsubscribed"
             }
 
-            
-            let existingActive = data["active"] as? Bool
-            let existingStatus = data["subscriptionStatus"] as? String
+            // Transaction = idempotent write (stops spam)
+            _ = try await db.runTransaction { txn, errorPtr in
+                do {
+                    let current = try txn.getDocument(docRef)
+                    let existingActive = current.get("active") as? Bool
+                    let existingStatus = current.get("subscriptionStatus") as? String
 
-            // Avoid spamming writes when nothing changed (e.g., Settings onAppear)
-            guard existingActive != isActive || existingStatus != status else { return }
-            
-            docRef.setData([
-                "active": isActive,
-                "subscriptionStatus": status
-            ], merge: true)
+                    guard existingActive != isActive || existingStatus != status else {
+                        return nil
+                    }
+
+                    txn.setData(
+                        [
+                            "active": isActive,
+                            "subscriptionStatus": status
+                        ],
+                        forDocument: docRef,
+                        merge: true
+                    )
+
+                    return nil
+                } catch {
+                    errorPtr?.pointee = error as NSError
+                    return nil
+                }
+            }
+
+        } catch {
+            print("❌ recomputeAndPersistActive error:", error.localizedDescription)
         }
     }
 
+
+
+
     // MARK: - Trial timer
+
+    // MARK: - Trial timer
+    @MainActor
+    private var lastScheduledTrialEndsAt: Date? = nil
 
     private func scheduleTrialExpiryTimer(trialEndsAt: Date?) {
         DispatchQueue.main.async {
@@ -223,20 +303,22 @@ final class RevenueCatManager: NSObject, ObservableObject {
 
             guard let trialEndsAt else { return }
 
-            let interval = trialEndsAt.timeIntervalSinceNow
-            guard interval > 0 else {
-                self.recomputeAndPersistActive()
-                return
-            }
+            // ✅ If we've already scheduled for this exact trial end, don't reschedule.
+            if let last = self.lastScheduledTrialEndsAt, last == trialEndsAt { return }
+            self.lastScheduledTrialEndsAt = trialEndsAt
 
-            self.trialExpiryTimer = Timer.scheduledTimer(
-                withTimeInterval: interval,
-                repeats: false
-            ) { [weak self] _ in
+            let interval = trialEndsAt.timeIntervalSinceNow
+
+            // ✅ IMPORTANT: If trial already expired, DO NOT call recompute here.
+            // Calling recompute here causes an infinite loop (recompute -> schedule -> recompute -> ...).
+            guard interval > 0 else { return }
+
+            self.trialExpiryTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
                 self?.recomputeAndPersistActive()
             }
         }
     }
+
 }
 
 // MARK: - PurchasesDelegate

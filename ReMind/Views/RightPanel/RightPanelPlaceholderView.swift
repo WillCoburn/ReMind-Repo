@@ -119,8 +119,7 @@ struct RightPanelPlaceholderView: View {
             }
         )
         .onAppear {
-            RevenueCatManager.shared.refreshEntitlementState()
-            RevenueCatManager.shared.recomputeAndPersistActive()
+            //no rc calls
 
             Task {
                 do {

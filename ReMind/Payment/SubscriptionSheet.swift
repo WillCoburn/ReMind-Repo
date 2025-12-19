@@ -15,7 +15,7 @@ struct SubscriptionSheet: View {
                 
                 // Force an immediate RC sync so Firestore reflects the purchase right away.
                 RevenueCatManager.shared.refreshEntitlementState()
-                RevenueCatManager.shared.recomputeAndPersistActive()
+                //RevenueCatManager.shared.recomputeAndPersistActive()
                 dismiss()
             }
             .onRestoreCompleted { _ in dismiss() }

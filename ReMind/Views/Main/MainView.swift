@@ -137,9 +137,6 @@ struct MainView: View {
             .onChange(of: net.isConnected) { value in
                 print("🔄 net.isConnected (MainView) ->", value)
             }
-            .onAppear {
-                RevenueCatManager.shared.recomputeAndPersistActive()
-            }
             .tint(.figmaBlue)
             .toolbar(.hidden, for: .navigationBar)
         }

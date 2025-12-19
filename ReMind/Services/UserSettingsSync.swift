@@ -88,95 +88,82 @@ enum UserSettingsSync {
             Task { await SettingsPushGate.shared.end() }
         }
         
-        try await Task.detached(priority: .userInitiated) {
-            guard let uid = Auth.auth().currentUser?.uid else {
-                throw NSError(
-                    domain: "UserSettingsSync",
-                    code: 401,
-                    userInfo: [NSLocalizedDescriptionKey: "Not logged in"]
-                )
-            }
+        guard let uid = Auth.auth().currentUser?.uid else {
+            throw NSError(
+                domain: "UserSettingsSync",
+                code: 401,
+                userInfo: [NSLocalizedDescriptionKey: "Not logged in"]
+            )
+        }
 
-            let db = Firestore.firestore()
-            let functions = Functions.functions()
-            let settings = currentFromAppStorage()
+        let db = Firestore.firestore()
+        let functions = Functions.functions()
+        let settings = currentFromAppStorage()
 
-            let settingsData: [String: Any] = [
-                "remindersPerWeek": settings.remindersPerWeek,
-                "tzIdentifier": settings.tzIdentifier,
-                "quietStartHour": settings.quietStartHour,
-                "quietEndHour": settings.quietEndHour,
-                "updatedAt": FieldValue.serverTimestamp()
-            ]
+        let settingsData: [String: Any] = [
+            "remindersPerWeek": settings.remindersPerWeek,
+            "tzIdentifier": settings.tzIdentifier,
+            "quietStartHour": settings.quietStartHour,
+            "quietEndHour": settings.quietEndHour,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
 
-            let userRef = db.collection("users").document(uid)
-            let settingsRef = userRef
-                .collection("meta")
-                .document("settings")
+        let userRef = db.collection("users").document(uid)
+        let settingsRef = userRef
+            .collection("meta")
+            .document("settings")
 
-            // MARK: - Read user state (subscription / trial)
+        // MARK: - Read user state (subscription / trial)
 
-            let snapshot = try await withTimeout(seconds: 3, label: "settings getDocument") {
-                try await runOffMain(label: "settings getDocument") {
-                    try await userRef.getDocument()
-                }
-            }
+        let snapshot = try await userRef.getDocument()
 
-            var shouldSetActiveTrue = false
-            if snapshot.exists {
-                let status =
-                    (snapshot.get("subscriptionStatus") as? String)
-                    ?? SubscriptionStatus.unsubscribed.rawValue
+        var shouldSetActiveTrue = false
+        if snapshot.exists {
+            let status =
+                (snapshot.get("subscriptionStatus") as? String)
+                ?? SubscriptionStatus.unsubscribed.rawValue
 
-                let isSubscribed =
-                    status == SubscriptionStatus.subscribed.rawValue
+            let isSubscribed =
+                status == SubscriptionStatus.subscribed.rawValue
 
-                let trialEndsAt =
-                    (snapshot.get("trialEndsAt") as? Timestamp)?.dateValue()
+            let trialEndsAt =
+                (snapshot.get("trialEndsAt") as? Timestamp)?.dateValue()
 
-                let withinTrial =
-                    trialEndsAt.map { Date() < $0 } ?? false
+            let withinTrial =
+                trialEndsAt.map { Date() < $0 } ?? false
 
-                shouldSetActiveTrue = isSubscribed || withinTrial
-            }
+            shouldSetActiveTrue = isSubscribed || withinTrial
+        }
 
-            // MARK: - Batch write (cannot be cancelled)
+        // MARK: - Batch write (cannot be cancelled)
 
-            let batch = db.batch()
+        let batch = db.batch()
 
+        batch.setData(
+            settingsData,
+            forDocument: settingsRef,
+            merge: true
+        )
+
+        if shouldSetActiveTrue {
+            
+            
             batch.setData(
-                settingsData,
-                forDocument: settingsRef,
+                [
+                    "active": true,
+                    "updatedAt": FieldValue.serverTimestamp()
+                ],
+                forDocument: userRef,
                 merge: true
             )
-
-            if shouldSetActiveTrue {
-                batch.setData(
-                    [
-                        "active": true,
-                        "updatedAt": FieldValue.serverTimestamp()
-                    ],
-                    forDocument: userRef,
-                    merge: true
-                )
-            }
-
-            try await withTimeout(seconds: 3, label: "settings batch commit") {
-                try await runOffMain(label: "settings batch commit") {
-                    try await batch.commit()
-                }
-            }
+        }
+            try await batch.commit()
             print("✅ settings batch COMMITTED")
 
-            // MARK: - Callable
+
 
             let callable = functions.httpsCallable("applyUserSettings")
-            _ = try await withTimeout(seconds: 3, label: "applyUserSettings callable") {
-                try await runOffMain(label: "applyUserSettings callable") {
-                    try await callable.call([:])
-                }
-            }
+            _ = try await callable.call([:])
             print("✅ applyUserSettings success")
-        }.value
     }
 }
