@@ -4,7 +4,6 @@
 import Foundation
 import FirebaseFunctions
 
-@MainActor
 extension AppViewModel {
     // MARK: - Send One Now (Cloud Function)
     /// Throws if something goes wrong; caller decides how to surface the error.

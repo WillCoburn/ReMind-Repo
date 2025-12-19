@@ -68,12 +68,6 @@ final class AppViewModel: ObservableObject {
                 await self.loadUserAndEntries(authUser?.uid)
                 await self.refreshGodModeFlag(forceRefresh: true)
 
-                // ✅ Only identify/configure RevenueCat AFTER the base user profile is loaded.
-                // This ensures no RC config/writes occur before the Firestore user doc exists.
-                let hasPhone = !(self.user?.phoneE164 ?? "").isEmpty
-                if hasPhone {
-                    RevenueCatManager.shared.identifyIfPossible()
-                }
             }
         }
     }

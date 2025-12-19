@@ -5,7 +5,7 @@ import Foundation
 import FirebaseAuth
 import FirebaseFirestore
 
-@MainActor
+
 extension AppViewModel {
     // MARK: - Entries
     
@@ -62,30 +62,48 @@ extension AppViewModel {
           entriesListener = nil
       }
     
-    func submit(text: String, isOnline: Bool = NetworkMonitor.shared.isConnected) async {
-        guard isOnline else {
-            print("⏸️ submit skipped: offline")
+    func submit(text: String) async {
+        print("🧪 submit tapped")
+
+        guard NetworkMonitor.shared.isConnected else {
+            print("❌ submit blocked: offline")
             return
         }
 
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+        guard let uid = Auth.auth().currentUser?.uid else {
+            print("❌ submit blocked: no auth uid")
+            return
+        }
+
+        print("🧪 submit uid:", uid)
+
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty else {
+            print("❌ submit blocked: empty text")
+            return
+        }
+
+        let ref = db.collection("users")
+            .document(uid)
+            .collection("entries")
+            .document()
+
+        print("🧪 submit writing to:", ref.path)
 
         do {
-            try await db.collection("users")
-                .document(uid)
-                .collection("entries")
-                .addDocument(data: [
-                    "text": trimmed,
-                    "createdAt": FieldValue.serverTimestamp(),
-                    "sent": false
-                ])
-            await refreshAll()
+            try await ref.setData([
+                "text": trimmed,
+                "createdAt": FieldValue.serverTimestamp(),
+                "sent": false
+            ])
+
+            print("✅ submit write success")
         } catch {
-            print("❌ submit error:", error.localizedDescription)
+            print("❌ submit write failed:", error.localizedDescription)
         }
     }
+
+
 
     func refreshAll() async {
         guard let uid = Auth.auth().currentUser?.uid else { return }

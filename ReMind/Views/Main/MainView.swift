@@ -70,7 +70,10 @@ struct MainView: View {
                         if hasExpiredTrialWithoutSubscription {
                             SubscriptionReminderBanner(
                                 message: "Your free trial has ended - please start a subscription to use ReMind.",
-                                onSubscribe: { showPaywall = true }
+                                onSubscribe: { RevenueCatManager.shared.forceIdentify {
+                                    showPaywall = true
+                                }
+ }
                             )
                         }
 
@@ -277,7 +280,10 @@ struct MainView: View {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
+        print("🧪 sendEntry → calling submit")
+        
         await appVM.submit(text: text)
+        print("🧪 sendEntry → submit returned")
         input = ""
         isEntryFieldFocused = false
         hideKeyboard()

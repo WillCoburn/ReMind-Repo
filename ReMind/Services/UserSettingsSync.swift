@@ -14,114 +14,128 @@ struct UserSettings: Codable {
 }
 
 enum UserSettingsSync {
+
+    // MARK: - Read from AppStorage
+
     static func currentFromAppStorage() -> UserSettings {
         let d = UserDefaults.standard
+
         let storedWeekly = d.object(forKey: "remindersPerWeek") as? Double
         let legacyDaily = d.object(forKey: "remindersPerDay") as? Double
-        var weekly = storedWeekly ?? ((legacyDaily != nil) ? (legacyDaily! * 7.0) : nil) ?? 7.0
+
+        var weekly =
+            storedWeekly ??
+            ((legacyDaily != nil) ? (legacyDaily! * 7.0) : nil) ??
+            7.0
+
         weekly = max(1.0, min(20.0, weekly))
+
         if storedWeekly == nil {
             d.set(weekly, forKey: "remindersPerWeek")
         }
 
-        
         return .init(
             remindersPerWeek: weekly,
-            tzIdentifier: d.string(forKey: "tzIdentifier") ?? TimeZone.current.identifier,
-            quietStartHour: max(0, min(24, Int(round(d.double(forKey: "quietStartHour"))))),
-            quietEndHour:  max(0, min(24, Int(round(d.double(forKey: "quietEndHour")))))
+            tzIdentifier: d.string(forKey: "tzIdentifier")
+                ?? TimeZone.current.identifier,
+            quietStartHour: max(
+                0,
+                min(24, Int(round(d.double(forKey: "quietStartHour"))))
+            ),
+            quietEndHour: max(
+                0,
+                min(24, Int(round(d.double(forKey: "quietEndHour"))))
+            )
         )
     }
 
+    // MARK: - Push + Apply (ASYNC / AWAIT SAFE)
+
     /// Writes settings to Firestore at users/{uid}/meta/settings
-    /// THEN calls the callable `applyUserSettings` to compute users/{uid}.nextSendAt immediately.
+    /// THEN calls the callable `applyUserSettings`
     ///
-    /// CHANGE: We only write `users/{uid}.active = true` if the user is SUBSCRIBED
-    /// or still WITHIN TRIAL. Otherwise we leave `active` untouched, preventing
-    /// an unintended reactivation for expired/unsubscribed users.
-    static func pushAndApply(completion: ((Error?) -> Void)? = nil) {
+    /// `active` is only flipped to true if:
+    /// - subscribed
+    /// - OR still within trial
+    static func pushAndApply() async throws {
+        print("🧪 settings save tapped")
+        print("🧪 settings uid:", Auth.auth().currentUser?.uid ?? "nil")
+
         guard let uid = Auth.auth().currentUser?.uid else {
-            completion?(NSError(domain: "UserSettingsSync",
-                                code: 401,
-                                userInfo: [NSLocalizedDescriptionKey: "Not logged in"]))
-            return
+            throw NSError(
+                domain: "UserSettingsSync",
+                code: 401,
+                userInfo: [NSLocalizedDescriptionKey: "Not logged in"]
+            )
         }
 
         let db = Firestore.firestore()
         let functions = Functions.functions()
-        let s = currentFromAppStorage()
+        let settings = currentFromAppStorage()
 
-        // Prepare settings payload
         let settingsData: [String: Any] = [
-            "remindersPerWeek": s.remindersPerWeek,
-            "tzIdentifier": s.tzIdentifier,
-            "quietStartHour": s.quietStartHour,
-            "quietEndHour": s.quietEndHour,
+            "remindersPerWeek": settings.remindersPerWeek,
+            "tzIdentifier": settings.tzIdentifier,
+            "quietStartHour": settings.quietStartHour,
+            "quietEndHour": settings.quietEndHour,
             "updatedAt": FieldValue.serverTimestamp()
         ]
 
         let userRef = db.collection("users").document(uid)
-        let settingsRef = userRef.collection("meta").document("settings")
+        let settingsRef = userRef
+            .collection("meta")
+            .document("settings")
 
-        // Step 0: Read user to decide if we are allowed to flip `active` to true.
-        userRef.getDocument { snapshot, readErr in
-            if let readErr = readErr {
-                // If we can't read, fail CLOSED (do not accidentally reactivate).
-                // We still save settings and call the backend, but we won't write active=true.
-                print("⚠️ UserSettingsSync: failed to read user doc; will not force active=true. \(readErr.localizedDescription)")
-                commitBatch(shouldSetActiveTrue: false)
-                return
-            }
+        // MARK: - Read user state (subscription / trial)
 
-            // Parse subscription status & trial window
-            var shouldSetActiveTrue = false
-            if let doc = snapshot, doc.exists {
-                let status = (doc.get("subscriptionStatus") as? String) ?? SubscriptionStatus.unsubscribed.rawValue
-                let isSubscribed = (status == SubscriptionStatus.subscribed.rawValue)
+        let snapshot = try await userRef.getDocument()
 
-                let trialEndsAt: Date? = {
-                    if let ts = doc.get("trialEndsAt") as? Timestamp { return ts.dateValue() }
-                    return nil
-                }()
+        var shouldSetActiveTrue = false
+        if snapshot.exists {
+            let status =
+                (snapshot.get("subscriptionStatus") as? String)
+                ?? SubscriptionStatus.unsubscribed.rawValue
 
-                let now = Date()
-                let withinTrial = (trialEndsAt != nil) ? (now < trialEndsAt!) : false
+            let isSubscribed =
+                status == SubscriptionStatus.subscribed.rawValue
 
-                shouldSetActiveTrue = isSubscribed || withinTrial
-            } else {
-                // No user doc? Fail CLOSED: don't re-activate.
-                shouldSetActiveTrue = false
-            }
+            let trialEndsAt =
+                (snapshot.get("trialEndsAt") as? Timestamp)?.dateValue()
 
-            commitBatch(shouldSetActiveTrue: shouldSetActiveTrue)
+            let withinTrial =
+                trialEndsAt.map { Date() < $0 } ?? false
+
+            shouldSetActiveTrue = isSubscribed || withinTrial
         }
 
-        // Commits the batch (settings always saved; active=true only when allowed), then calls the callable.
-        func commitBatch(shouldSetActiveTrue: Bool) {
-            let batch = db.batch()
-            // Always save settings
-            batch.setData(settingsData, forDocument: settingsRef, merge: true)
+        // MARK: - Batch write (cannot be cancelled)
 
-            // Conditionally flip active -> true (do NOT hardcode to false when not allowed)
-            if shouldSetActiveTrue {
-                batch.setData(["active": true,
-                               "updatedAt": FieldValue.serverTimestamp()],
-                              forDocument: userRef,
-                              merge: true)
-            }
+        let batch = db.batch()
 
-            batch.commit { err in
-                if let err = err {
-                    completion?(err)
-                    return
-                }
+        batch.setData(
+            settingsData,
+            forDocument: settingsRef,
+            merge: true
+        )
 
-                // Recompute nextSendAt; backend should honor users/{uid}.active when scheduling.
-                let callable = functions.httpsCallable("applyUserSettings")
-                callable.call([:]) { _, callErr in
-                    completion?(callErr)
-                }
-            }
+        if shouldSetActiveTrue {
+            batch.setData(
+                [
+                    "active": true,
+                    "updatedAt": FieldValue.serverTimestamp()
+                ],
+                forDocument: userRef,
+                merge: true
+            )
         }
+
+        try await batch.commit()
+        print("✅ settings batch COMMITTED")
+
+        // MARK: - Callable
+
+        let callable = functions.httpsCallable("applyUserSettings")
+        _ = try await callable.call([:])
+        print("✅ applyUserSettings success")
     }
 }

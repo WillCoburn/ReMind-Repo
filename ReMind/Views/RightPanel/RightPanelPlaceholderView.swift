@@ -247,18 +247,24 @@ struct RightPanelPlaceholderView: View {
 
     // MARK: - Settings sync
 
-    private func persistSettingsDebounced() {
-        pendingSaveWorkItem?.cancel()
+    @State private var saveTask: Task<Void, Never>?
 
-        let workItem = DispatchWorkItem {
-            UserSettingsSync.pushAndApply { err in
-                print("pushAndApply (right panel) ->", err?.localizedDescription ?? "OK")
+    private func persistSettingsDebounced() {
+        saveTask?.cancel()
+
+        saveTask = Task {
+            try? await Task.sleep(nanoseconds: 600_000_000) // 0.6s debounce
+
+            do {
+                print("🧪 committing settings batch")
+                try await UserSettingsSync.pushAndApply()
+                print("✅ pushAndApply (right panel) OK")
+            } catch {
+                print("❌ pushAndApply (right panel) failed:", error.localizedDescription)
             }
         }
-
-        pendingSaveWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: workItem)
     }
+
     
     private func trialBanner(_ trialEnd: Date) -> some View {
         HStack(spacing: 12) {
@@ -273,7 +279,11 @@ struct RightPanelPlaceholderView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Button(action: { showPaywall = true }) {
+            Button {
+                RevenueCatManager.shared.forceIdentify {
+                    showPaywall = true
+                }
+            } label: {
                 Text("Subscribe")
                     .font(.footnote.weight(.semibold))
                     .padding(.vertical, 6)
@@ -282,6 +292,7 @@ struct RightPanelPlaceholderView: View {
                     .foregroundColor(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
+
             .buttonStyle(.plain)   // IMPORTANT: prevents parent gestures from blocking taps
         }
         .padding(12)

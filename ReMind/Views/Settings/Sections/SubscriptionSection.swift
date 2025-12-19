@@ -57,8 +57,11 @@ struct SubscriptionSection: View {
 
                 // Start Subscription Button
                 Button("Start Subscription") {
-                    showPaywall = true
+                    RevenueCatManager.shared.forceIdentify {
+                        showPaywall = true
+                    }
                 }
+
                 .buttonStyle(.borderedProminent)
                 .frame(maxWidth: .infinity, alignment: .center)
             }

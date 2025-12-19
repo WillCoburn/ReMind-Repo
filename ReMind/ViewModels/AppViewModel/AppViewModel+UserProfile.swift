@@ -87,8 +87,6 @@ extension AppViewModel {
                 self.user?.createdAt = now
             }
 
-            // ✅ Identify with RevenueCat only AFTER base doc exists.
-            RevenueCatManager.shared.identifyIfPossible()
 
             // Ensure `active` reflects RC entitlement vs. trial (covers re-sign-in edge cases)
             RevenueCatManager.shared.recomputeAndPersistActive(uid: uid)
