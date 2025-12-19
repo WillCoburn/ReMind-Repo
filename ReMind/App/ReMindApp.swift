@@ -9,11 +9,16 @@ struct ReMindApp: App {
     // If you need AppDelegate for phone auth/APNs handoff:
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
-    @StateObject private var appVM = CompositionRoot.makeAppViewModel()
+    @StateObject private var appVM: AppViewModel
 
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var net = NetworkMonitor.shared
 
+    init() {
+        FirebaseBootstrap.configure()
+        _appVM = StateObject(wrappedValue: CompositionRoot.makeAppViewModel())
+    }
+    
     var body: some Scene {
         WindowGroup {
             RootView()

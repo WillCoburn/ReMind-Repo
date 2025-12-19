@@ -7,20 +7,27 @@ import FirebaseAuth
 import FirebaseFirestore
 
 enum FirebaseBootstrap {
+    private static var hasConfigured = false
     private static let projectCacheKey = "FirebaseProjectId"
     private static let defaultFirestoreHost = "firestore.googleapis.com"
 
     /// Ensures Firebase is configured exactly once and eagerly prepares Firestore
     /// so gRPC streams are online before any async work is launched.
     static func configure() {
+        guard !hasConfigured else { return }
+        hasConfigured = true
+        
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()
         }
+        
+        FirebaseConfiguration.shared.setLoggerLevel(.debug)
 
         Task.detached(priority: .userInitiated) {
             await logRuntimeConfiguration()
             await resetPersistenceIfProjectChanged()
             await ensureFirestoreNetworkEnabled()
+            await sanityCheckConnectivity()
             await logAuthState()
         }
     }
@@ -107,4 +114,42 @@ enum FirebaseBootstrap {
         }
     }
 
+    // MARK: - Connectivity sanity check
+     private static func sanityCheckConnectivity() async {
+         guard let uid = Auth.auth().currentUser?.uid else {
+             print("🔥 Firestore sanity check skipped: no auth user yet")
+             return
+         }
+
+         let db = Firestore.firestore()
+         let pingRef = db.collection("users")
+             .document(uid)
+             .collection("meta")
+             .document("debug")
+             .collection("ping")
+             .document("boot")
+
+         do {
+             try await withTimeout(seconds: 5, label: "firestore ping write") {
+                 try await runOffMain(label: "firestore ping write") {
+                     try await pingRef.setData([
+                         "ts": FieldValue.serverTimestamp(),
+                         "source": "bootstrap"
+                     ])
+                 }
+             }
+
+             let snapshot = try await withTimeout(seconds: 5, label: "firestore ping read") {
+                 try await runOffMain(label: "firestore ping read") {
+                     try await pingRef.getDocument()
+                 }
+             }
+
+             let ts = (snapshot.get("ts") as? Timestamp)?.dateValue()
+             print("✅ Firestore sanity check ok (ts: \(ts?.description ?? "nil"))")
+         } catch {
+             print("❌ Firestore sanity check failed:", error.localizedDescription)
+         }
+     }
+    
 }

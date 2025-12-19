@@ -6,6 +6,24 @@ import FirebaseAuth
 import FirebaseFirestore
 import FirebaseFunctions
 
+
+private actor SettingsPushGate {
+    static let shared = SettingsPushGate()
+
+    private var inFlight = false
+
+    func begin() -> Bool {
+        guard !inFlight else { return false }
+        inFlight = true
+        return true
+    }
+
+    func end() {
+        inFlight = false
+    }
+}
+
+
 struct UserSettings: Codable {
     var remindersPerWeek: Double
     var tzIdentifier: String
@@ -61,6 +79,15 @@ enum UserSettingsSync {
         print("🧪 settings save tapped")
         print("🧪 settings uid:", Auth.auth().currentUser?.uid ?? "nil")
 
+        guard await SettingsPushGate.shared.begin() else {
+            print("⚠️ settings push skipped: already in flight")
+            return
+        }
+
+        defer {
+            Task { await SettingsPushGate.shared.end() }
+        }
+        
         try await Task.detached(priority: .userInitiated) {
             guard let uid = Auth.auth().currentUser?.uid else {
                 throw NSError(
