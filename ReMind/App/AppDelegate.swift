@@ -7,21 +7,7 @@ import FirebaseFunctions
 
 class AppDelegate: NSObject, UIApplicationDelegate {
 
-    // MARK: - Debug Helper
-    private func debugFirebaseConfig() {
-        if let app = FirebaseApp.app() {
-            print("🔥 Firebase app name:", app.name)
-            print("🔥 Firebase projectID:", app.options.projectID ?? "nil")
-            print("🔥 Firebase apiKey:", app.options.apiKey)
-        } else {
-            print("🔥 Firebase app is nil")
-        }
 
-        // These just confirm Firestore / Functions are initialized, no extra properties
-        _ = Firestore.firestore()
-        _ = Functions.functions()
-        print("🔥 Firestore & Functions initialized")
-    }
 
     // MARK: - App Launch
     func application(
@@ -31,8 +17,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
         FirebaseApp.configure()
 
-        // Print out what Firebase project you're actually connecting to
-        debugFirebaseConfig()
+        FirebaseBootstrap.configure()
 
         // Enable debug logging for Functions
         UserDefaults.standard.set(true, forKey: "FIRDebugEnabled")
