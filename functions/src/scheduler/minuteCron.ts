@@ -121,7 +121,15 @@ export const minuteCron = onSchedule(
           continue;
         }
 
-        await db.doc(`users/${uid}`).set({ active: true, smsOptOut: false }, { merge: true });
+         const isActive = doc.get("active") === true;
+         const isOptedOut = doc.get("smsOptOut") === true;
+
+         if (!isActive || isOptedOut) {
+          await db.doc(`users/${uid}`).set(
+            { active: true, smsOptOut: false },
+            { merge: true }
+          );
+        }
 
         try {
           if (picked?.ref) {
