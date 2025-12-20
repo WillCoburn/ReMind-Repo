@@ -36,6 +36,7 @@ export const minuteCron = onSchedule(
     const client = getTwilioClient(sid, token);
 
     const now = admin.firestore.Timestamp.now();
+    const nowSeconds = now.seconds + now.nanoseconds / 1_000_000_000;
 
     logger.info("[minuteCron] querying due users");
     const dueSnap = await db
@@ -58,6 +59,28 @@ export const minuteCron = onSchedule(
       }
 
       try {
+        const rcExpiresAtRaw = doc.get("rc.expiresAt");
+        const rcExpiresAtSeconds =
+          rcExpiresAtRaw instanceof admin.firestore.Timestamp
+            ? rcExpiresAtRaw.seconds + rcExpiresAtRaw.nanoseconds / 1_000_000_000
+            : typeof rcExpiresAtRaw === "number"
+            ? rcExpiresAtRaw
+            : null;
+
+        if (rcExpiresAtSeconds != null && rcExpiresAtSeconds < nowSeconds) {
+          logger.warn("[minuteCron] skipping expired user", { uid, rcExpiresAtSeconds });
+          await db.doc(`users/${uid}`).set(
+            {
+              rc: { entitlementActive: false, willRenew: false },
+              active: false,
+              subscriptionStatus: "unsubscribed",
+            },
+            { merge: true }
+          );
+          await scheduleNext(uid, new Date());
+          continue;
+        }
+
         if (doc.get("welcomed") !== true) {
           await (async () => {
             const params = buildMsgParams({

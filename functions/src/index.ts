@@ -273,12 +273,16 @@ export { triggerWelcome } from "./onboarding/triggerWelcome";
 
 // scheduler
 export { minuteCron } from "./scheduler/minuteCron";
+export { reconcileRevenueCatEntitlements } from "./scheduler/reconcileRevenueCatEntitlements";
 
 // firestore triggers
 export { onEntryCreated } from "./entries/onEntryCreated";
 
 // twilio webhooks
 export { twilioInboundSms, twilioStatusCallback } from "./twilio/webhooks";
+
+// revenuecat webhook
+export { revenueCatWebhook } from "./revenuecat/webhook";
 
 // export - get URL
 export { getExportUploadUrl } from "./exports/getExportUploadUrl";
