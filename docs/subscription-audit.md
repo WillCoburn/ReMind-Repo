@@ -58,3 +58,19 @@ For each case: users can often keep interacting because gating is based on cache
   - Replace local `Date()` trial checks with server timestamps and avoid trusting device clocks; treat missing/old data as inactive until refreshed.
 
 **Overall:** Subscription enforcement is **unsafe**. UI depends on cached trial/active flags and does not react to live RevenueCat or Firestore updates, so both over-access (expired users allowed) and under-access (paid users still blocked) are likely until the app is restarted or manually refreshed.
+
+## 8. Enforcement after backend hardening (current state)
+- **Confirmed safe behaviors:**
+  - A scheduled reconciler flips `rc.entitlementActive`, `active`, and `subscriptionStatus` to inactive whenever an `rc.expiresAt` timestamp is past due, eliminating reliance on the client opening the app to enforce expiry.【F:functions/src/scheduler/reconcileRevenueCatEntitlements.ts†L9-L69】
+  - RevenueCat webhook events now immediately mirror entitlement updates to Firestore and recompute `active/subscriptionStatus`, ensuring cancellations, renewals, and expirations are reflected without client interaction.【F:functions/src/revenuecat/webhook.ts†L18-L102】
+  - The SMS scheduler refuses to send if the stored `rc.expiresAt` is in the past and marks the user inactive, preventing stale entitlements from triggering outbound messages.【F:functions/src/scheduler/minuteCron.ts†L32-L63】
+- **Potential bugs or risks:**
+  - The reconciler processes at most 500 active users per run; a larger active cohort could delay some expirations until a later execution window.【F:functions/src/scheduler/reconcileRevenueCatEntitlements.ts†L9-L69】
+  - Webhook authenticity is not validated (e.g., HMAC), so a misrouted endpoint could accept forged events; rate limiting and signature checks would strengthen trust.【F:functions/src/revenuecat/webhook.ts†L1-L102】
+  - `rc.expiresAt` accepts numeric or Timestamp formats; inconsistent client writes could still bypass comparisons until normalized.【F:functions/src/revenuecat/state.ts†L1-L37】【F:functions/src/scheduler/minuteCron.ts†L32-L63】
+- **Recommended fixes or simplifications:**
+  - Add pagination/continuation or a batched loop in the reconciler to cover more than 500 active users per execution window.【F:functions/src/scheduler/reconcileRevenueCatEntitlements.ts†L9-L69】
+  - Normalize `rc.expiresAt` writes (e.g., to server timestamps) and centralize expiry parsing to remove mixed-type comparisons.【F:functions/src/revenuecat/state.ts†L1-L37】【F:functions/src/revenuecat/webhook.ts†L18-L102】
+  - Validate webhook signatures and log replay identifiers to prevent spoofed entitlement changes.【F:functions/src/revenuecat/webhook.ts†L1-L102】
+
+**Verdict:** Subscription enforcement is now **mostly correct but fragile** — backend jobs and webhooks enforce expiry without client participation, but scale limits, mixed timestamp formats, and missing webhook authentication remain areas to shore up.
