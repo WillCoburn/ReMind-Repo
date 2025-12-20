@@ -8,6 +8,7 @@ import FirebaseAuth
 struct ExportSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appVM: AppViewModel
+    @ObservedObject private var revenueCat: RevenueCatManager = .shared
 
     @State private var isExporting = false
     @State private var link: URL? = nil
@@ -17,6 +18,7 @@ struct ExportSheet: View {
     private let exporter: ExportService = FirebaseExportService()
 
     var body: some View {
+        let _ = revenueCat.entitlementActive
         NavigationView {
             ZStack {
                 // Base → white, then soft blue overlay
@@ -80,9 +82,9 @@ struct ExportSheet: View {
                                 .font(.headline)
                         }
                         .foregroundColor(.white)
-                        .background(isExporting ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
+                        .background(isExporting || !appVM.isEntitled ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .disabled(isExporting)
+                        .disabled(isExporting || !appVM.isEntitled)
 
                         Button(action: { dismiss() }) {
                             Text("Cancel")
@@ -116,6 +118,9 @@ struct ExportSheet: View {
             .padding(10)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
+        .onChange(of: appVM.isEntitled) { entitled in
+            if !entitled { dismiss() }
+        }
     }
 
     private func runExport() async {
@@ -123,6 +128,11 @@ struct ExportSheet: View {
         error = nil
         isExporting = true
         defer { isExporting = false }
+
+        guard appVM.isEntitled else {
+            error = "Subscription required to export."
+            return
+        }
 
         do {
             let url = try await exporter.exportAndSend(entries: appVM.entries)

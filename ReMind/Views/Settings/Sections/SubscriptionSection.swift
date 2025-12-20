@@ -21,9 +21,8 @@ struct SubscriptionSection: View {
             let expiration = revenueCat.entitlementExpirationDate
 
 
-            let now = Date()
             let trialEnd = appVM.user?.trialEndsAt
-            let onTrial = (trialEnd ?? .distantPast) > now
+            let onTrial = appVM.isTrialActive
 
             // ============================
             // Subscription Status / Trial

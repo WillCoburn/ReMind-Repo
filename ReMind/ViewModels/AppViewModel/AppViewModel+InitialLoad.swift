@@ -31,6 +31,7 @@ extension AppViewModel {
         do {
             let snap = try await db.collection("users").document(uid).getDocument()
             let documentExists = snap.exists
+            updateServerTime(readAt: snap.readTime?.dateValue())
 
             // Base identity
             let phone = snap.get("phoneE164") as? String ?? ""

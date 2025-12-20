@@ -11,10 +11,7 @@ struct SubscriptionSheet: View {
     @State private var detent: PresentationDetent = .large   // 👈 start expanded
 
     private var statusText: String {
-        let onTrial = appVM.user?.trialEndsAt.map { Date() < $0 } ?? false
-
-        if onTrial { return "Subscription status: Trial" }
-        if revenueCat.entitlementActive { return "Subscription status: Subscribed" }
+        if appVM.isTrialActive { return "Subscription status: Trial" }
         if appVM.isEntitled { return "Subscription status: Subscribed" }
         return "Subscription status: Unsubscribed"
     }
