@@ -8,11 +8,13 @@ import UIKit
 struct SendNowSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appVM: AppViewModel
+    @ObservedObject private var revenueCat: RevenueCatManager = .shared
 
     @State private var isSending = false
     @State private var errorMessage: String? = nil
 
     var body: some View {
+        let _ = revenueCat.entitlementActive
         NavigationView {
             ZStack {
                 // Base → white, then soft blue overlay (matches ExportSheet)
@@ -72,9 +74,9 @@ struct SendNowSheet: View {
                             .frame(height: 52)
                         }
                         .foregroundColor(.white)
-                        .background(isSending ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
+                        .background(isSending || !appVM.isEntitled ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .disabled(isSending)
+                        .disabled(isSending || !appVM.isEntitled)
 
                         Button(action: { dismiss() }) {
                             Text("Cancel")
@@ -100,10 +102,17 @@ struct SendNowSheet: View {
             }
             .navigationBarTitleDisplayMode(.inline)
         }
+        .onChange(of: appVM.isEntitled) { entitled in
+            if !entitled { dismiss() }
+        }
     }
 
     private func sendNow() async {
         guard !isSending else { return }
+        guard appVM.isEntitled else {
+            errorMessage = "Subscription required to send reminders."
+            return
+        }
         isSending = true
         errorMessage = nil
         defer { isSending = false }

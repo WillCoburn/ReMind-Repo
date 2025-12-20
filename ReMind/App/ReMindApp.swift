@@ -32,6 +32,7 @@ struct ReMindApp: App {
                 NetworkMonitor.shared.forceRefresh()
                 // Recompute only if we’re identified (lazy manager will no-op otherwise).
                 RevenueCatManager.shared.recomputeAndPersistActive()
+                appVM.refreshEntitlementState()
             }
         }
     }

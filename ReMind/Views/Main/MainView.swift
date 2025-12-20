@@ -29,9 +29,7 @@ struct MainView: View {
     private let goal: Int = 3
 
     private var hasExpiredTrialWithoutSubscription: Bool {
-        guard !appVM.isEntitled else { return false }
-        guard let trialEnd = appVM.user?.trialEndsAt else { return false }
-        return Date() >= trialEnd
+        !appVM.isEntitled && appVM.hasExpiredTrial
     }
 
     var body: some View {

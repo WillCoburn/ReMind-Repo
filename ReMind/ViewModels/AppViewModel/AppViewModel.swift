@@ -15,6 +15,8 @@ final class AppViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var hasLoadedInitialProfile = false
     @Published private(set) var isEntitled = false
+    @Published private(set) var isTrialActive = false
+    @Published private(set) var hasExpiredTrial = false
 
     // Current SMS opt-out state for the signed-in user
     @Published var smsOptOut: Bool = false
@@ -46,6 +48,8 @@ final class AppViewModel: ObservableObject {
     private var authHandle: AuthStateDidChangeListenerHandle?
     private var entitlementCancellables: Set<AnyCancellable> = []
     private var trialExpiryTimer: Timer?
+    private var lastServerNow: Date?
+    private var uptimeAtLastServerNow: TimeInterval?
 
     let revenueCat: RevenueCatManager = .shared
 
@@ -107,8 +111,8 @@ final class AppViewModel: ObservableObject {
         trialExpiryTimer?.invalidate()
         trialExpiryTimer = nil
 
-        guard let trialEndsAt = user?.trialEndsAt else { return }
-        let interval = trialEndsAt.timeIntervalSinceNow
+        guard let trialEndsAt = user?.trialEndsAt, let now = trustedNow() else { return }
+        let interval = trialEndsAt.timeIntervalSince(now)
         guard interval > 0 else { return }
 
         trialExpiryTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
@@ -120,10 +124,37 @@ final class AppViewModel: ObservableObject {
 
     private func recomputeEntitlement() {
         let entitlementActive = revenueCat.entitlementActive
-        let onTrial = user?.trialEndsAt.map { Date() < $0 } ?? false
+        let onTrial = computeTrialActive()
         let newValue = entitlementActive || onTrial
+        let expiredTrial = (!entitlementActive && !onTrial && user?.trialEndsAt != nil)
 
-        guard newValue != isEntitled else { return }
+        guard newValue != isEntitled || onTrial != isTrialActive || expiredTrial != hasExpiredTrial else { return }
         isEntitled = newValue
+        isTrialActive = onTrial
+        hasExpiredTrial = expiredTrial
+    }
+
+    private func computeTrialActive() -> Bool {
+        guard let trialEndsAt = user?.trialEndsAt else { return false }
+        guard let now = trustedNow() else { return false }
+        return now < trialEndsAt
+    }
+
+    private func trustedNow() -> Date? {
+        guard let serverNow = lastServerNow, let uptime = uptimeAtLastServerNow else { return nil }
+        let elapsed = ProcessInfo.processInfo.systemUptime - uptime
+        return serverNow.addingTimeInterval(elapsed)
+    }
+
+    func updateServerTime(readAt: Date?) {
+        guard let readAt else { return }
+        lastServerNow = readAt
+        uptimeAtLastServerNow = ProcessInfo.processInfo.systemUptime
+        refreshEntitlementState()
+    }
+
+    func refreshEntitlementState() {
+        recomputeEntitlement()
+        scheduleTrialExpiryTimer()
     }
 }
