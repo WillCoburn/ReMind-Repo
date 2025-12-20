@@ -6,6 +6,7 @@ import FirebaseAuth
 
 struct RootView: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @EnvironmentObject private var paywallPresenter: PaywallPresenter
     
     // Which horizontal page we’re on
     private enum Page: Hashable { case community, main, right }
@@ -68,6 +69,9 @@ struct RootView: View {
             if !shouldShow {
                 activePage = .main
             }
+        }
+        .fullScreenCover(isPresented: $paywallPresenter.isPresenting) {
+            SubscriptionSheet()
         }
         // Dismiss keyboard if user swipes away from the main page
         .onChange(of: activePage) { newPage in

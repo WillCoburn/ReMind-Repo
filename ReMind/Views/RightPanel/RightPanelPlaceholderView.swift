@@ -8,6 +8,7 @@ import SwiftUI
 
 struct RightPanelPlaceholderView: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @EnvironmentObject private var paywallPresenter: PaywallPresenter
     @ObservedObject private var revenueCat = RevenueCatManager.shared
 
     @AppStorage("remindersPerWeek") private var remindersPerWeek: Double = 7.0 // 1...20
@@ -20,7 +21,6 @@ struct RightPanelPlaceholderView: View {
     @State private var loadError: String?
     @State private var pendingSaveWorkItem: DispatchWorkItem?
     @State private var activeSheet: ActiveSettingsSheet?
-    @State private var showPaywall = false
     @State private var showDeleteSheet = false
     @State private var restoreMessage: String?
     @State private var mailError: String?
@@ -91,15 +91,12 @@ struct RightPanelPlaceholderView: View {
             case .subscription:
                 SubscriptionOptionsSheet(
                     appVM: appVM,
-                    showPaywall: $showPaywall,
+                    onStartSubscription: { paywallPresenter.present(after: { activeSheet = nil }) },
                     restoreMessage: $restoreMessage
                 )
             case .contactUs:
                 ContactUsMailSheet()
             }
-        }
-        .sheet(isPresented: $showPaywall) {
-            SubscriptionSheet()
         }
         .sheet(isPresented: $showDeleteSheet) {
             DeleteAccountSheet(isPresented: $showDeleteSheet)
@@ -280,7 +277,7 @@ struct RightPanelPlaceholderView: View {
 
             Button {
                 RevenueCatManager.shared.forceIdentify {
-                    showPaywall = true
+                    paywallPresenter.present()
                 }
             } label: {
                 Text("Subscribe")
@@ -333,6 +330,7 @@ struct RightPanelPlaceholderView_Previews: PreviewProvider {
     static var previews: some View {
         RightPanelPlaceholderView()
             .environmentObject(AppViewModel())
+            .environmentObject(PaywallPresenter())
     }
 }
 
@@ -614,12 +612,12 @@ struct SubscriptionOptionsSheet: View {
     var appVM: AppViewModel
     @ObservedObject var revenueCat: RevenueCatManager = .shared
 
-    @Binding var showPaywall: Bool
+    var onStartSubscription: () -> Void
     @Binding var restoreMessage: String?
 
-    init(appVM: AppViewModel, showPaywall: Binding<Bool>, restoreMessage: Binding<String?>) {
+    init(appVM: AppViewModel, onStartSubscription: @escaping () -> Void, restoreMessage: Binding<String?>) {
         self.appVM = appVM
-        self._showPaywall = showPaywall
+        self.onStartSubscription = onStartSubscription
         self._restoreMessage = restoreMessage
     }
 
@@ -637,7 +635,7 @@ struct SubscriptionOptionsSheet: View {
             SubscriptionSection(
                 appVM: appVM,
                 revenueCat: revenueCat,
-                showPaywall: $showPaywall,
+                onStartSubscription: onStartSubscription,
                 restoreMessage: $restoreMessage
             )
             .frame(maxWidth: .infinity)
