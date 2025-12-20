@@ -26,7 +26,9 @@ extension AppViewModel {
             let docRef = db.collection("users").document(uid)
 
             let existingSnapshot = try await docRef.getDocument()
-            updateServerTime(readAt: existingSnapshot.readTime?.dateValue())
+            let serverRead = (existingSnapshot.get("updatedAt") as? Timestamp
+                ?? existingSnapshot.get("createdAt") as? Timestamp)?.dateValue()
+            updateServerTime(readAt: serverRead)
 
             if existingSnapshot.exists {
                 let existingData = existingSnapshot.data() ?? [:]
