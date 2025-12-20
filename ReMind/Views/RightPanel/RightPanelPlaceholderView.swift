@@ -8,8 +8,9 @@ import SwiftUI
 
 struct RightPanelPlaceholderView: View {
     @EnvironmentObject private var appVM: AppViewModel
-    @EnvironmentObject private var paywallPresenter: PaywallPresenter
     @ObservedObject private var revenueCat = RevenueCatManager.shared
+
+    let onRequestPaywall: () -> Void
 
     @AppStorage("remindersPerWeek") private var remindersPerWeek: Double = 7.0 // 1...20
     @AppStorage("tzIdentifier")    private var tzIdentifier: String = TimeZone.current.identifier
@@ -91,7 +92,10 @@ struct RightPanelPlaceholderView: View {
             case .subscription:
                 SubscriptionOptionsSheet(
                     appVM: appVM,
-                    onStartSubscription: { paywallPresenter.present(after: { activeSheet = nil }) },
+                    onStartSubscription: {
+                        activeSheet = nil
+                        onRequestPaywall()
+                    },
                     restoreMessage: $restoreMessage
                 )
             case .contactUs:
@@ -277,7 +281,7 @@ struct RightPanelPlaceholderView: View {
 
             Button {
                 RevenueCatManager.shared.forceIdentify {
-                    paywallPresenter.present()
+                    onRequestPaywall()
                 }
             } label: {
                 Text("Subscribe")
@@ -328,7 +332,7 @@ enum ActiveSettingsSheet: Identifiable {
 
 struct RightPanelPlaceholderView_Previews: PreviewProvider {
     static var previews: some View {
-        RightPanelPlaceholderView()
+        RightPanelPlaceholderView(onRequestPaywall: {})
             .environmentObject(AppViewModel())
             .environmentObject(PaywallPresenter())
     }
