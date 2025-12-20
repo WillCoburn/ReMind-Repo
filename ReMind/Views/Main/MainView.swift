@@ -36,10 +36,9 @@ struct MainView: View {
         // Observe RevenueCat updates so entitlement changes redraw instantly.
         let _ = revenueCat.entitlementActive
         let count = appVM.entries.count
-        let active = appVM.isEntitled
-        let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected || !active
 
+        let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected
         ZStack {
             ZStack(alignment: .bottom) {
                 backgroundLayer
@@ -101,7 +100,7 @@ struct MainView: View {
 
                 // ✅ INSTANT hide/show of bottom bar when keyboard opens/closes
                 if !isEntryFieldFocused {
-                    bottomActionBar(active: active, count: count)
+                    bottomActionBar(count: count)
                         .transition(.identity) // no animation, no fade
                         .animation(nil, value: isEntryFieldFocused)
                 }
@@ -161,7 +160,7 @@ struct MainView: View {
         }
     }
 
-    private func bottomActionBar(active: Bool, count: Int) -> some View {
+    private func bottomActionBar(count: Int) -> some View {
         let canExport = net.isConnected && count >= goal
         let canSendNow = net.isConnected && count >= goal
 
