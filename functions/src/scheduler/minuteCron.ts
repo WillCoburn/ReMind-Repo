@@ -19,6 +19,7 @@ import {
   TWILIO_MSID,
 } from "../config/options";
 import { getTwilioClient, buildMsgParams, sendSMS } from "../twilio/client";
+import { parseRcExpiresAt } from "../revenuecat/state";
 
 export const minuteCron = onSchedule(
   {
@@ -59,13 +60,14 @@ export const minuteCron = onSchedule(
       }
 
       try {
-        const rcExpiresAtRaw = doc.get("rc.expiresAt");
-        const rcExpiresAtSeconds =
-          rcExpiresAtRaw instanceof admin.firestore.Timestamp
-            ? rcExpiresAtRaw.seconds + rcExpiresAtRaw.nanoseconds / 1_000_000_000
-            : typeof rcExpiresAtRaw === "number"
-            ? rcExpiresAtRaw
-            : null;
+        const { expiresAt, expiresAtSeconds: rcExpiresAtSeconds, needsNormalization } = parseRcExpiresAt(
+          doc.get("rc.expiresAt")
+        );
+
+        if (needsNormalization && expiresAt) {
+          await doc.ref.set({ rc: { expiresAt } }, { merge: true });
+          logger.info("[minuteCron] normalized rc.expiresAt", { uid, rcExpiresAtSeconds });
+        }
 
         if (rcExpiresAtSeconds != null && rcExpiresAtSeconds < nowSeconds) {
           logger.warn("[minuteCron] skipping expired user", { uid, rcExpiresAtSeconds });

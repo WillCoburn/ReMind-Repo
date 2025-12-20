@@ -3,32 +3,40 @@
 // ============================
 import { admin } from "../config/options";
 
-export function secondsFromTimestamp(raw: unknown): number | null {
+export function parseRcExpiresAt(raw: unknown): {
+  expiresAt: admin.firestore.Timestamp | null;
+  expiresAtSeconds: number | null;
+  needsNormalization: boolean;
+} {
+  if (raw == null) {
+    return { expiresAt: null, expiresAtSeconds: null, needsNormalization: false };
+  }
+
   if (raw instanceof admin.firestore.Timestamp) {
-    return raw.seconds + raw.nanoseconds / 1_000_000_000;
+    const expiresAtSeconds = raw.seconds + raw.nanoseconds / 1_000_000_000;
+    return { expiresAt: raw, expiresAtSeconds, needsNormalization: false };
   }
 
-  if (typeof raw === "number") {
-    return Number.isFinite(raw) ? raw : null;
+  const asNumber = typeof raw === "string" ? Number(raw) : (raw as number);
+  if (!Number.isFinite(asNumber)) {
+    return { expiresAt: null, expiresAtSeconds: null, needsNormalization: false };
   }
 
-  if (typeof raw === "string") {
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
+  const expiresAtSeconds = asNumber;
+  const expiresAt = admin.firestore.Timestamp.fromMillis(expiresAtSeconds * 1000);
 
-  return null;
+  return { expiresAt, expiresAtSeconds, needsNormalization: true };
 }
 
 export function deriveSubscriptionState(
   rc: Partial<{
     entitlementActive: boolean;
     willRenew: boolean;
-    expiresAt: number | admin.firestore.Timestamp | null;
+    expiresAt: unknown;
   }>,
   nowSeconds = Date.now() / 1000
 ) {
-  const expiresAtSeconds = secondsFromTimestamp(rc.expiresAt);
+  const { expiresAtSeconds } = parseRcExpiresAt(rc.expiresAt);
 
   const entitlementActive =
     typeof rc.entitlementActive === "boolean"
