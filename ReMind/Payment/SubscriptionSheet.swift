@@ -8,7 +8,6 @@ struct SubscriptionSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appVM: AppViewModel
     @ObservedObject private var revenueCat: RevenueCatManager = .shared
-    @State private var detent: PresentationDetent = .large   // 👈 start expanded
 
     private var statusText: String {
         if appVM.isTrialActive { return "Subscription status: Trial" }
@@ -34,8 +33,5 @@ struct SubscriptionSheet: View {
                 .onRestoreCompleted { _ in dismiss() }
         }
         .padding()
-        .presentationDetents([.large], selection: $detent) // only large
-        .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(false)
     }
 }

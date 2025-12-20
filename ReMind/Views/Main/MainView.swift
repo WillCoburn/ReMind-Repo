@@ -6,6 +6,7 @@ import SwiftUI
 struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var net: NetworkMonitor   // 👈 network state
+    @EnvironmentObject private var paywallPresenter: PaywallPresenter
     @ObservedObject private var revenueCat: RevenueCatManager = .shared
 
     // User-selected background image (Base64)
@@ -14,7 +15,6 @@ struct MainView: View {
     @State private var input: String = ""
     @State private var showExportSheet = false
     @State private var showSendNowSheet = false
-    @State private var showPaywall = false
     @State private var showSuccessMessage = false
     @State private var isSubmitting = false
     @FocusState private var isEntryFieldFocused: Bool
@@ -64,7 +64,7 @@ struct MainView: View {
                             SubscriptionReminderBanner(
                                 message: "Your free trial has ended - please start a subscription to use ReMind.",
                                 onSubscribe: { RevenueCatManager.shared.forceIdentify {
-                                    showPaywall = true
+                                    paywallPresenter.present()
                                 }
  }
                             )
@@ -123,7 +123,6 @@ struct MainView: View {
             }
             .sheet(isPresented: $showExportSheet) { ExportSheet() }
             .sheet(isPresented: $showSendNowSheet) { SendNowSheet() }
-            .sheet(isPresented: $showPaywall) { SubscriptionSheet() }
             .alert(alertTitle, isPresented: $showAlert) {
                 Button("OK", role: .cancel) { }
             } message: { Text(alertMessage) }

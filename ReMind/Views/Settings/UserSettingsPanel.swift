@@ -51,6 +51,7 @@ struct UserSettingsPanel: View {
 struct UserSettingsForm: View {
   @EnvironmentObject private var appVM: AppViewModel
   @ObservedObject private var revenueCat = RevenueCatManager.shared
+  @EnvironmentObject private var paywallPresenter: PaywallPresenter
 
   @Binding var remindersPerWeek: Double
   @Binding var tzIdentifier: String
@@ -65,7 +66,6 @@ struct UserSettingsForm: View {
   @State private var loadError: String?
   @State private var showMailSheet = false
   @State private var mailError: String?
-  @State private var showPaywall = false
   @State private var restoreMessage: String?
 
   var body: some View {
@@ -112,10 +112,9 @@ struct UserSettingsForm: View {
           SubscriptionSection(
               appVM: appVM,
               revenueCat: revenueCat,
-              showPaywall: $showPaywall,
+              onStartSubscription: paywallPresenter.present,
               restoreMessage: $restoreMessage
           )
-          .sheet(isPresented: $showPaywall) { SubscriptionSheet() }
 
           Divider()
 

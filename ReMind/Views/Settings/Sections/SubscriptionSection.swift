@@ -7,7 +7,7 @@ struct SubscriptionSection: View {
     let appVM: AppViewModel
     @ObservedObject var revenueCat: RevenueCatManager
 
-    @Binding var showPaywall: Bool
+    var onStartSubscription: () -> Void
     @Binding var restoreMessage: String?
 
     var body: some View {
@@ -58,9 +58,9 @@ struct SubscriptionSection: View {
 
                 // Start Subscription Button
                 Button("Start Subscription") {
-                    
+
                      RevenueCatManager.shared.forceIdentify {
-                         showPaywall = true
+                         onStartSubscription()
                      }
                 }
                 .buttonStyle(.borderedProminent)
