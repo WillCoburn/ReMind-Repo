@@ -18,7 +18,7 @@ struct HomePagerView: View {
                 .tag(1)
 
             // RIGHT: placeholder for future features
-            RightPanelPlaceholderView()
+            RightPanelPlaceholderView(onRequestPaywall: {})
                 .tag(2)
         }
         // Snapchat-style horizontal paging

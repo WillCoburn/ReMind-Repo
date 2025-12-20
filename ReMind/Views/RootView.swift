@@ -8,10 +8,11 @@ import RevenueCatUI
 struct RootView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var paywallPresenter: PaywallPresenter
-    
+
     // Which horizontal page we’re on
     private enum Page: Hashable { case community, main, right }
     @State private var activePage: Page = .main
+    @State private var routeToPaywall = false
     
     
     var body: some View {
@@ -58,6 +59,12 @@ struct RootView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: appVM.featureTourStep)
         .animation(.easeInOut(duration: 0.25), value: appVM.showFeatureTour)
         .networkAware()
+        .onChange(of: routeToPaywall) { shouldRoute in
+            if shouldRoute {
+                paywallPresenter.present()
+                routeToPaywall = false
+            }
+        }
         .onAppear {
             Auth.auth().addStateDidChangeListener { _, user in
                 print("🔐 auth changed uid:", user?.uid ?? "nil")
@@ -112,10 +119,14 @@ struct RootView: View {
                 mainPage
             }
             .tag(Page.main)
-            
+
             // RIGHT: placeholder for future stuff
             NavigationStack {
-                RightPanelPlaceholderView()
+                RightPanelPlaceholderView(
+                    onRequestPaywall: {
+                        routeToPaywall = true
+                    }
+                )
             }
             .tag(Page.right)
         }
