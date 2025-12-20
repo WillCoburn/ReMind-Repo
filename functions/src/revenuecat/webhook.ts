@@ -3,7 +3,7 @@
 // ============================
 import { onRequest } from "firebase-functions/v2/https";
 import { admin, db, logger } from "../config/options";
-import { deriveSubscriptionState } from "./state";
+import { deriveSubscriptionState, parseRcExpiresAt } from "./state";
 
 type RevenueCatEvent = Record<string, unknown>;
 
@@ -46,6 +46,8 @@ export const revenueCatWebhook = onRequest(async (req, res) => {
     parseSecondsFromMillis((event as Record<string, unknown>)["expires_at_ms"]) ??
     parseSecondsFromMillis((event as Record<string, unknown>)["expiration_ms"]);
 
+  const { expiresAt } = parseRcExpiresAt(expiresAtSeconds);
+
   const purchasedAtSeconds =
     parseSecondsFromMillis(event?.purchased_at_ms) ??
     parseSecondsFromMillis((event as Record<string, unknown>)["original_purchase_date_ms"]);
@@ -74,7 +76,7 @@ export const revenueCatWebhook = onRequest(async (req, res) => {
       entitlementActive:
         entitlementActiveFromEvent ?? (expiresAtSeconds != null ? expiresAtSeconds >= nowSeconds : eventType !== "EXPIRATION"),
       willRenew: willRenewFromEvent,
-      expiresAt: expiresAtSeconds,
+      expiresAt,
     },
     nowSeconds
   );
@@ -83,7 +85,7 @@ export const revenueCatWebhook = onRequest(async (req, res) => {
     entitlementActive: derived.entitlementActive,
     willRenew: derived.willRenew,
     productId: event?.product_id ?? event?.productId ?? null,
-    expiresAt: expiresAtSeconds,
+    expiresAt,
     latestPurchaseAt: purchasedAtSeconds,
     store: event?.store ?? (event?.platform as string | undefined) ?? "app_store",
     lastWebhookEventAt: admin.firestore.FieldValue.serverTimestamp(),

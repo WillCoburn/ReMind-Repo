@@ -3,7 +3,7 @@
 // ============================
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { admin, db, logger } from "../config/options";
-import { secondsFromTimestamp } from "../revenuecat/state";
+import { parseRcExpiresAt } from "../revenuecat/state";
 
 const BATCH_LIMIT = 500;
 
@@ -18,54 +18,80 @@ export const reconcileRevenueCatEntitlements = onSchedule(
 
     logger.info("[reconcileRevenueCatEntitlements] start", { now: now.toDate().toISOString() });
 
-    const activeSnap = await db
-      .collection("users")
-      .where("rc.entitlementActive", "==", true)
-      .limit(BATCH_LIMIT)
-      .get();
-
-    if (activeSnap.empty) {
-      logger.info("[reconcileRevenueCatEntitlements] no active entitlements found");
-      return;
-    }
-
+    let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+    let batchNumber = 0;
     let expiredCount = 0;
+    let checked = 0;
 
-    for (const doc of activeSnap.docs) {
-      const expiresRaw = doc.get("rc.expiresAt");
-      const expiresAtSeconds = secondsFromTimestamp(expiresRaw);
-
-      if (expiresAtSeconds == null) {
-        continue;
+    while (true) {
+      let query = db.collection("users").where("rc.entitlementActive", "==", true).orderBy(admin.firestore.FieldPath.documentId());
+      if (lastDoc) {
+        query = query.startAfter(lastDoc);
       }
 
-      if (expiresAtSeconds > nowSeconds) {
-        continue;
+      const activeSnap = await query.limit(BATCH_LIMIT).get();
+
+      if (activeSnap.empty) {
+        break;
       }
 
-      expiredCount += 1;
+      batchNumber += 1;
+      checked += activeSnap.size;
 
-      await doc.ref.set(
-        {
-          rc: {
-            entitlementActive: false,
-            willRenew: false,
-          },
-          active: false,
-          subscriptionStatus: "unsubscribed",
-        },
-        { merge: true }
-      );
-
-      logger.warn("[reconcileRevenueCatEntitlements] deactivated expired user", {
-        uid: doc.id,
-        expiresAtSeconds,
+      logger.info("[reconcileRevenueCatEntitlements] processing batch", {
+        batchNumber,
+        batchSize: activeSnap.size,
+        checked,
+        expiredCount,
       });
+
+      for (const doc of activeSnap.docs) {
+        const expiresRaw = doc.get("rc.expiresAt");
+        const { expiresAt, expiresAtSeconds, needsNormalization } = parseRcExpiresAt(expiresRaw);
+
+        if (needsNormalization && expiresAt) {
+          await doc.ref.set({ rc: { expiresAt } }, { merge: true });
+          logger.info("[reconcileRevenueCatEntitlements] normalized rc.expiresAt", {
+            uid: doc.id,
+            expiresAtSeconds,
+          });
+        }
+
+        if (expiresAtSeconds == null) {
+          continue;
+        }
+
+        if (expiresAtSeconds > nowSeconds) {
+          continue;
+        }
+
+        expiredCount += 1;
+
+        await doc.ref.set(
+          {
+            rc: {
+              entitlementActive: false,
+              willRenew: false,
+            },
+            active: false,
+            subscriptionStatus: "unsubscribed",
+          },
+          { merge: true }
+        );
+
+        logger.warn("[reconcileRevenueCatEntitlements] deactivated expired user", {
+          uid: doc.id,
+          expiresAtSeconds,
+        });
+      }
+
+      lastDoc = activeSnap.docs[activeSnap.docs.length - 1];
     }
 
     logger.info("[reconcileRevenueCatEntitlements] complete", {
-      checked: activeSnap.size,
+      checked,
       expiredCount,
+      batches: batchNumber,
     });
   }
 );
