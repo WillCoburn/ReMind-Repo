@@ -71,8 +71,13 @@ struct RootView: View {
                 activePage = .main
             }
         }
-        .fullScreenCover(isPresented: $paywallPresenter.isPresenting) {
+        .sheet(isPresented: $paywallPresenter.isPresenting) {
             PaywallView(displayCloseButton: true)
+                .id(UUID()) // force recreation
+                .environment(\.verticalSizeClass, .regular)
+                .ignoresSafeArea()
+                .presentationDetents([.fraction(1.0)])
+                .presentationDragIndicator(.visible)
                 .onPurchaseCompleted { _ in
                     RevenueCatManager.shared.refreshEntitlementState()
                     paywallPresenter.dismiss()
@@ -81,6 +86,9 @@ struct RootView: View {
                     paywallPresenter.dismiss()
                 }
         }
+
+
+
         // Dismiss keyboard if user swipes away from the main page
         .onChange(of: activePage) { newPage in
             guard newPage != .main else { return }

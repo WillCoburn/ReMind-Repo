@@ -112,7 +112,11 @@ struct UserSettingsForm: View {
           SubscriptionSection(
               appVM: appVM,
               revenueCat: revenueCat,
-              onStartSubscription: { paywallPresenter.present() },
+              onStartSubscription: {
+                  RevenueCatManager.shared.forceIdentify {
+                      paywallPresenter.present()
+                  }
+              },
               restoreMessage: $restoreMessage
           )
 
