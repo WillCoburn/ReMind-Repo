@@ -3,6 +3,7 @@
 // =====================
 import SwiftUI
 import FirebaseAuth
+import RevenueCatUI
 
 struct RootView: View {
     @EnvironmentObject private var appVM: AppViewModel
@@ -71,7 +72,14 @@ struct RootView: View {
             }
         }
         .fullScreenCover(isPresented: $paywallPresenter.isPresenting) {
-            SubscriptionSheet()
+            PaywallView(displayCloseButton: true)
+                .onPurchaseCompleted { _ in
+                    RevenueCatManager.shared.refreshEntitlementState()
+                    paywallPresenter.dismiss()
+                }
+                .onRestoreCompleted { _ in
+                    paywallPresenter.dismiss()
+                }
         }
         // Dismiss keyboard if user swipes away from the main page
         .onChange(of: activePage) { newPage in

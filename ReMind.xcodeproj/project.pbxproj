@@ -71,6 +71,7 @@
 		D2BEC2752E7FBE47009E3698 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC2742E7FBE47009E3698 /* FirebaseFunctions */; };
 		D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */; };
 		D2BEC27F2EB039E0009E3698 /* PDFKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D2BEC27E2EB039E0009E3698 /* PDFKit.framework */; };
+		D2C1FD462EF71D41007F2BAF /* PaywallPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2C1FD452EF71D41007F2BAF /* PaywallPresenter.swift */; };
 		D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */; };
 		D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BC82EBC170D0078BAB0 /* PhoneEntrySection.swift */; };
 		D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */; };
@@ -90,7 +91,6 @@
 		D2D07BEA2EC3F42F0078BAB0 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = D2D07BE92EC3F42F0078BAB0 /* RevenueCatUI */; };
 		D2D07BEE2EC3F6730078BAB0 /* PaywallConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BED2EC3F66C0078BAB0 /* PaywallConfig.swift */; };
 		D2D07BF02EC3F6A50078BAB0 /* RevenueCatManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BEF2EC3F69D0078BAB0 /* RevenueCatManager.swift */; };
-		D2D07BF22EC3F6D20078BAB0 /* SubscriptionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BF12EC3F6CB0078BAB0 /* SubscriptionSheet.swift */; };
 		D2D07BF42EC3F6E90078BAB0 /* TrialExpiryBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */; };
 		D2ED48062EC6F8D20030CBA7 /* FunctionsErrorHandling.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48052EC6F8C80030CBA7 /* FunctionsErrorHandling.swift */; };
 		D2ED48102EC8F2F00030CBA7 /* SettingsHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED480F2EC8F2ED0030CBA7 /* SettingsHelpers.swift */; };
@@ -185,6 +185,7 @@
 		D2BEC2692E7E37C1009E3698 /* DataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStore.swift; sourceTree = "<group>"; };
 		D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsSync.swift; sourceTree = "<group>"; };
 		D2BEC27E2EB039E0009E3698 /* PDFKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PDFKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/PDFKit.framework; sourceTree = DEVELOPER_DIR; };
+		D2C1FD452EF71D41007F2BAF /* PaywallPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallPresenter.swift; sourceTree = "<group>"; };
 		D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureTourOverlay.swift; sourceTree = "<group>"; };
 		D2D07BC82EBC170D0078BAB0 /* PhoneEntrySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEntrySection.swift; sourceTree = "<group>"; };
 		D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentAndAgreeBottom.swift; sourceTree = "<group>"; };
@@ -202,7 +203,6 @@
 		D2D07BE42EBC1D290078BAB0 /* NetworkAwareModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkAwareModifier.swift; sourceTree = "<group>"; };
 		D2D07BED2EC3F66C0078BAB0 /* PaywallConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallConfig.swift; sourceTree = "<group>"; };
 		D2D07BEF2EC3F69D0078BAB0 /* RevenueCatManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueCatManager.swift; sourceTree = "<group>"; };
-		D2D07BF12EC3F6CB0078BAB0 /* SubscriptionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSheet.swift; sourceTree = "<group>"; };
 		D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialExpiryBanner.swift; sourceTree = "<group>"; };
 		D2ED48052EC6F8C80030CBA7 /* FunctionsErrorHandling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FunctionsErrorHandling.swift; sourceTree = "<group>"; };
 		D2ED480F2EC8F2ED0030CBA7 /* SettingsHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsHelpers.swift; sourceTree = "<group>"; };
@@ -498,8 +498,8 @@
 		D2D07BEC2EC3F6600078BAB0 /* Payment */ = {
 			isa = PBXGroup;
 			children = (
+				D2C1FD452EF71D41007F2BAF /* PaywallPresenter.swift */,
 				D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */,
-				D2D07BF12EC3F6CB0078BAB0 /* SubscriptionSheet.swift */,
 				D2D07BEF2EC3F69D0078BAB0 /* RevenueCatManager.swift */,
 				D2D07BED2EC3F66C0078BAB0 /* PaywallConfig.swift */,
 			);
@@ -711,6 +711,7 @@
 				D2ED48102EC8F2F00030CBA7 /* SettingsHelpers.swift in Sources */,
 				D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */,
 				D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
+				D2C1FD462EF71D41007F2BAF /* PaywallPresenter.swift in Sources */,
 				D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
 				D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */,
 				D23CFAF92ECAAB0F00FEBF3D /* CommunityComposerSheet.swift in Sources */,
@@ -742,7 +743,6 @@
 				D2BEC25A2E7E1897009E3698 /* FirebasePing.swift in Sources */,
 				D22EF4862E7B2F7A00810204 /* ExportService.swift in Sources */,
 				D21FF4C12ECED5E80054E7F8 /* EnergyPlaceholderView.swift in Sources */,
-				D2D07BF22EC3F6D20078BAB0 /* SubscriptionSheet.swift in Sources */,
 				D21FF4C72ECED6350054E7F8 /* MoodPlaceholderView.swift in Sources */,
 				D2ED48062EC6F8D20030CBA7 /* FunctionsErrorHandling.swift in Sources */,
 				D2ED48272EC8F9190030CBA7 /* MainView.swift in Sources */,
