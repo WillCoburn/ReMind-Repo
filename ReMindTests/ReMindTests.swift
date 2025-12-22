@@ -6,30 +6,56 @@
 //
 
 import XCTest
+@testable import ReMind
 
 final class ReMindTests: XCTestCase {
 
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+    private var calendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        return calendar
+    }()
+
+    func testFirstEntrySetsStreakToOne() {
+        let entry = Entry(id: "1", text: "", createdAt: Date(), sent: false)
+        XCTAssertEqual(StreakCalculator.compute(entries: [entry], calendar: calendar), 1)
     }
 
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    func testMultipleEntriesSameDayDoNotDoubleCount() {
+        let now = Date()
+        let morning = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: now)!
+        let evening = calendar.date(bySettingHour: 21, minute: 0, second: 0, of: now)!
+
+        let entries = [
+            Entry(id: "1", text: "", createdAt: morning, sent: false),
+            Entry(id: "2", text: "", createdAt: evening, sent: false)
+        ]
+
+        XCTAssertEqual(StreakCalculator.compute(entries: entries, calendar: calendar), 1)
     }
 
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // Any test you write for XCTest can be annotated as throws and async.
-        // Mark your test throws to produce an unexpected failure when your test encounters an uncaught error.
-        // Mark your test async to allow awaiting for asynchronous code to complete. Check the results with assertions afterwards.
+    func testConsecutiveDaysAcrossMidnightCountTowardsStreak() {
+        let todayStart = calendar.startOfDay(for: Date())
+        let justAfterMidnight = calendar.date(byAdding: .minute, value: 1, to: todayStart)!
+        let justBeforeMidnight = calendar.date(byAdding: .minute, value: -1, to: todayStart)!
+
+        let entries = [
+            Entry(id: "1", text: "", createdAt: justAfterMidnight, sent: false),
+            Entry(id: "2", text: "", createdAt: justBeforeMidnight, sent: false)
+        ]
+
+        XCTAssertEqual(StreakCalculator.compute(entries: entries, calendar: calendar), 2)
     }
 
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        measure {
-            // Put the code you want to measure the time of here.
-        }
-    }
+    func testMissingDayBreaksStreak() {
+        let today = Date()
+        let twoDaysAgo = calendar.date(byAdding: .day, value: -2, to: today)!
 
+        let entries = [
+            Entry(id: "1", text: "", createdAt: today, sent: false),
+            Entry(id: "2", text: "", createdAt: twoDaysAgo, sent: false)
+        ]
+
+        XCTAssertEqual(StreakCalculator.compute(entries: entries, calendar: calendar), 1)
+    }
 }
