@@ -14,30 +14,8 @@ extension AppViewModel {
       }
 
     var streakCount: Int {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-
-        let uniqueDays = Set(
-            entries.compactMap { entry in
-                guard let createdAt = entry.createdAt else { return nil }
-                return calendar.startOfDay(for: createdAt)
-            }
-        ).sorted(by: >)
-
-        guard let mostRecentDay = uniqueDays.first, mostRecentDay == today else { return 0 }
-
-        var streak = 1
-
-        for day in uniqueDays.dropFirst() {
-            let dayDifference = calendar.dateComponents([.day], from: day, to: today).day ?? 0
-
-            guard dayDifference == streak else { break }
-
-            streak += 1
-          }
-
-          return streak
-      }
+        StreakCalculator.compute(entries: entries, calendar: streakCalendar)
+    }
     
       func attachEntriesListener(_ uid: String) {
           entriesListener?.remove()
@@ -99,6 +77,16 @@ extension AppViewModel {
             ])
 
             print("✅ submit write success")
+
+            let optimistic = Entry(
+                id: ref.documentID,
+                text: trimmed,
+                createdAt: Date(),
+                sent: false
+            )
+
+            entries.removeAll { $0.id == optimistic.id }
+            entries.insert(optimistic, at: 0)
         } catch {
             print("❌ submit write failed:", error.localizedDescription)
         }
@@ -137,5 +125,14 @@ extension AppViewModel {
             createdAt: ts,
             sent: sent
         )
+    }
+
+    private var streakCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        let defaults = UserDefaults.standard
+        if let id = defaults.string(forKey: "tzIdentifier"), let tz = TimeZone(identifier: id) {
+            calendar.timeZone = tz
+        }
+        return calendar
     }
 }
