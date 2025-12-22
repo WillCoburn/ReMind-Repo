@@ -14,9 +14,13 @@ final class AppViewModel: ObservableObject {
     @Published var entries: [Entry] = []
     @Published var isLoading = false
     @Published var hasLoadedInitialProfile = false
+    enum EntitlementSource { case unknown, cached, revenueCat }
+
     @Published private(set) var isEntitled = false
     @Published private(set) var isTrialActive = false
     @Published private(set) var hasExpiredTrial = false
+    @Published private(set) var entitlementResolved = false
+    @Published private(set) var entitlementSource: EntitlementSource = .unknown
 
     // Current SMS opt-out state for the signed-in user
     @Published var smsOptOut: Bool = false
@@ -50,6 +54,7 @@ final class AppViewModel: ObservableObject {
     private var trialExpiryTimer: Timer?
     private var lastServerNow: Date?
     private var uptimeAtLastServerNow: TimeInterval?
+    private var lastEntitlementActive = false
 
     let revenueCat: RevenueCatManager = .shared
 
@@ -94,15 +99,18 @@ final class AppViewModel: ObservableObject {
         revenueCat.$entitlementActive
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.recomputeEntitlement()
+                guard let self else { return }
+                self.applyEntitlementState(
+                    entitlementActive: self.revenueCat.entitlementActive,
+                    source: .revenueCat
+                )
             }
             .store(in: &entitlementCancellables)
 
         $user
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.scheduleTrialExpiryTimer()
-                self?.recomputeEntitlement()
+            .sink { [weak self] profile in
+                self?.handleUserProfileChange(profile)
             }
             .store(in: &entitlementCancellables)
     }
@@ -117,21 +125,60 @@ final class AppViewModel: ObservableObject {
 
         trialExpiryTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
             DispatchQueue.main.async {
-                self?.recomputeEntitlement()
+                self?.refreshEntitlementState()
             }
         }
     }
 
-    private func recomputeEntitlement() {
-        let entitlementActive = revenueCat.entitlementActive
-        let onTrial = computeTrialActive()
-        let newValue = entitlementActive || onTrial
-        let expiredTrial = (!entitlementActive && !onTrial && user?.trialEndsAt != nil)
+    private func handleUserProfileChange(_ profile: UserProfile?) {
+        scheduleTrialExpiryTimer()
 
-        guard newValue != isEntitled || onTrial != isTrialActive || expiredTrial != hasExpiredTrial else { return }
+        guard let profile else {
+            entitlementResolved = false
+            entitlementSource = .unknown
+            lastEntitlementActive = false
+            isEntitled = false
+            isTrialActive = false
+            hasExpiredTrial = false
+            return
+        }
+
+        if let active = profile.active {
+            applyEntitlementState(entitlementActive: active, source: .cached)
+        } else {
+            refreshEntitlementState()
+        }
+    }
+
+    private func applyEntitlementState(entitlementActive: Bool, source: EntitlementSource) {
+        let resolvedSource: EntitlementSource
+        let resolvedActive: Bool
+
+        if entitlementSource == .revenueCat && source == .cached {
+            resolvedSource = entitlementSource
+            resolvedActive = lastEntitlementActive
+        } else {
+            resolvedSource = source
+            resolvedActive = entitlementActive
+        }
+
+        let onTrial = computeTrialActive()
+        let newValue = resolvedActive || onTrial
+        let expiredTrial = (!resolvedActive && !onTrial && user?.trialEndsAt != nil)
+
+        guard newValue != isEntitled
+                || onTrial != isTrialActive
+                || expiredTrial != hasExpiredTrial
+                || !entitlementResolved
+                || entitlementSource != resolvedSource
+                || lastEntitlementActive != resolvedActive else { return }
+
         isEntitled = newValue
         isTrialActive = onTrial
         hasExpiredTrial = expiredTrial
+        entitlementResolved = true
+        entitlementSource = resolvedSource
+        lastEntitlementActive = resolvedActive
     }
 
     private func computeTrialActive() -> Bool {
@@ -154,7 +201,14 @@ final class AppViewModel: ObservableObject {
     }
 
     func refreshEntitlementState() {
-        recomputeEntitlement()
+        guard entitlementSource != .unknown else { return }
+        applyEntitlementState(entitlementActive: lastEntitlementActive, source: entitlementSource)
         scheduleTrialExpiryTimer()
+    }
+
+    func refreshRevenueCatEntitlement() {
+        revenueCat.forceIdentify { [weak self] in
+            self?.revenueCat.refreshEntitlementState()
+        }
     }
 }

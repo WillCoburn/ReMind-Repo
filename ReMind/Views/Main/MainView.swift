@@ -29,7 +29,7 @@ struct MainView: View {
     private let goal: Int = 3
 
     private var hasExpiredTrialWithoutSubscription: Bool {
-        !appVM.isEntitled && appVM.hasExpiredTrial
+        appVM.entitlementResolved && !appVM.isEntitled && appVM.hasExpiredTrial
     }
 
     var body: some View {
