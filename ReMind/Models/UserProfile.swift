@@ -15,7 +15,7 @@ public struct UserProfile: Codable, Sendable, Equatable {
     // 🔽 Added for payment/trial UX & backend gating
     public var trialEndsAt: Date?   // End of in-app 30-day free period
     public var active: Bool?        // Convenience flag for backend send gating
-    public var receivedCount: Int   // Total ReMinds delivered (auto/manual/PDF)
+    public var receivedCount: Int?  // Total ReMinds delivered (auto/manual/PDF)
 
     public init(
         uid: String,
@@ -24,7 +24,7 @@ public struct UserProfile: Codable, Sendable, Equatable {
         updatedAt: Date? = nil,
         trialEndsAt: Date? = nil,
         active: Bool? = nil,
-        receivedCount: Int = 0
+        receivedCount: Int? = nil
     ) {
         self.uid = uid
         self.phoneE164 = phoneE164

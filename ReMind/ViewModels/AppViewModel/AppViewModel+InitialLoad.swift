@@ -46,6 +46,16 @@ extension AppViewModel {
             // Active flag (backend gating)
             let active = snap.get("active") as? Bool
 
+            // Counts and activity
+            let receivedCount: Int?
+            if let value = snap.get("receivedCount") as? Int {
+                receivedCount = value
+            } else if let number = snap.get("receivedCount") as? NSNumber {
+                receivedCount = number.intValue
+            } else {
+                receivedCount = nil
+            }
+
             // Build model
             var profile = UserProfile(
                 uid: uid,
@@ -53,7 +63,8 @@ extension AppViewModel {
                 createdAt: createdAtTS?.dateValue(),
                 updatedAt: updatedAtTS?.dateValue(),
                 trialEndsAt: trialEndsAtTS?.dateValue(),
-                active: active
+                active: active,
+                receivedCount: receivedCount
             )
 
             self.user = profile
@@ -87,7 +98,7 @@ extension AppViewModel {
 
         await fetchAndApplyUserSettings(uid: uid)
         
-        //attachUserListener(uid)
+        attachUserListener(uid)
         attachEntriesListener(uid)
 
         await refreshAll()
