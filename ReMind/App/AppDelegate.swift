@@ -2,12 +2,8 @@
 import UIKit
 import FirebaseCore
 import FirebaseAuth
-import FirebaseFirestore
-import FirebaseFunctions
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-
-
 
     // MARK: - App Launch
     func application(
@@ -15,46 +11,37 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
 
-      
-
         FirebaseBootstrap.configure()
 
-        // Enable debug logging for Functions
+        // Enable Firebase debug logging (optional)
         UserDefaults.standard.set(true, forKey: "FIRDebugEnabled")
-        print("🔥 Firebase Functions debug logging enabled")
+        print("🔥 Firebase debug logging enabled")
 
-        // Needed so Firebase can attempt APNs verification safely
+        // Required for Firebase Phone Auth silent verification
         application.registerForRemoteNotifications()
 
         return true
     }
 
-    // MARK: - URL Handling (Phone Auth)
+    // MARK: - URL Handling (Phone Auth reCAPTCHA / fallback)
     func application(
         _ app: UIApplication,
         open url: URL,
         options: [UIApplication.OpenURLOptionsKey : Any] = [:]
     ) -> Bool {
-        if Auth.auth().canHandle(url) { return true }
-        return false
+        return Auth.auth().canHandle(url)
     }
 
-    // MARK: - APNs Token Forwarding
+    // MARK: - Remote Notification Handling (Phone Auth)
     func application(
         _ application: UIApplication,
-        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+        didReceiveRemoteNotification userInfo: [AnyHashable : Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
-        Auth.auth().setAPNSToken(deviceToken, type: .unknown)
-    }
-
-    // MARK: - Remote Notification Handling
-    func application(
-        _ application: UIApplication,
-        didReceiveRemoteNotification userInfo: [AnyHashable : Any]
-    ) async -> UIBackgroundFetchResult {
         if Auth.auth().canHandleNotification(userInfo) {
-            return .noData
+            completionHandler(.noData)
+            return
         }
-        return .noData
+        completionHandler(.noData)
     }
 }

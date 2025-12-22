@@ -122,8 +122,32 @@ struct OnboardingView: View {
             self.verificationID = verID
             self.isAdvancing = true
             self.step = .enterCode
+
         } catch {
-            self.errorText = "Failed to send code. Please try again."
+            if let nsError = error as NSError?,
+               let code = AuthErrorCode(rawValue: nsError.code) {
+
+                switch code {
+                case .invalidPhoneNumber:
+                    self.errorText = "Please enter a valid 10-digit US number."
+                    self.showErrorBorder = true
+
+                case .tooManyRequests, .quotaExceeded:
+                    self.errorText = "Too many attempts. Please wait a few minutes and try again."
+
+                case .captchaCheckFailed:
+                    self.errorText = "Verification failed. Please try again and ensure Safari is available."
+
+                case .appNotAuthorized:
+                    self.errorText = "App isn't authorized for phone auth. Please update and try again."
+
+                default:
+                    self.errorText = "Failed to send code. Please try again."
+                }
+            } else {
+                self.errorText = "Failed to send code. Please try again."
+            }
+
             print("verifyPhone error:", error)
         }
     }
