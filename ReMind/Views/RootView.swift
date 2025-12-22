@@ -3,16 +3,13 @@
 // =====================
 import SwiftUI
 import FirebaseAuth
-import RevenueCatUI
 
 struct RootView: View {
     @EnvironmentObject private var appVM: AppViewModel
-    @EnvironmentObject private var paywallPresenter: PaywallPresenter
 
     // Which horizontal page we’re on
     private enum Page: Hashable { case community, main, right }
     @State private var activePage: Page = .main
-    @State private var routeToPaywall = false
     
     
     var body: some View {
@@ -59,12 +56,6 @@ struct RootView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: appVM.featureTourStep)
         .animation(.easeInOut(duration: 0.25), value: appVM.showFeatureTour)
         .networkAware()
-        .onChange(of: routeToPaywall) { shouldRoute in
-            if shouldRoute {
-                paywallPresenter.present()
-                routeToPaywall = false
-            }
-        }
         .onAppear {
             Auth.auth().addStateDidChangeListener { _, user in
                 print("🔐 auth changed uid:", user?.uid ?? "nil")
@@ -77,21 +68,6 @@ struct RootView: View {
             if !shouldShow {
                 activePage = .main
             }
-        }
-        .sheet(isPresented: $paywallPresenter.isPresenting) {
-            PaywallView(displayCloseButton: true)
-                .id(UUID()) // force recreation
-                .environment(\.verticalSizeClass, .regular)
-                .ignoresSafeArea()
-                .presentationDetents([.fraction(1.0)])
-                .presentationDragIndicator(.visible)
-                .onPurchaseCompleted { _ in
-                    RevenueCatManager.shared.refreshEntitlementState()
-                    paywallPresenter.dismiss()
-                }
-                .onRestoreCompleted { _ in
-                    paywallPresenter.dismiss()
-                }
         }
 
 
@@ -122,11 +98,7 @@ struct RootView: View {
 
             // RIGHT: placeholder for future stuff
             NavigationStack {
-                RightPanelPlaceholderView(
-                    onRequestPaywall: {
-                        routeToPaywall = true
-                    }
-                )
+                RightPanelPlaceholderView()
             }
             .tag(Page.right)
         }
