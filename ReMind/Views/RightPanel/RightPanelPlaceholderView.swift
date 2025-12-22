@@ -10,7 +10,7 @@ struct RightPanelPlaceholderView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @ObservedObject private var revenueCat = RevenueCatManager.shared
 
-    let onRequestPaywall: () -> Void
+    @State private var showPaywall = false
 
     @AppStorage("remindersPerWeek") private var remindersPerWeek: Double = 7.0 // 1...20
     @AppStorage("tzIdentifier")    private var tzIdentifier: String = TimeZone.current.identifier
@@ -94,7 +94,7 @@ struct RightPanelPlaceholderView: View {
                     appVM: appVM,
                     onStartSubscription: {
                         activeSheet = nil
-                        onRequestPaywall()
+                        RevenueCatManager.shared.forceIdentify { showPaywall = true }
                     },
                     restoreMessage: $restoreMessage
                 )
@@ -105,6 +105,9 @@ struct RightPanelPlaceholderView: View {
         .sheet(isPresented: $showDeleteSheet) {
             DeleteAccountSheet(isPresented: $showDeleteSheet)
                 .environmentObject(appVM)
+        }
+        .sheet(isPresented: $showPaywall) {
+            SubscriptionSheet()
         }
         .alert(
             "Mail Error",
@@ -281,7 +284,7 @@ struct RightPanelPlaceholderView: View {
 
             Button {
                 RevenueCatManager.shared.forceIdentify {
-                    onRequestPaywall()
+                    showPaywall = true
                 }
             } label: {
                 Text("Subscribe")
@@ -332,9 +335,8 @@ enum ActiveSettingsSheet: Identifiable {
 
 struct RightPanelPlaceholderView_Previews: PreviewProvider {
     static var previews: some View {
-        RightPanelPlaceholderView(onRequestPaywall: {})
+        RightPanelPlaceholderView()
             .environmentObject(AppViewModel())
-            .environmentObject(PaywallPresenter())
     }
 }
 

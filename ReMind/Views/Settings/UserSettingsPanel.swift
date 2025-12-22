@@ -51,7 +51,6 @@ struct UserSettingsPanel: View {
 struct UserSettingsForm: View {
   @EnvironmentObject private var appVM: AppViewModel
   @ObservedObject private var revenueCat = RevenueCatManager.shared
-  @EnvironmentObject private var paywallPresenter: PaywallPresenter
 
   @Binding var remindersPerWeek: Double
   @Binding var tzIdentifier: String
@@ -67,6 +66,7 @@ struct UserSettingsForm: View {
   @State private var showMailSheet = false
   @State private var mailError: String?
   @State private var restoreMessage: String?
+  @State private var showPaywall = false
 
   var body: some View {
       VStack(alignment: .leading, spacing: 20) {
@@ -114,7 +114,7 @@ struct UserSettingsForm: View {
               revenueCat: revenueCat,
               onStartSubscription: {
                   RevenueCatManager.shared.forceIdentify {
-                      paywallPresenter.present()
+                      showPaywall = true
                   }
               },
               restoreMessage: $restoreMessage
@@ -140,6 +140,9 @@ struct UserSettingsForm: View {
                 recipients: ["remindapphelp@gmail.com"],
                 subject: "Re[Mind] Feedback"
             )
+        }
+        .sheet(isPresented: $showPaywall) {
+            SubscriptionSheet()
         }
         .onAppear {
             //no RC calls
