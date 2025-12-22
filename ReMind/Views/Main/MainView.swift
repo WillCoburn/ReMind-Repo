@@ -278,14 +278,14 @@ struct MainView: View {
         isEntryFieldFocused = false
         hideKeyboard()
 
-        withAnimation(.easeInOut(duration: 0.18)) { pulseEditor = true }
+        withAnimation(.easeInOut(duration: 0.5)) { pulseEditor = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-            withAnimation(.easeInOut(duration: 0.18)) { pulseEditor = false }
+            withAnimation(.easeInOut(duration: 0.5)) { pulseEditor = false }
         }
 
-        withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = true }
+        withAnimation(.easeInOut(duration: 0.5)) { showSuccessMessage = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = false }
+            withAnimation(.easeInOut(duration: 0.5)) { showSuccessMessage = false }
         }
     }
 

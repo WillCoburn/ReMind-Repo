@@ -44,12 +44,17 @@ struct EntryComposer: View {
                         .allowsHitTesting(false)
                 }
             }
-            .scaleEffect(pulseEditor ? 0.97 : 1)
-            .overlay(
+            .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.figmaBlue.opacity(pulseEditor ? 1 : 0), lineWidth: 2)
+                    .fill(Color.clear)
+                    .scaleEffect(pulseEditor ? 0.97 : 1)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.figmaBlue.opacity(pulseEditor ? 1 : 0), lineWidth: 3.5)
+                    )
+                    .animation(.easeInOut(duration: 0.18), value: pulseEditor)
             )
-            .animation(.easeInOut(duration: 0.18), value: pulseEditor)
+
 
             Button {
                 Task { await onSubmit() }
