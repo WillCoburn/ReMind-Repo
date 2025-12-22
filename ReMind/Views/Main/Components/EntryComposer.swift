@@ -52,7 +52,7 @@ struct EntryComposer: View {
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(Color.figmaBlue.opacity(pulseEditor ? 1 : 0), lineWidth: 3.5)
                     )
-                    .animation(.easeInOut(duration: 0.18), value: pulseEditor)
+                    .animation(.easeInOut(duration: 0.5), value: pulseEditor)
             )
 
 

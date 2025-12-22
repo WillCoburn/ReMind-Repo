@@ -52,13 +52,16 @@ struct MainView: View {
                             .frame(width: 300, height: 120)
                             .padding(.top, 40)
 
-                        if showSuccessMessage {
-                            Text("Saved")
-                                .font(.footnote)
-                                .foregroundColor(.green)
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                                .animation(.easeInOut(duration: 0.3), value: showSuccessMessage)
-                        }
+                        ZStack {
+                             if showSuccessMessage {
+                                 Text("Saved")
+                                     .font(.system(size: 16, weight: .semibold))
+                                     .foregroundColor(.green)
+                                     .transition(.opacity.combined(with: .move(edge: .top)))
+                                     .animation(.easeInOut(duration: 0.3), value: showSuccessMessage)
+                             }
+                         }
+                         .frame(height: 24)
 
                         if hasExpiredTrialWithoutSubscription {
                             SubscriptionReminderBanner(
@@ -279,7 +282,7 @@ struct MainView: View {
         hideKeyboard()
 
         withAnimation(.easeInOut(duration: 0.5)) { pulseEditor = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             withAnimation(.easeInOut(duration: 0.5)) { pulseEditor = false }
         }
 
