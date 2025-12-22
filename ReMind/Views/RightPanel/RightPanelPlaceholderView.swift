@@ -367,7 +367,7 @@ private extension RightPanelPlaceholderView {
         statTile(
             systemImage: "bubble.left.and.bubble.right.fill",
             title: "Received",
-            value: "\(appVM.user?.receivedCount ?? appVM.sentEntriesCount)"
+            value: "\(appVM.user?.receivedCount ?? 0)"
         )
     }
 
