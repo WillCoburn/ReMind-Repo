@@ -21,6 +21,12 @@ final class AppViewModel: ObservableObject {
     @Published private(set) var hasExpiredTrial = false
     @Published private(set) var entitlementResolved = false
     @Published private(set) var entitlementSource: EntitlementSource = .unknown
+    
+    /// True once Firebase auth state + user profile have been resolved at least once
+    var isAuthInitialized: Bool {
+        hasLoadedInitialProfile
+    }
+
 
     // Current SMS opt-out state for the signed-in user
     @Published var smsOptOut: Bool = false
