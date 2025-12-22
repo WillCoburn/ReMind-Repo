@@ -7,6 +7,7 @@ struct EntryComposer: View {
     @Binding var text: String
     @Binding var isSubmitting: Bool
     var isDisabled: Bool
+    var pulseEditor: Bool
 
     // Forward the parent's FocusState binding for keyboard control
     @FocusState var isEntryFieldFocused: Bool
@@ -43,6 +44,12 @@ struct EntryComposer: View {
                         .allowsHitTesting(false)
                 }
             }
+            .scaleEffect(pulseEditor ? 0.97 : 1)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.figmaBlue.opacity(pulseEditor ? 1 : 0), lineWidth: 2)
+            )
+            .animation(.easeInOut(duration: 0.18), value: pulseEditor)
 
             Button {
                 Task { await onSubmit() }

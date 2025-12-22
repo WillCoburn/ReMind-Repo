@@ -16,6 +16,7 @@ struct MainView: View {
     @State private var showSendNowSheet = false
     @State private var showPaywall = false
     @State private var showSuccessMessage = false
+    @State private var pulseEditor = false
     @State private var isSubmitting = false
     @FocusState private var isEntryFieldFocused: Bool
 
@@ -52,7 +53,7 @@ struct MainView: View {
                             .padding(.top, 40)
 
                         if showSuccessMessage {
-                            Text("✅ Successfully stored!")
+                            Text("Saved")
                                 .font(.footnote)
                                 .foregroundColor(.green)
                                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -70,6 +71,7 @@ struct MainView: View {
                             text: $input,
                             isSubmitting: $isSubmitting,
                             isDisabled: buttonDisabled,
+                            pulseEditor: pulseEditor,
                             isEntryFieldFocused: _isEntryFieldFocused,
                             onSubmit: { await sendEntry() }
                         )
@@ -275,6 +277,11 @@ struct MainView: View {
         input = ""
         isEntryFieldFocused = false
         hideKeyboard()
+
+        withAnimation(.easeInOut(duration: 0.18)) { pulseEditor = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            withAnimation(.easeInOut(duration: 0.18)) { pulseEditor = false }
+        }
 
         withAnimation(.easeInOut(duration: 0.2)) { showSuccessMessage = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
