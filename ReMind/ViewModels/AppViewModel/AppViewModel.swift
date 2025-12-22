@@ -150,7 +150,7 @@ final class AppViewModel: ObservableObject {
         }
     }
 
-    private func applyEntitlementState(entitlementActive: Bool, source: EntitlementSource) {
+    func applyEntitlementState(entitlementActive: Bool, source: EntitlementSource) {
         let resolvedSource: EntitlementSource
         let resolvedActive: Bool
 

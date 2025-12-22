@@ -71,7 +71,7 @@
 		D2BEC2752E7FBE47009E3698 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = D2BEC2742E7FBE47009E3698 /* FirebaseFunctions */; };
 		D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */; };
 		D2BEC27F2EB039E0009E3698 /* PDFKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D2BEC27E2EB039E0009E3698 /* PDFKit.framework */; };
-                D2F7A0022F12345000ABCDEF /* SubscriptionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7A0012F12345000ABCDEF /* SubscriptionSheet.swift */; };
+		D2C1FD492EF8CB4F007F2BAF /* StreakCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2C1FD482EF8CB4F007F2BAF /* StreakCalculator.swift */; };
 		D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */; };
 		D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BC82EBC170D0078BAB0 /* PhoneEntrySection.swift */; };
 		D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */; };
@@ -108,6 +108,7 @@
 		D2ED482B2EC8F9420030CBA7 /* TopBarActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */; };
 		D2ED482D2EC8F94D0030CBA7 /* TrialBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */; };
 		D2ED48322EC8FB020030CBA7 /* ReMindBackgrounds.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */; };
+		D2F7A0022F12345000ABCDEF /* SubscriptionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7A0012F12345000ABCDEF /* SubscriptionSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -185,7 +186,7 @@
 		D2BEC2692E7E37C1009E3698 /* DataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStore.swift; sourceTree = "<group>"; };
 		D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsSync.swift; sourceTree = "<group>"; };
 		D2BEC27E2EB039E0009E3698 /* PDFKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PDFKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/PDFKit.framework; sourceTree = DEVELOPER_DIR; };
-                D2F7A0012F12345000ABCDEF /* SubscriptionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSheet.swift; sourceTree = "<group>"; };
+		D2C1FD482EF8CB4F007F2BAF /* StreakCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCalculator.swift; sourceTree = "<group>"; };
 		D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureTourOverlay.swift; sourceTree = "<group>"; };
 		D2D07BC82EBC170D0078BAB0 /* PhoneEntrySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEntrySection.swift; sourceTree = "<group>"; };
 		D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentAndAgreeBottom.swift; sourceTree = "<group>"; };
@@ -220,6 +221,7 @@
 		D2ED482A2EC8F93E0030CBA7 /* TopBarActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBarActions.swift; sourceTree = "<group>"; };
 		D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialBanner.swift; sourceTree = "<group>"; };
 		D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindBackgrounds.swift; sourceTree = "<group>"; };
+		D2F7A0012F12345000ABCDEF /* SubscriptionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSheet.swift; sourceTree = "<group>"; };
 		D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionReminderBanner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -390,6 +392,7 @@
 		D22EF47A2E7B2EA100810204 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				D2C1FD482EF8CB4F007F2BAF /* StreakCalculator.swift */,
 				D25C55832EF4D8B300A5240E /* Concurrency+Timeouts.swift */,
 				D23CFAF02ECAAAD100FEBF3D /* CommunityAPI.swift */,
 				D2ED48052EC6F8C80030CBA7 /* FunctionsErrorHandling.swift */,
@@ -495,13 +498,13 @@
 			path = AppViewModel;
 			sourceTree = "<group>";
 		};
-                D2D07BEC2EC3F6600078BAB0 /* Payment */ = {
-                        isa = PBXGroup;
-                        children = (
-                                D2F7A0012F12345000ABCDEF /* SubscriptionSheet.swift */,
-                                D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */,
-                                D2D07BEF2EC3F69D0078BAB0 /* RevenueCatManager.swift */,
-                                D2D07BED2EC3F66C0078BAB0 /* PaywallConfig.swift */,
+		D2D07BEC2EC3F6600078BAB0 /* Payment */ = {
+			isa = PBXGroup;
+			children = (
+				D2F7A0012F12345000ABCDEF /* SubscriptionSheet.swift */,
+				D2D07BF32EC3F6E30078BAB0 /* TrialExpiryBanner.swift */,
+				D2D07BEF2EC3F69D0078BAB0 /* RevenueCatManager.swift */,
+				D2D07BED2EC3F66C0078BAB0 /* PaywallConfig.swift */,
 			);
 			path = Payment;
 			sourceTree = "<group>";
@@ -708,11 +711,11 @@
 				D22EF4A02E7B944700810204 /* CompletionCollapseBadge.swift in Sources */,
 				D2D07BD52EBC18F60078BAB0 /* AppViewModel+InitialLoad.swift in Sources */,
 				D2D07BDF2EBC1A8D0078BAB0 /* AppViewModel+GodMode.swift in Sources */,
-                                D2ED48102EC8F2F00030CBA7 /* SettingsHelpers.swift in Sources */,
-                                D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */,
-                                D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
-                                D2F7A0022F12345000ABCDEF /* SubscriptionSheet.swift in Sources */,
-                                D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
+				D2ED48102EC8F2F00030CBA7 /* SettingsHelpers.swift in Sources */,
+				D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */,
+				D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
+				D2F7A0022F12345000ABCDEF /* SubscriptionSheet.swift in Sources */,
+				D22EF4842E7B2F5F00810204 /* MessagingService.swift in Sources */,
 				D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */,
 				D23CFAF92ECAAB0F00FEBF3D /* CommunityComposerSheet.swift in Sources */,
 				D22EF4802E7B2F2F00810204 /* UserProfile.swift in Sources */,
@@ -733,6 +736,7 @@
 				D23CFAF32ECAAAF700FEBF3D /* HomePagerView.swift in Sources */,
 				D2ED48142EC8F3300030CBA7 /* RangeSlider.swift in Sources */,
 				D2D07BE32EBC1CD70078BAB0 /* OfflineBanner.swift in Sources */,
+				D2C1FD492EF8CB4F007F2BAF /* StreakCalculator.swift in Sources */,
 				D25C55862EF4DB9A00A5240E /* FirebaseBootstrap.swift in Sources */,
 				D2D07BF02EC3F6A50078BAB0 /* RevenueCatManager.swift in Sources */,
 				D2D07BE52EBC1D2E0078BAB0 /* NetworkAwareModifier.swift in Sources */,

@@ -9,6 +9,7 @@ struct PhoneField: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UITextField {
         let tf = UITextField(frame: .zero)
+        tf.font = UIFont.preferredFont(forTextStyle: .body)
         tf.placeholder = "(123)-456-7890"
         tf.keyboardType = .numberPad
         tf.textContentType = .telephoneNumber

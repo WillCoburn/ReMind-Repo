@@ -35,10 +35,15 @@ struct PhoneEntrySection: View {
 
             // Phone field
             HStack(spacing: 0) {
-                Text("+1")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 12)
+
+                // Country code (matches old formatting)
+                HStack(spacing: 4) {
+                    Text("+1")
+                        .font(.body)
+                        .foregroundColor(.primary)
+                }
+                .frame(width: 28)          // 👈 KEY FIX (prevents overlap)
+                .padding(.horizontal, 6)
 
                 Divider()
                     .frame(width: 1, height: 24)
@@ -47,9 +52,9 @@ struct PhoneEntrySection: View {
 
                 PhoneField(digits: $phoneDigits)
                     .frame(height: 44)
-                    .frame(maxWidth: .infinity)
-                    .layoutPriority(1)
             }
+
+
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 12)

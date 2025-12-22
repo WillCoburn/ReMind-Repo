@@ -70,7 +70,11 @@ extension AppViewModel {
             self.user = profile
 
             let cachedActive = profile.active ?? false
-            applyEntitlementState(entitlementActive: cachedActive, source: .cached)
+            applyEntitlementState(
+                entitlementActive: cachedActive,
+                source: EntitlementSource.cached
+            )
+
 
             // Ancillary flags
             self.smsOptOut = snap.get("smsOptOut") as? Bool ?? false
