@@ -15,8 +15,6 @@ struct ReMindApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        // ✅ Firebase must be configured synchronously and exactly once
-        FirebaseBootstrap.configure()
         _appVM = StateObject(wrappedValue: CompositionRoot.makeAppViewModel())
     }
 
