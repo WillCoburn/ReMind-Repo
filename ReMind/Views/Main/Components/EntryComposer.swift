@@ -29,16 +29,18 @@ struct EntryComposer: View {
                     .scrollContentBackground(.hidden)
                     .foregroundColor(.black)
                     .font(.system(size: 17))
-                    // ✅ CRITICAL FIX: stop inner UITextView from scrolling-to-caret and fighting the outer ScrollView
+                    // stop inner UITextView scroll-to-caret
                     .scrollDisabled(true)
 
-                if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    && !isEntryFieldFocused {
+
                     Text("Hey future me, remember…")
                         .foregroundColor(.gray)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 18)
                         .font(.system(size: 17))
-                        .allowsHitTesting(false) // ✅ prevents taps on placeholder from causing extra focus/layout weirdness
+                        .allowsHitTesting(false)
                 }
             }
 
