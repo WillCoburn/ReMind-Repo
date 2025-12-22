@@ -69,6 +69,9 @@ extension AppViewModel {
 
             self.user = profile
 
+            let cachedActive = profile.active ?? false
+            applyEntitlementState(entitlementActive: cachedActive, source: .cached)
+
             // Ancillary flags
             self.smsOptOut = snap.get("smsOptOut") as? Bool ?? false
             let hasSeenTour = snap.get("hasSeenFeatureTour") as? Bool ?? false
@@ -97,9 +100,11 @@ extension AppViewModel {
         }
 
         await fetchAndApplyUserSettings(uid: uid)
-        
+
         attachUserListener(uid)
         attachEntriesListener(uid)
+
+        refreshRevenueCatEntitlement()
 
         await refreshAll()
     }
