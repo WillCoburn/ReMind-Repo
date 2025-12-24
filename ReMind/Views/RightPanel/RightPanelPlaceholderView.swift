@@ -3,6 +3,7 @@
 // ============================
 import MessageUI
 import PhotosUI
+import SafariServices
 import StoreKit
 import SwiftUI
 
@@ -25,6 +26,7 @@ struct RightPanelPlaceholderView: View {
     @State private var showDeleteSheet = false
     @State private var restoreMessage: String?
     @State private var mailError: String?
+    @State private var showCommunityGuidelines = false
 
     var body: some View {
         ZStack {
@@ -109,6 +111,9 @@ struct RightPanelPlaceholderView: View {
         .sheet(isPresented: $showPaywall) {
             SubscriptionSheet()
         }
+        .sheet(isPresented: $showCommunityGuidelines) {
+            SafariView(url: URL(string: "https://re-mind-app.github.io/remind-site/")!)
+        }
         .alert(
             "Mail Error",
             isPresented: Binding(
@@ -186,6 +191,12 @@ struct RightPanelPlaceholderView: View {
                     value: nil,
                     isDestructive: false,
                     action: openSupport
+                )
+                SettingsRow(
+                    title: "Community Guidelines",
+                    value: nil,
+                    isDestructive: false,
+                    action: { showCommunityGuidelines = true }
                 )
 
                 SettingsRow(
@@ -448,6 +459,17 @@ struct SettingsRow: View {
             )
         }
     }
+}
+
+
+struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
 
 // MARK: - Sheets (unchanged structurally)
