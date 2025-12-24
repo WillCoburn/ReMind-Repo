@@ -13,8 +13,16 @@ extension AppViewModel {
           entries.filter { $0.sent }.count
       }
 
-    var streakCount: Int {
+    private var streakStatus: StreakStatus {
         StreakCalculator.compute(entries: entries, calendar: streakCalendar)
+    }
+
+    var streakCount: Int {
+        streakStatus.count
+    }
+
+    var isStreakInGracePeriod: Bool {
+        streakStatus.isInGracePeriod
     }
     
       func attachEntriesListener(_ uid: String) {
