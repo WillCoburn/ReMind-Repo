@@ -77,6 +77,7 @@ extension AppViewModel {
             ])
 
             print("✅ submit write success")
+            Haptics.success()
 
             let optimistic = Entry(
                 id: ref.documentID,

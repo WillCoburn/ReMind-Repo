@@ -1,20 +1,13 @@
-// Utils/Haptics.swift
 import UIKit
 
+/// Small utility for emitting system haptics.
 enum Haptics {
+    /// Plays a pleasant success confirmation haptic.
     static func success() {
-        #if !targetEnvironment(simulator)
-        let g = UINotificationFeedbackGenerator()
-        g.prepare()
-        g.notificationOccurred(.success)
-        #endif
-    }
-
-    static func light() {
-        #if !targetEnvironment(simulator)
-        let g = UIImpactFeedbackGenerator(style: .light)
-        g.prepare()
-        g.impactOccurred()
-        #endif
+        DispatchQueue.main.async {
+            let generator = UINotificationFeedbackGenerator()
+            generator.prepare()
+            generator.notificationOccurred(.success)
+        }
     }
 }
