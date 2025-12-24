@@ -16,7 +16,7 @@ struct SubscriptionSection: View {
         VStack(alignment: .center, spacing: 12) {
 
 
-            let isEntitled = appVM.isEntitled
+           
             let willRenew = revenueCat.entitlementWillRenew
             let expiration = revenueCat.entitlementExpirationDate
 
@@ -27,7 +27,7 @@ struct SubscriptionSection: View {
             // ============================
             // Subscription Status / Trial
             // ============================
-            if isEntitled {
+            if appVM.isSubscribed {
                 if let expiration {
                     let dateString = DateFormatter.localizedString(
                         from: expiration,
@@ -70,16 +70,19 @@ struct SubscriptionSection: View {
             // ============================
             // Manage Subscription Button
             // ============================
-            Button("Manage Subscription") {
-                
-                 if let url = RevenueCatManager.shared.managementURL {
-                     UIApplication.shared.open(url)
-                 } else if let fallback = URL(string: "itms-apps://apps.apple.com/account/subscriptions") {
-                     UIApplication.shared.open(fallback)
-                 }
+            if appVM.isSubscribed {
+                Button("Manage Subscription") {
+                    
+                     if let url = RevenueCatManager.shared.managementURL {
+                         UIApplication.shared.open(url)
+                     } else if let fallback = URL(string: "itms-apps://apps.apple.com/account/subscriptions") {
+                         UIApplication.shared.open(fallback)
+                     }
+                }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
-            .buttonStyle(.bordered)
-            .frame(maxWidth: .infinity, alignment: .center)
+            
 
             // ============================
             // Restore Purchases Button

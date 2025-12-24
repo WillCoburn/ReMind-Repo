@@ -318,7 +318,7 @@ struct RightPanelPlaceholderView: View {
 
 
     private var shouldShowTrialBanner: Bool {
-        !appVM.isEntitled && appVM.isTrialActive
+        appVM.isTrialActive && !appVM.isSubscribed
     }
 
     private func trialEndDateString(_ date: Date) -> String {

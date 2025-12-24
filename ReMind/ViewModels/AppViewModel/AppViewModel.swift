@@ -17,6 +17,7 @@ final class AppViewModel: ObservableObject {
     enum EntitlementSource { case unknown, cached, revenueCat }
 
     @Published private(set) var isEntitled = false
+    @Published var isSubscribed = false
     @Published private(set) var isTrialActive = false
     @Published private(set) var hasExpiredTrial = false
     @Published private(set) var entitlementResolved = false
@@ -106,6 +107,7 @@ final class AppViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }
+                self.isSubscribed = self.revenueCat.entitlementActive
                 self.applyEntitlementState(
                     entitlementActive: self.revenueCat.entitlementActive,
                     source: .revenueCat
