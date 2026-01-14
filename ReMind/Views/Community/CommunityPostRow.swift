@@ -78,8 +78,11 @@ struct CommunityPostRow: View {
                 } label: {
                     Image(systemName: "ellipsis")
                         .foregroundColor(.gray.opacity(0.7))
-                        .padding(8)
                 }
+                // Match the card’s content inset (same “right padding” feel as timestamp)
+                .padding(.trailing, 16)
+                // Nudge down from the top border so it feels aligned with your top content
+                .padding(.top, 12)
             }
         }
         .alert(
