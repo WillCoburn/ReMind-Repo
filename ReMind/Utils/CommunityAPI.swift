@@ -7,6 +7,7 @@ import FirebaseFunctions
 
 struct CommunityPost: Identifiable, Hashable {
     let id: String
+    let authorId: String
     let text: String
     let createdAt: Date
     let likeCount: Int
@@ -16,6 +17,7 @@ struct CommunityPost: Identifiable, Hashable {
     
     init(
          id: String,
+         authorId: String,
          text: String,
          createdAt: Date,
          likeCount: Int,
@@ -24,6 +26,7 @@ struct CommunityPost: Identifiable, Hashable {
          expiresAt: Date
      ) {
          self.id = id
+         self.authorId = authorId
          self.text = text
          self.createdAt = createdAt
          self.likeCount = likeCount
@@ -35,12 +38,14 @@ struct CommunityPost: Identifiable, Hashable {
     init?(from doc: DocumentSnapshot) {
         guard let data = doc.data() else { return nil }
         guard let text = data["text"] as? String,
+              let authorId = data["authorId"] as? String,
               let createdAtTs = data["createdAt"] as? Timestamp,
               let expiresAtTs = data["expiresAt"] as? Timestamp else {
             return nil
         }
 
         self.id = doc.documentID
+        self.authorId = authorId
         self.text = text
         self.createdAt = createdAtTs.dateValue()
         self.expiresAt = expiresAtTs.dateValue()

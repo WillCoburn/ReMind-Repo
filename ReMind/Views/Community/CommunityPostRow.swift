@@ -7,6 +7,9 @@ struct CommunityPostRow: View {
 
     var onLike: (() -> Void)? = nil
     var onReport: (() -> Void)? = nil
+    var onBlock: (() -> Void)? = nil
+
+    @State private var showBlockConfirm = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -63,6 +66,34 @@ struct CommunityPostRow: View {
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Color.figmaBlue, lineWidth: 1)
+        )
+        .overlay(alignment: .topTrailing) {
+            if !post.authorId.isEmpty {
+                Menu {
+                    Button(role: .destructive) {
+                        showBlockConfirm = true
+                    } label: {
+                        Label("Block user", systemImage: "hand.raised.fill")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .foregroundColor(.gray.opacity(0.7))
+                        .padding(8)
+                }
+            }
+        }
+        .alert(
+            "Block user?",
+            isPresented: $showBlockConfirm,
+            actions: {
+                Button("Cancel", role: .cancel) {}
+                Button("Block", role: .destructive) {
+                    onBlock?()
+                }
+            },
+            message: {
+                Text("You won’t see any more posts from this user.")
+            }
         )
     }
 

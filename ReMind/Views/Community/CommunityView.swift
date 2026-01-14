@@ -5,6 +5,7 @@ import FirebaseFunctions
 struct CommunityView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @ObservedObject private var revenueCat: RevenueCatManager = .shared
+    private let blockService: BlockService = FirestoreBlockService()
     @State private var posts: [CommunityPost] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
@@ -16,9 +17,12 @@ struct CommunityView: View {
 
     @State private var likedPostIds: Set<String> = []
     @State private var reportedPostIds: Set<String> = []
+    @State private var blockedAuthorIds: Set<String> = []
 
     @State private var listener: ListenerRegistration?
+    @State private var blockListener: ListenerRegistration?
     @State private var isAtTop = true
+    @State private var isStartingListener = false
 
     private var isUserActive: Bool { appVM.isEntitled }
 
@@ -173,7 +177,12 @@ struct CommunityView: View {
                                     isLiked: isLiked(post),
                                     isReported: isReported(post),
                                     onLike: { handleLike(post) },
-                                    onReport: { handleReport(post) }
+                                    onReport: { handleReport(post) },
+                                    onBlock: {
+                                        Task {
+                                            await blockAuthor(post.authorId)
+                                        }
+                                    }
                                 )
                                 .blur(radius: isUserActive ? 0 : 12)
                             }
@@ -207,18 +216,37 @@ struct CommunityView: View {
     // MARK: - Firestore Feed Listener
 
     private func startListeningIfNeeded() {
-        guard listener == nil else { return }
+        guard listener == nil, !isStartingListener else { return }
+        isStartingListener = true
+        isLoading = true
 
-        listener = CommunityAPI.shared.observeFeed { newPosts in
-            self.posts = newPosts
-            self.isLoading = false
-            self.errorMessage = nil
+        Task {
+            do {
+                let blocked = try await blockService.fetchBlockedAuthorIds()
+                await MainActor.run {
+                    blockedAuthorIds = blocked
+                }
+                await MainActor.run {
+                    startFeedListener()
+                    startBlockedUsersListener()
+                    isStartingListener = false
+                }
+            } catch {
+                await MainActor.run {
+                    blockedAuthorIds = []
+                    startFeedListener()
+                    startBlockedUsersListener()
+                    isStartingListener = false
+                }
+            }
         }
     }
 
     private func stopListening() {
         listener?.remove()
         listener = nil
+        blockListener?.remove()
+        blockListener = nil
     }
 
     private func presentSubscribeAlert() {
@@ -306,7 +334,7 @@ struct CommunityView: View {
         do {
             let latest = try await CommunityAPI.shared.fetchLatest()
             await MainActor.run {
-                posts = latest
+                posts = filteredPosts(latest)
                 isLoading = false
                 errorMessage = nil
             }
@@ -368,12 +396,58 @@ struct CommunityView: View {
             return transform(post)
         }
     }
+
+    private func startFeedListener() {
+        listener = CommunityAPI.shared.observeFeed { newPosts in
+            let filtered = filteredPosts(newPosts)
+            self.posts = filtered
+            self.isLoading = false
+            self.errorMessage = nil
+        }
+    }
+
+    private func startBlockedUsersListener() {
+        blockListener = blockService.listenBlockedAuthorIds { newBlockedIds in
+            Task { @MainActor in
+                blockedAuthorIds = newBlockedIds
+                posts = posts.filter { !newBlockedIds.contains($0.authorId) }
+            }
+        }
+    }
+
+    private func filteredPosts(_ posts: [CommunityPost]) -> [CommunityPost] {
+        posts.filter { post in
+            !post.isHidden && !blockedAuthorIds.contains(post.authorId)
+        }
+    }
+
+    private func blockAuthor(_ authorId: String) async {
+        guard !authorId.isEmpty else { return }
+        let previousBlocked = blockedAuthorIds
+        let previousPosts = posts
+
+        await MainActor.run {
+            blockedAuthorIds.insert(authorId)
+            posts = posts.filter { $0.authorId != authorId }
+        }
+
+        do {
+            try await blockService.block(authorId: authorId)
+        } catch {
+            await MainActor.run {
+                blockedAuthorIds = previousBlocked
+                posts = previousPosts
+                actionErrorMessage = "Couldn’t block user. Check connection and try again."
+            }
+        }
+    }
 }
 
 private extension CommunityPost {
     func withUpdatedCounts(likeDelta: Int = 0, reportDelta: Int = 0) -> CommunityPost {
         CommunityPost(
             id: id,
+            authorId: authorId,
             text: text,
             createdAt: createdAt,
             likeCount: max(0, likeCount + likeDelta),
