@@ -78,7 +78,10 @@ struct CommunityPostRow: View {
                 } label: {
                     Image(systemName: "ellipsis")
                         .foregroundColor(.gray.opacity(0.7))
+                        .frame(width: 44, height: 44, alignment: .center) // 👈 Apple-friendly hitbox
+                        .contentShape(Rectangle())
                 }
+
                 // Match the card’s content inset (same “right padding” feel as timestamp)
                 .padding(.trailing, 16)
                 // Nudge down from the top border so it feels aligned with your top content
