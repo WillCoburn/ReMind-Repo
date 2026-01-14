@@ -72,6 +72,7 @@
 		D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */; };
 		D2BEC27F2EB039E0009E3698 /* PDFKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D2BEC27E2EB039E0009E3698 /* PDFKit.framework */; };
 		D2C1FD492EF8CB4F007F2BAF /* StreakCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2C1FD482EF8CB4F007F2BAF /* StreakCalculator.swift */; };
+		D2C1FD4B2F17F18D007F2BAF /* BlockService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2C1FD4A2F17F18D007F2BAF /* BlockService.swift */; };
 		D2D07BC22EBAC0E30078BAB0 /* FeatureTourOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */; };
 		D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BC82EBC170D0078BAB0 /* PhoneEntrySection.swift */; };
 		D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */; };
@@ -187,6 +188,7 @@
 		D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsSync.swift; sourceTree = "<group>"; };
 		D2BEC27E2EB039E0009E3698 /* PDFKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PDFKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/PDFKit.framework; sourceTree = DEVELOPER_DIR; };
 		D2C1FD482EF8CB4F007F2BAF /* StreakCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCalculator.swift; sourceTree = "<group>"; };
+		D2C1FD4A2F17F18D007F2BAF /* BlockService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockService.swift; sourceTree = "<group>"; };
 		D2D07BC12EBAC0DD0078BAB0 /* FeatureTourOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureTourOverlay.swift; sourceTree = "<group>"; };
 		D2D07BC82EBC170D0078BAB0 /* PhoneEntrySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEntrySection.swift; sourceTree = "<group>"; };
 		D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentAndAgreeBottom.swift; sourceTree = "<group>"; };
@@ -353,6 +355,7 @@
 		D22EF4772E7B2E0400810204 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				D2C1FD4A2F17F18D007F2BAF /* BlockService.swift */,
 				D2BEC27C2EAC52E3009E3698 /* UserSettingsSync.swift */,
 				D2BEC2692E7E37C1009E3698 /* DataStore.swift */,
 				D22EF4832E7B2F5F00810204 /* MessagingService.swift */,
@@ -732,6 +735,7 @@
 				D21FF4D62ECFC7490054E7F8 /* Color+Palette.swift in Sources */,
 				D21FF4BD2ECED5BB0054E7F8 /* ActivityPlaceholderView.swift in Sources */,
 				D2ED48122EC8F3270030CBA7 /* SettingsHeaderBar.swift in Sources */,
+				D2C1FD4B2F17F18D007F2BAF /* BlockService.swift in Sources */,
 				D22EF47C2E7B2EE600810204 /* CompositionRoot.swift in Sources */,
 				D23CFAF32ECAAAF700FEBF3D /* HomePagerView.swift in Sources */,
 				D2ED48142EC8F3300030CBA7 /* RangeSlider.swift in Sources */,
@@ -950,6 +954,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReMind/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Re[Mind]";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -964,7 +969,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.01;
 				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMind;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -993,6 +998,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReMind/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Re[Mind]";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -1007,7 +1013,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.01;
 				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMind;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
