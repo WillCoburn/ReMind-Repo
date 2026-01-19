@@ -21,6 +21,7 @@ final class AppViewModel: ObservableObject {
     @Published private(set) var isTrialActive = false
     @Published private(set) var hasExpiredTrial = false
     @Published private(set) var entitlementResolved = false
+    @Published private(set) var hasRevenueCatCustomerInfo = false
     @Published private(set) var entitlementSource: EntitlementSource = .unknown
     
     /// True once Firebase auth state + user profile have been resolved at least once
@@ -116,7 +117,13 @@ final class AppViewModel: ObservableObject {
                 )
             }
             .store(in: &entitlementCancellables)
-
+        revenueCat.$lastCustomerInfo
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] info in
+                self?.hasRevenueCatCustomerInfo = (info != nil)
+            }
+            .store(in: &entitlementCancellables)
+        
         $user
             .receive(on: DispatchQueue.main)
             .sink { [weak self] profile in
@@ -150,6 +157,7 @@ final class AppViewModel: ObservableObject {
             isEntitled = false
             isTrialActive = false
             hasExpiredTrial = false
+            hasRevenueCatCustomerInfo = false
             return
         }
 
