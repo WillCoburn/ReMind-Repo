@@ -21,7 +21,9 @@ extension AppViewModel {
         let profile = UserProfile(uid: uid, phoneE164: e164)
         self.user = profile
 
-
+        isSeedingUserProfile = true
+        defer { isSeedingUserProfile = false }
+        
         do {
             let docRef = db.collection("users").document(uid)
 

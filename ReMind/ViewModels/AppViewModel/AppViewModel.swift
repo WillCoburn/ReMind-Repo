@@ -62,6 +62,7 @@ final class AppViewModel: ObservableObject {
     private var lastServerNow: Date?
     private var uptimeAtLastServerNow: TimeInterval?
     private var lastEntitlementActive = false
+    var isSeedingUserProfile = false
 
     let revenueCat: RevenueCatManager = .shared
 
@@ -86,6 +87,7 @@ final class AppViewModel: ObservableObject {
         authHandle = Auth.auth().addStateDidChangeListener { [weak self] _, authUser in
             guard let self = self else { return }
             Task {
+                await self.waitForProfileSeedIfNeeded()
                 // Load user profile and entries for this auth state.
                 await self.loadUserAndEntries(authUser?.uid)
                 await self.refreshGodModeFlag(forceRefresh: true)
@@ -127,8 +129,8 @@ final class AppViewModel: ObservableObject {
         trialExpiryTimer?.invalidate()
         trialExpiryTimer = nil
 
-        guard let trialEndsAt = user?.trialEndsAt, let now = trustedNow() else { return }
-        let interval = trialEndsAt.timeIntervalSince(now)
+        guard let trialEndsAt = user?.trialEndsAt else { return }
+        let interval = trialEndsAt.timeIntervalSince(referenceNow())
         guard interval > 0 else { return }
 
         trialExpiryTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
@@ -191,8 +193,11 @@ final class AppViewModel: ObservableObject {
 
     private func computeTrialActive() -> Bool {
         guard let trialEndsAt = user?.trialEndsAt else { return false }
-        guard let now = trustedNow() else { return false }
-        return now < trialEndsAt
+        return referenceNow() < trialEndsAt
+    }
+
+    private func referenceNow() -> Date {
+        trustedNow() ?? Date()
     }
 
     private func trustedNow() -> Date? {
@@ -217,6 +222,14 @@ final class AppViewModel: ObservableObject {
     func refreshRevenueCatEntitlement() {
         revenueCat.forceIdentify { [weak self] in
             self?.revenueCat.refreshEntitlementState()
+        }
+    }
+    private func waitForProfileSeedIfNeeded() async {
+        guard isSeedingUserProfile else { return }
+        let maxAttempts = 20
+        for _ in 0..<maxAttempts {
+            if !isSeedingUserProfile { return }
+            try? await Task.sleep(nanoseconds: 100_000_000)
         }
     }
 }

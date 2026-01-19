@@ -98,6 +98,7 @@ struct PhoneEntrySection: View {
         }
         .onAppear { startKeyboardObservers() }
         .onDisappear { stopKeyboardObservers() }
+        .dynamicTypeSize(.medium)
     }
 
     // MARK: - Keyboard Observation
