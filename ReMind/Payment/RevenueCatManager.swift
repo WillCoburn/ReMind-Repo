@@ -248,21 +248,41 @@ final class RevenueCatManager: NSObject, ObservableObject {
     
     //restore
     func restore(completion: @escaping (_ success: Bool, _ errorMessage: String?) -> Void) {
-        Purchases.shared.restorePurchases { customerInfo, error in
+        ensureConfigured()
+
+        guard let uid = Auth.auth().currentUser?.uid else {
+            completion(false, "Please sign in to restore purchases.")
+            return
+        }
+
+        Purchases.shared.logIn(uid) { [weak self] info, _, error in
+            guard let self else { return }
+
             if let error {
-                completion(false, error.localizedDescription)
+                completion(false, "Unable to sign in: \(error.localizedDescription)")
                 return
             }
 
-            guard let info = customerInfo else {
-                completion(false, "Nothing to restore.")
-                return
+            if let info {
+                self.apply(info)
             }
 
-            // Update local entitlement state ONLY (no Firestore writes)
-            self.apply(info)
+            Purchases.shared.restorePurchases { customerInfo, error in
+                if let error {
+                    completion(false, error.localizedDescription)
+                    return
+                }
 
-            completion(true, nil)
+                guard let info = customerInfo else {
+                    completion(false, "Nothing to restore.")
+                    return
+                }
+
+                // Update local entitlement state ONLY (no Firestore writes)
+                self.apply(info)
+
+                completion(true, nil)
+            }
         }
     }
 
@@ -274,5 +294,4 @@ extension RevenueCatManager: PurchasesDelegate {
         apply(customerInfo)
     }
 }
-
 
