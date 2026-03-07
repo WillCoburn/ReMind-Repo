@@ -10,8 +10,6 @@ struct CommunityView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var showComposer = false
-    @State private var showSubscribeAlert = false
-    @State private var subscribeAlertMessage: String?
     @State private var actionErrorMessage: String?
     @State private var reportLimitMessage: String?
 
@@ -24,25 +22,15 @@ struct CommunityView: View {
     @State private var isAtTop = true
     @State private var isStartingListener = false
 
-    private var isUserActive: Bool { appVM.isEntitled }
+    private var isUserActive: Bool { true }
 
     var body: some View {
         // Observe RevenueCat directly so entitlement changes update interaction instantly.
         let _ = revenueCat.entitlementActive
         ZStack(alignment: .bottomTrailing) {
             content
-                .overlay {
-                    if !isUserActive {
-                        Color.white.opacity(0.35).ignoresSafeArea()
-                    }
-                }
-                .allowsHitTesting(isUserActive)
 
             Button {
-                guard isUserActive else {
-                    presentSubscribeAlert()
-                    return
-                }
                 showComposer = true
             } label: {
                 Image(systemName: "plus")
@@ -64,14 +52,6 @@ struct CommunityView: View {
         .sheet(isPresented: $showComposer) {
             CommunityComposerSheet()
         }
-        .alert(
-            "Subscribe to Continue",
-            isPresented: $showSubscribeAlert,
-            actions: {
-                Button("OK", role: .cancel) { showSubscribeAlert = false }
-            },
-            message: { Text(subscribeAlertMessage ?? "Your free trial has ended. Start a subscription to use ReMind.") }
-        )
         .alert(
             "Action Failed",
             isPresented: Binding(
@@ -249,11 +229,6 @@ struct CommunityView: View {
         blockListener = nil
     }
 
-    private func presentSubscribeAlert() {
-        subscribeAlertMessage = "Your free trial has ended. Start a subscription to use ReMind."
-        showSubscribeAlert = true
-    }
-    
     // MARK: - Actions
 
     private func handleLike(_ post: CommunityPost) {

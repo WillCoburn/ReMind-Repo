@@ -19,13 +19,8 @@ struct SubscriptionSection: View {
            
             let willRenew = revenueCat.entitlementWillRenew
             let expiration = revenueCat.entitlementExpirationDate
-
-
-            let trialEnd = appVM.user?.trialEndsAt
-            let onTrial = appVM.isTrialActive
-
             // ============================
-            // Subscription Status / Trial
+            // Subscription Status
             // ============================
             if appVM.isSubscribed {
                 if let expiration {
@@ -43,19 +38,6 @@ struct SubscriptionSection: View {
                     .multilineTextAlignment(.center)
                 }
             } else {
-                if onTrial, let trialEnd {
-                    let dateString = DateFormatter.localizedString(
-                        from: trialEnd,
-                        dateStyle: .medium,
-                        timeStyle: .none
-                    )
-
-                    Text("Free trial ends: \(dateString)")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-
                 // Start Subscription Button
                 Button("Start Subscription") {
 

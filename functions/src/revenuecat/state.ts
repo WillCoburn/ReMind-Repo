@@ -55,5 +55,7 @@ export function deriveSubscriptionState(
       : "cancelled"
     : "unsubscribed";
 
-  return { entitlementActive, willRenew, expiresAtSeconds, inPaidPeriod, subscriptionStatus };
+  const plan: "free" | "pro" = inPaidPeriod ? "pro" : "free";
+
+  return { entitlementActive, willRenew, expiresAtSeconds, inPaidPeriod, subscriptionStatus, plan };
 }

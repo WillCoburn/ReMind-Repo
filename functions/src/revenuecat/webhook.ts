@@ -97,7 +97,9 @@ export const revenueCatWebhook = onRequest(async (req, res) => {
     .set(
       {
         rc: rcUpdate,
-        active: derived.inPaidPeriod,
+        // `plan` is tier source of truth; keep `active` operational for scheduler compatibility.
+        active: true,
+        plan: derived.plan,
         subscriptionStatus: derived.subscriptionStatus,
       },
       { merge: true }

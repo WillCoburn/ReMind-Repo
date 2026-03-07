@@ -12,6 +12,7 @@ struct SendNowSheet: View {
 
     @State private var isSending = false
     @State private var errorMessage: String? = nil
+    @State private var showWeeklyLimitAlert = false
 
     var body: some View {
         let _ = revenueCat.entitlementActive
@@ -74,9 +75,9 @@ struct SendNowSheet: View {
                             .frame(height: 52)
                         }
                         .foregroundColor(.white)
-                        .background(isSending || !appVM.isEntitled ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
+                        .background((isSending || appVM.hasUsedFreeInstantSendThisWeek) ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .disabled(isSending || !appVM.isEntitled)
+                        .disabled(isSending)
 
                         Button(action: { dismiss() }) {
                             Text("Cancel")
@@ -102,15 +103,17 @@ struct SendNowSheet: View {
             }
             .navigationBarTitleDisplayMode(.inline)
         }
-        .onChange(of: appVM.isEntitled) { entitled in
-            if !entitled { dismiss() }
+        .alert("Weekly Instant Send Used", isPresented: $showWeeklyLimitAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("You already used your weekly instant send, upgrade for unlimited!")
         }
     }
 
     private func sendNow() async {
         guard !isSending else { return }
-        guard appVM.isEntitled else {
-            errorMessage = "Subscription required to send reminders."
+        if appVM.hasUsedFreeInstantSendThisWeek {
+            showWeeklyLimitAlert = true
             return
         }
         isSending = true

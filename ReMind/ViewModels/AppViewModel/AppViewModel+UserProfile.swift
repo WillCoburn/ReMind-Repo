@@ -11,7 +11,7 @@ enum SubscriptionStatus: String { case subscribed, unsubscribed }
 @MainActor
 extension AppViewModel {
     // MARK: - User Profile (create or merge on sign-in)
-    /// Creates/merges the Firestore user document and seeds a 30-day trial,
+    /// Creates/merges the Firestore user document and seeds baseline freemium fields,
     /// THEN identifies RevenueCat so RC writes happen **after** the base doc exists.
     func setPhoneProfileAndLoad(_ phoneDigits: String) async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
@@ -35,7 +35,6 @@ extension AppViewModel {
             if existingSnapshot.exists {
                 let existingData = existingSnapshot.data() ?? [:]
                 let existingCreatedAt = existingData["createdAt"] as? Timestamp
-                let existingTrialEnds = existingData["trialEndsAt"] as? Timestamp
                 // Only repair a missing createdAt once; never overwrite a historical timestamp
                 var mergePayload: [String: Any] = [
                     "uid": uid,
@@ -47,19 +46,14 @@ extension AppViewModel {
                     mergePayload["createdAt"] = FieldValue.serverTimestamp()
                 }
 
-                // If the doc exists but is missing the baseline onboarding fields (e.g., was
-                // created by a background writer), seed the trial + active + status so the app
-                // has everything it needs to load without freezing.
-                if existingTrialEnds == nil {
-                    let now = Date()
-                    let trialEnd = Calendar.current.date(byAdding: .day, value: 30, to: now)
-                        ?? now.addingTimeInterval(60 * 60 * 24 * 30)
+                // Tier source-of-truth: default to free when missing.
+                if existingData["plan"] == nil {
+                    mergePayload["plan"] = UserPlan.free.rawValue
+                }
 
-                    mergePayload["trialEndsAt"] = Timestamp(date: trialEnd)
+                // Keep operational active=true by default for scheduler compatibility (except STOP).
+                if existingData["active"] == nil {
                     mergePayload["active"] = true
-
-                    self.user?.trialEndsAt = trialEnd
-                    self.user?.active = true
                 }
 
                 if existingData["subscriptionStatus"] == nil {
@@ -74,26 +68,22 @@ extension AppViewModel {
                     self.user?.createdAt = Date()
                 }
             } else {
-                // Compute trial end locally (server will store canonical timestamps)
-                let now = Date()
-                let trialEnd = Calendar.current.date(byAdding: .day, value: 30, to: now)
-                    ?? now.addingTimeInterval(60 * 60 * 24 * 30)
-
                 try await docRef.setData([
                     "uid": uid,
                     "phoneE164": e164,
                     "createdAt": FieldValue.serverTimestamp(),
                     "updatedAt": FieldValue.serverTimestamp(),
-                    "trialEndsAt": Timestamp(date: trialEnd),
+                    // No new trial seeding in freemium.
                     "subscriptionStatus": SubscriptionStatus.unsubscribed.rawValue,
-                    "active": true   // starts active during trial
+                    "plan": UserPlan.free.rawValue,
+                    "active": true,
                 ], merge: true)
-
-                self.user?.createdAt = now
+                self.user?.createdAt = Date()
             }
 
 
-            // Ensure `active` reflects RC entitlement vs. trial (covers re-sign-in edge cases)
+            // Ensure paid-state fields are synced from RevenueCat without trial dependence.
+            // CLEANUP AFTER: consolidate all plan writes into a single server-authoritative path.
             RevenueCatManager.shared.recomputeAndPersistActive(uid: uid)
 
             // Load the rest of app state

@@ -4,6 +4,21 @@
 import Foundation
 
 
+public enum UserPlan: String, Codable, Sendable {
+    case free
+    case pro
+}
+
+public struct InstantUsage: Codable, Sendable, Equatable {
+    public var instantWeekKey: String?
+    public var instantSendsThisWeek: Int
+
+    public init(instantWeekKey: String? = nil, instantSendsThisWeek: Int = 0) {
+        self.instantWeekKey = instantWeekKey
+        self.instantSendsThisWeek = instantSendsThisWeek
+    }
+}
+
 
 
 public struct UserProfile: Codable, Sendable, Equatable {
@@ -12,10 +27,13 @@ public struct UserProfile: Codable, Sendable, Equatable {
     public var createdAt: Date?     // First created timestamp
     public var updatedAt: Date?     // Last updated timestamp
 
-    // 🔽 Added for payment/trial UX & backend gating
+    // Legacy trial fields are intentionally retained for mixed-version compatibility.
+    // CLEANUP AFTER: remove trial fields once all clients/backend paths are fully plan-based.
     public var trialEndsAt: Date?   // End of in-app 30-day free period
-    public var active: Bool?        // Convenience flag for backend send gating
+    public var active: Bool?        // Operational scheduler flag (STOP/START + send safety)
+    public var plan: UserPlan?
     public var receivedCount: Int?  // Total ReMinds delivered (auto/manual/PDF)
+    public var usage: InstantUsage?
 
     public init(
         uid: String,
@@ -24,7 +42,9 @@ public struct UserProfile: Codable, Sendable, Equatable {
         updatedAt: Date? = nil,
         trialEndsAt: Date? = nil,
         active: Bool? = nil,
-        receivedCount: Int? = nil
+        plan: UserPlan? = nil,
+        receivedCount: Int? = nil,
+        usage: InstantUsage? = nil
     ) {
         self.uid = uid
         self.phoneE164 = phoneE164
@@ -32,6 +52,8 @@ public struct UserProfile: Codable, Sendable, Equatable {
         self.updatedAt = updatedAt
         self.trialEndsAt = trialEndsAt
         self.active = active
+        self.plan = plan
         self.receivedCount = receivedCount
+        self.usage = usage
     }
 }

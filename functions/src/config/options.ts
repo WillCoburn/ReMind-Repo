@@ -72,10 +72,21 @@ function nextLocalTime(
 async function loadSettings(uid: string) {
   const snap = await db.doc(`users/${uid}/meta/settings`).get();
   const d = snap.exists ? snap.data()! : {};
+  const userSnap = await db.doc(`users/${uid}`).get();
+  const plan = (String(userSnap.get("plan") ?? "free").toLowerCase() === "pro") ? "pro" : "free";
+  const rawWeekly = Number(d?.remindersPerWeek ?? (Number(d?.remindersPerDay ?? 1) * 7));
+  let remindersPerWeek = clampWeeklyRate(rawWeekly);
+
+  if (plan === "free" && remindersPerWeek > 3) {
+    // Defensive backend cap for mixed/legacy data. Scheduler always uses <=3 for free.
+    remindersPerWeek = 3;
+    // CLEANUP AFTER: remove write-back once all clients enforce free 1...3 in settings.
+    await db.doc(`users/${uid}/meta/settings`).set({ remindersPerWeek: 3 }, { merge: true });
+    logger.warn("[loadSettings] capped remindersPerWeek for free user", { uid, rawWeekly });
+  }
+
   return {
-    remindersPerWeek: clampWeeklyRate(
-      Number(d?.remindersPerWeek ?? (Number(d?.remindersPerDay ?? 1) * 7))
-    ),
+    remindersPerWeek,
     tzIdentifier: String(d?.tzIdentifier ?? "UTC"),
     quietStartHour: Number(d?.quietStartHour ?? 9),
     quietEndHour: Number(d?.quietEndHour ?? 22),
@@ -260,8 +271,18 @@ function isTrialActive(user: FirebaseFirestore.DocumentSnapshot, now = new Date(
 }
 
 function computeActive(user: FirebaseFirestore.DocumentSnapshot, now = new Date()) {
-  const entitlementActive = user.get("entitlement.active") === true;
-  return entitlementActive || isTrialActive(user, now);
+  const optedOut = user.get("smsOptOut") === true;
+  if (optedOut) return false;
+  return user.get("active") !== false;
+}
+
+function resolvePlan(user: FirebaseFirestore.DocumentSnapshot): "free" | "pro" {
+  const explicit = String(user.get("plan") ?? "").toLowerCase();
+  if (explicit === "pro") return "pro";
+  if (explicit === "free") return "free";
+
+  const rcActive = user.get("rc.entitlementActive") === true;
+  return rcActive ? "pro" : "free";
 }
 
 
@@ -291,4 +312,5 @@ export {
   //trial tracking
   isTrialActive,
   computeActive,
+  resolvePlan,
 };

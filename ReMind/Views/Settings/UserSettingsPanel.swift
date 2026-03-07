@@ -70,7 +70,20 @@ struct UserSettingsForm: View {
 
   var body: some View {
       VStack(alignment: .leading, spacing: 20) {
-          RemindersPerWeekSection(remindersPerWeek: $remindersPerWeek)
+          if !appVM.isProUser {
+              Text("Free users limited to 3 auto, 1 instant messages/week")
+                  .font(.footnote.weight(.semibold))
+                  .foregroundStyle(.secondary)
+                  .padding(.horizontal, 12)
+                  .padding(.vertical, 10)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .background(
+                      RoundedRectangle(cornerRadius: 10)
+                          .fill(Color.yellow.opacity(0.16))
+                  )
+          }
+
+          RemindersPerWeekSection(remindersPerWeek: $remindersPerWeek, isProUser: appVM.isProUser)
               .onChange(of: remindersPerWeek) { _ in handleSettingChange() }
 
           Divider()
@@ -157,17 +170,6 @@ struct UserSettingsForm: View {
                 }
             }
         }
-    }
-    
-    private var shouldShowTrialBanner: Bool {
-        !appVM.isEntitled && appVM.isTrialActive
-    }
-
-    private func trialEndDateString(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
     }
     
     private func handleSettingChange() {

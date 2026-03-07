@@ -74,13 +74,13 @@ export const minuteCron = onSchedule(
           await db.doc(`users/${uid}`).set(
             {
               rc: { entitlementActive: false, willRenew: false },
-              active: false,
+              // Tier migration: expired paid users become free (not locked out).
+              // Keep `active` for operational SMS gating only.
+              plan: "free",
               subscriptionStatus: "unsubscribed",
             },
             { merge: true }
           );
-          await scheduleNext(uid, new Date());
-          continue;
         }
 
         if (doc.get("welcomed") !== true) {
