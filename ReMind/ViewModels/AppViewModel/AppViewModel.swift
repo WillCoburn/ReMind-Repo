@@ -70,6 +70,42 @@ final class AppViewModel: ObservableObject {
     /// Legacy convenience; true when a profile is loaded.
     var isOnboarded: Bool { user != nil }
 
+    /// New source-of-truth tier signal.
+    /// Defaults to `.free` when missing for backward compatibility.
+    var effectivePlan: UserPlan {
+        if let explicit = user?.plan { return explicit }
+        if isSubscribed { return .pro }
+        return .free
+    }
+
+    var isProUser: Bool { effectivePlan == .pro }
+
+    var hasUsedFreeInstantSendThisWeek: Bool {
+        guard effectivePlan == .free else { return false }
+        guard let usage = user?.usage else { return false }
+        let tzIdentifier = UserDefaults.standard.string(forKey: "tzIdentifier") ?? TimeZone.current.identifier
+        let weekKey = Self.instantWeekKey(now: Date(), tzIdentifier: tzIdentifier)
+        let sends = usage.instantWeekKey == weekKey ? usage.instantSendsThisWeek : 0
+        return sends >= 1
+    }
+
+    static func instantWeekKey(now: Date, tzIdentifier: String) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2 // Monday
+        calendar.minimumDaysInFirstWeek = 4
+        calendar.timeZone = TimeZone(identifier: tzIdentifier) ?? .current
+        let weekday = calendar.component(.weekday, from: now)
+        let offset = weekday == 1 ? -6 : 2 - weekday
+        guard let monday = calendar.date(byAdding: .day, value: offset, to: now) else {
+            return "1970-01-01"
+        }
+        let comps = calendar.dateComponents([.year, .month, .day], from: monday)
+        let y = comps.year ?? 1970
+        let m = String(format: "%02d", comps.month ?? 1)
+        let d = String(format: "%02d", comps.day ?? 1)
+        return "\(y)-\(m)-\(d)"
+    }
+
     /// Onboarding gate:
     /// - Show onboarding if there is NO Firebase session
     /// - Or if we don’t yet have a phone number in the loaded profile
@@ -161,11 +197,8 @@ final class AppViewModel: ObservableObject {
             return
         }
 
-        if let active = profile.active {
-            applyEntitlementState(entitlementActive: active, source: .cached)
-        } else {
-            refreshEntitlementState()
-        }
+        let cachedPaid = profile.plan == .pro
+        applyEntitlementState(entitlementActive: cachedPaid, source: .cached)
     }
 
     func applyEntitlementState(entitlementActive: Bool, source: EntitlementSource) {
@@ -181,7 +214,10 @@ final class AppViewModel: ObservableObject {
         }
 
         let onTrial = computeTrialActive()
-        let newValue = resolvedActive || onTrial
+        // Tier source of truth is now `plan`; keep this boolean for legacy UI wiring.
+        // CLEANUP AFTER: remove trial-derived entitlement flags once old UX is fully deleted.
+        let plan = user?.plan ?? (resolvedActive ? .pro : .free)
+        let newValue = (plan == .pro)
         let expiredTrial = (!resolvedActive && !onTrial && user?.trialEndsAt != nil)
 
         guard newValue != isEntitled

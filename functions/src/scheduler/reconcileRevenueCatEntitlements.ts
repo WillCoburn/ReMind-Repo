@@ -73,7 +73,7 @@ export const reconcileRevenueCatEntitlements = onSchedule(
               entitlementActive: false,
               willRenew: false,
             },
-            active: false,
+            plan: "free",
             subscriptionStatus: "unsubscribed",
           },
           { merge: true }

@@ -44,7 +44,7 @@ enum UserSettingsSync {
         var weekly =
             storedWeekly ??
             ((legacyDaily != nil) ? (legacyDaily! * 7.0) : nil) ??
-            7.0
+            3.0
 
         weekly = max(1.0, min(20.0, weekly))
 
@@ -72,9 +72,7 @@ enum UserSettingsSync {
     /// Writes settings to Firestore at users/{uid}/meta/settings
     /// THEN calls the callable `applyUserSettings`
     ///
-    /// `active` is only flipped to true if:
-    /// - subscribed
-    /// - OR still within trial
+    /// In freemium, settings updates no longer depend on trial/entitlement state.
     static func pushAndApply() async throws {
         print("🧪 settings save tapped")
         print("🧪 settings uid:", Auth.auth().currentUser?.uid ?? "nil")
@@ -113,28 +111,6 @@ enum UserSettingsSync {
             .collection("meta")
             .document("settings")
 
-        // MARK: - Read user state (subscription / trial)
-
-        let snapshot = try await userRef.getDocument()
-
-        var shouldSetActiveTrue = false
-        if snapshot.exists {
-            let status =
-                (snapshot.get("subscriptionStatus") as? String)
-                ?? SubscriptionStatus.unsubscribed.rawValue
-
-            let isSubscribed =
-                status == SubscriptionStatus.subscribed.rawValue
-
-            let trialEndsAt =
-                (snapshot.get("trialEndsAt") as? Timestamp)?.dateValue()
-
-            let withinTrial =
-                trialEndsAt.map { Date() < $0 } ?? false
-
-            shouldSetActiveTrue = isSubscribed || withinTrial
-        }
-
         // MARK: - Batch write (cannot be cancelled)
 
         let batch = db.batch()
@@ -145,18 +121,14 @@ enum UserSettingsSync {
             merge: true
         )
 
-        if shouldSetActiveTrue {
-            
-            
-            batch.setData(
-                [
-                    "active": true,
-                    "updatedAt": FieldValue.serverTimestamp()
-                ],
-                forDocument: userRef,
-                merge: true
-            )
-        }
+        batch.setData(
+            [
+                "active": true,
+                "updatedAt": FieldValue.serverTimestamp()
+            ],
+            forDocument: userRef,
+            merge: true
+        )
             try await batch.commit()
             print("✅ settings batch COMMITTED")
 

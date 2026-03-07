@@ -87,12 +87,12 @@ export const triggerWelcome = onCall(
     const msid = TWILIO_MSID.value();
     const client = getTwilioClient(sid, token);
 
-    await db.doc(`users/${targetUid}`).set({ active: true, smsOptOut: false }, { merge: true });
+    await db.doc(`users/${targetUid}`).set({ active: true, smsOptOut: false, plan: "free" }, { merge: true });
     const settingsRef = db.doc(`users/${targetUid}/meta/settings`);
     const settingsSnap = await settingsRef.get();
     if (!settingsSnap.exists) {
       await settingsRef.set(
-        { remindersPerWeek: 7, tzIdentifier: "UTC", quietStartHour: 9, quietEndHour: 22 },
+        { remindersPerWeek: 3, tzIdentifier: "UTC", quietStartHour: 9, quietEndHour: 22 },
         { merge: true }
       );
     }

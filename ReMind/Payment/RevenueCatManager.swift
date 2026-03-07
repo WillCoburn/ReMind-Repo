@@ -169,11 +169,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
             guard let data = snap.data() else { return }
 
             let trialEndsAt = (data["trialEndsAt"] as? Timestamp)?.dateValue()
-            let onTrial = trialEndsAt.map { Date() < $0 } ?? false
-
-            if let trialEndsAt {
-                scheduleTrialExpiryTimer(trialEndsAt: trialEndsAt)
-            }
+            if let trialEndsAt { scheduleTrialExpiryTimer(trialEndsAt: trialEndsAt) }
 
             let rc = data["rc"] as? [String: Any] ?? [:]
             let entitled = entitlement ?? (rc["entitlementActive"] as? Bool ?? false)
@@ -183,7 +179,9 @@ final class RevenueCatManager: NSObject, ObservableObject {
 
             let now = Date()
             let inPaidPeriod = entitled && ((expiresAt ?? now) >= now)
-            let isActive = onTrial || inPaidPeriod
+            // plan is the tier source of truth; active remains operational for scheduler/STOP compatibility.
+            let isActive = (data["smsOptOut"] as? Bool == true) ? false : true
+            let plan: String = inPaidPeriod ? UserPlan.pro.rawValue : UserPlan.free.rawValue
 
             let status: String
             if inPaidPeriod && willRenew {
@@ -200,16 +198,18 @@ final class RevenueCatManager: NSObject, ObservableObject {
 
             let existingActive = current.get("active") as? Bool
             let existingStatus = current.get("subscriptionStatus") as? String
+            let existingPlan = current.get("plan") as? String
 
             // Idempotent guard — prevents write spam
-            guard existingActive != isActive || existingStatus != status else {
+            guard existingActive != isActive || existingStatus != status || existingPlan != plan else {
                 return
             }
 
             try await docRef.setData(
                 [
                     "active": isActive,
-                    "subscriptionStatus": status
+                    "subscriptionStatus": status,
+                    "plan": plan
                 ],
                 merge: true
             )
@@ -294,4 +294,3 @@ extension RevenueCatManager: PurchasesDelegate {
         apply(customerInfo)
     }
 }
-

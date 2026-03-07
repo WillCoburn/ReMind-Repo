@@ -13,7 +13,7 @@ struct RightPanelPlaceholderView: View {
 
     @State private var showPaywall = false
 
-    @AppStorage("remindersPerWeek") private var remindersPerWeek: Double = 7.0 // 1...20
+    @AppStorage("remindersPerWeek") private var remindersPerWeek: Double = 3.0 // 1...20
     @AppStorage("tzIdentifier")    private var tzIdentifier: String = TimeZone.current.identifier
     @AppStorage("quietStartHour")  private var quietStartHour: Double = 9     // 0...24
     @AppStorage("quietEndHour")    private var quietEndHour: Double = 22      // 0...24
@@ -147,9 +147,20 @@ struct RightPanelPlaceholderView: View {
 
     private var settingsList: some View {
         VStack(spacing: 12) {
-            if shouldShowTrialBanner, let trialEnd = appVM.user?.trialEndsAt {
-                trialBanner(trialEnd)
+            if !appVM.isProUser {
+                Text("Free users limited to 3 auto, 1 instant messages/week")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.yellow.opacity(0.16))
+                    )
             }
+
+            // CLEANUP AFTER: remove remaining trial-only view helpers below once old versions are sunset.
             
             // Top group
             VStack(spacing: 0) {
@@ -279,54 +290,6 @@ struct RightPanelPlaceholderView: View {
         }
     }
 
-    
-    private func trialBanner(_ trialEnd: Date) -> some View {
-        HStack(spacing: 12) {
-
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.footnote)
-                .foregroundColor(.red)
-
-            Text("Free trial is active until \(trialEndDateString(trialEnd)).")
-                .font(.footnote)
-                .foregroundColor(.red)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Button {
-                RevenueCatManager.shared.forceIdentify {
-                    showPaywall = true
-                }
-            } label: {
-                Text("Subscribe")
-                    .font(.footnote.weight(.semibold))
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 10)
-                    .background(Color.figmaBlue)
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-
-            .buttonStyle(.plain)   // IMPORTANT: prevents parent gestures from blocking taps
-        }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.red.opacity(0.12))
-        )
-    }
-
-
-    private var shouldShowTrialBanner: Bool {
-        appVM.isTrialActive && !appVM.isSubscribed
-    }
-
-    private func trialEndDateString(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
-    }
 }
 
 // MARK: - Active sheet enum
@@ -475,12 +438,14 @@ struct SafariView: UIViewControllerRepresentable {
 // MARK: - Sheets (unchanged structurally)
 
 struct RemindersPerWeekSheet: View {
+    @EnvironmentObject private var appVM: AppViewModel
     @Binding var remindersPerWeek: Double
 
     var onChange: () -> Void
     var onDone: () -> Void
 
     private let minReminders: Double = 1
+    private let freeMaxReminders: Double = 3
     private let maxReminders: Double = 20
     private let stepReminders: Double = 1
 
@@ -494,11 +459,38 @@ struct RemindersPerWeekSheet: View {
             Text("Automated Reminders Per Week")
                 .font(.headline)
 
-            Slider(
-                value: $remindersPerWeek,
-                in: minReminders...maxReminders,
-                step: stepReminders
-            )
+            if appVM.isProUser {
+                Slider(
+                    value: $remindersPerWeek,
+                    in: minReminders...maxReminders,
+                    step: stepReminders
+                )
+            } else {
+                Slider(
+                    value: Binding(
+                        get: { min(max(remindersPerWeek, minReminders), freeMaxReminders) },
+                        set: { remindersPerWeek = min(max($0, minReminders), freeMaxReminders) }
+                    ),
+                    in: minReminders...freeMaxReminders,
+                    step: stepReminders
+                )
+
+                HStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(Color.figmaBlue.opacity(0.20))
+                        .frame(height: 8)
+                        .frame(maxWidth: .infinity)
+
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(Color.gray.opacity(0.22))
+                        .frame(height: 8)
+                        .frame(maxWidth: .infinity)
+
+                    Text("Pro")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
             .onChange(of: remindersPerWeek) { _ in onChange() }
 
             Text("\(SettingsHelpers.remindersDisplay(remindersPerWeek)) reminders")

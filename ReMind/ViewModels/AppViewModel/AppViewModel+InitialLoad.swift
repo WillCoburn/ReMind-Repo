@@ -42,6 +42,8 @@ extension AppViewModel {
             let createdAtTS = snap.get("createdAt") as? Timestamp
             let updatedAtTS = snap.get("updatedAt") as? Timestamp
             let trialEndsAtTS = snap.get("trialEndsAt") as? Timestamp
+            let planRaw = (snap.get("plan") as? String)?.lowercased()
+            let plan = UserPlan(rawValue: planRaw ?? "")
 
             // Active flag (backend gating)
             let active = snap.get("active") as? Bool
@@ -56,20 +58,33 @@ extension AppViewModel {
                 receivedCount = nil
             }
 
+            let usageRaw = snap.get("usage") as? [String: Any]
+            let instantUsage = InstantUsage(
+                instantWeekKey: usageRaw?["instantWeekKey"] as? String,
+                instantSendsThisWeek: (usageRaw?["instantSendsThisWeek"] as? Int)
+                    ?? (usageRaw?["instantSendsThisWeek"] as? NSNumber)?.intValue
+                    ?? 0
+            )
+
             // Build model
-            var profile = UserProfile(
+            let profile = UserProfile(
                 uid: uid,
                 phoneE164: phone,
                 createdAt: createdAtTS?.dateValue(),
                 updatedAt: updatedAtTS?.dateValue(),
                 trialEndsAt: trialEndsAtTS?.dateValue(),
                 active: active,
-                receivedCount: receivedCount
+                plan: plan,
+                receivedCount: receivedCount,
+                usage: instantUsage
             )
 
             self.user = profile
 
-            let cachedActive = profile.active ?? false
+            let cachedActive = (profile.plan == .pro)
+                || ((snap.get("rc.entitlementActive") as? Bool) == true)
+                || (((snap.get("subscriptionStatus") as? String)?.lowercased() == "subscribed")
+                    || ((snap.get("subscriptionStatus") as? String)?.lowercased() == "cancelled"))
             applyEntitlementState(
                 entitlementActive: cachedActive,
                 source: EntitlementSource.cached
@@ -81,20 +96,15 @@ extension AppViewModel {
             let hasSeenTour = snap.get("hasSeenFeatureTour") as? Bool ?? false
             applyFeatureTourFlag(hasSeenTour)
 
-            // If trial was never seeded (older users), seed a trial now to avoid nil UI
-            if documentExists && profile.trialEndsAt == nil {
-                let trialEnd = Calendar.current.date(byAdding: .day, value: 30, to: Date())!
-                do {
-                    try await db.collection("users").document(uid).setData([
-                        "trialEndsAt": Timestamp(date: trialEnd),
-                        "active": true
-                    ], merge: true)
-                    profile.trialEndsAt = trialEnd
-                    profile.active = true
-                    self.user = profile
-                } catch {
-                    print("⚠️ failed to backfill trialEndsAt:", error.localizedDescription)
-                }
+            if documentExists && plan == nil {
+                // Backward-compatible default: users missing `plan` behave as free.
+                // If paid state is explicitly known, we infer pro; otherwise default free.
+                let status = (snap.get("subscriptionStatus") as? String)?.lowercased()
+                let rcEntitled = snap.get("rc.entitlementActive") as? Bool
+                let inferredPlan: UserPlan = (rcEntitled == true || status == "subscribed" || status == "cancelled") ? .pro : .free
+                try? await db.collection("users").document(uid).setData([
+                    "plan": inferredPlan.rawValue
+                ], merge: true)
             }
         } catch {
             print("❌ load user error:", error.localizedDescription)

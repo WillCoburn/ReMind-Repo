@@ -19,9 +19,17 @@ extension AppViewModel {
                 let updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue()
                 let trialEndsAt = (data["trialEndsAt"] as? Timestamp)?.dateValue()
                 let active = data["active"] as? Bool
+                let plan = UserPlan(rawValue: ((data["plan"] as? String) ?? "").lowercased())
                 let receivedCount = (data["receivedCount"] as? Int)
                     ?? (data["receivedCount"] as? NSNumber)?.intValue
                     ?? self.user?.receivedCount
+                let usage = data["usage"] as? [String: Any]
+                let instantUsage = InstantUsage(
+                    instantWeekKey: usage?["instantWeekKey"] as? String,
+                    instantSendsThisWeek: (usage?["instantSendsThisWeek"] as? Int)
+                        ?? (usage?["instantSendsThisWeek"] as? NSNumber)?.intValue
+                        ?? 0
+                )
 
                 // Build updated profile
                 let updatedProfile = UserProfile(
@@ -31,7 +39,9 @@ extension AppViewModel {
                     updatedAt: updatedAt,
                     trialEndsAt: trialEndsAt,
                     active: active,
-                    receivedCount: receivedCount
+                    plan: plan,
+                    receivedCount: receivedCount,
+                    usage: instantUsage
                 )
 
                 self.user = updatedProfile
