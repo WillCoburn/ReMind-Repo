@@ -11,6 +11,7 @@ struct RootView: View {
     private enum Page: Hashable { case community, main, right }
     @State private var activePage: Page = .main
     @State private var showOnboardingFeatureTour: Bool = true
+    @State private var hasDismissedOnboardingFeatureTour: Bool = false
 
 
     var body: some View {
@@ -29,9 +30,11 @@ struct RootView: View {
                                 set: { appVM.featureTourStep = $0 }
                             ),
                             onComplete: {
+                                hasDismissedOnboardingFeatureTour = true
                                 showOnboardingFeatureTour = false
                             },
                             onSkip: {
+                                hasDismissedOnboardingFeatureTour = true
                                 showOnboardingFeatureTour = false
                             }
                         )
@@ -62,7 +65,7 @@ struct RootView: View {
                 print("🔐 auth changed uid:", user?.uid ?? "nil")
             }
 
-            if appVM.shouldShowOnboarding {
+            if appVM.shouldShowOnboarding && !hasDismissedOnboardingFeatureTour {
                 appVM.featureTourStep = .settings
                 showOnboardingFeatureTour = true
             }
@@ -72,8 +75,10 @@ struct RootView: View {
         // Always drop users into the main page once onboarding finishes
         .onChange(of: appVM.shouldShowOnboarding) { shouldShow in
             if shouldShow {
-                appVM.featureTourStep = .settings
-                showOnboardingFeatureTour = true
+                if !hasDismissedOnboardingFeatureTour {
+                    appVM.featureTourStep = .settings
+                    showOnboardingFeatureTour = true
+                }
             } else {
                 activePage = .main
                 showOnboardingFeatureTour = false
