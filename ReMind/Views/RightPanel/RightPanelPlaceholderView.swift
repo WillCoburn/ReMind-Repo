@@ -1,6 +1,3 @@
-// ============================
-// File: Views/RightPanel/RightPanelPlaceholderView.swift
-// ============================
 import MessageUI
 import PhotosUI
 import SafariServices
@@ -465,6 +462,7 @@ struct RemindersPerWeekSheet: View {
                     in: minReminders...maxReminders,
                     step: stepReminders
                 )
+                .onChange(of: remindersPerWeek) { _ in onChange() }
             } else {
                 Slider(
                     value: Binding(
@@ -474,6 +472,7 @@ struct RemindersPerWeekSheet: View {
                     in: minReminders...freeMaxReminders,
                     step: stepReminders
                 )
+                .onChange(of: remindersPerWeek) { _ in onChange() }
 
                 HStack(spacing: 6) {
                     RoundedRectangle(cornerRadius: 5)
@@ -491,7 +490,6 @@ struct RemindersPerWeekSheet: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .onChange(of: remindersPerWeek) { _ in onChange() }
 
             Text("\(SettingsHelpers.remindersDisplay(remindersPerWeek)) reminders")
                 .font(.subheadline)
