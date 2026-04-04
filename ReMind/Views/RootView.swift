@@ -6,10 +6,23 @@ import FirebaseAuth
 
 struct RootView: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @AppStorage("hasCompletedOrientationSlides") private var hasCompletedOrientationSlides = false
 
     // Which horizontal page we’re on
     private enum Page: Hashable { case community, main, right }
     @State private var activePage: Page = .main
+    @State private var orientationStep: AppViewModel.FeatureTourStep = .settings
+    
+    /// New launch flow gate:
+    /// 1) Orientation slides (once, pre-auth)
+    /// 2) Phone auth onboarding (if needed)
+    /// 3) Main app
+    private var shouldShowOrientationSlides: Bool {
+        guard appVM.hasLoadedInitialProfile else { return false }
+        // Legacy migration: if Firestore already says the user saw the tour, don't show slides again.
+        if appVM.hasSeenFeatureTour { return false }
+        return !hasCompletedOrientationSlides
+    }
     
     
     var body: some View {
@@ -17,6 +30,12 @@ struct RootView: View {
             if !appVM.hasLoadedInitialProfile {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if shouldShowOrientationSlides {
+                FeatureTourOverlay(
+                    step: $orientationStep,
+                    onComplete: { completeOrientationSlides() },
+                    onSkip: { completeOrientationSlides() }
+                )
             } else if appVM.shouldShowOnboarding {
                 OnboardingView()
             } else {
@@ -31,7 +50,7 @@ struct RootView: View {
                     
                     
                     // Feature tour overlay (only on main page)
-                    if appVM.showFeatureTour, activePage == .main {
+                    if appVM.showFeatureTour, activePage == .main, !hasCompletedOrientationSlides {
                         FeatureTourOverlay(
                             step: Binding(
                                 get: { appVM.featureTourStep },
@@ -60,6 +79,12 @@ struct RootView: View {
             Auth.auth().addStateDidChangeListener { _, user in
                 print("🔐 auth changed uid:", user?.uid ?? "nil")
             }
+
+            // One-time migration for returning users who already completed the
+            // older in-app tour before this flow change.
+            if appVM.hasSeenFeatureTour && !hasCompletedOrientationSlides {
+                hasCompletedOrientationSlides = true
+            }
         }
 
         
@@ -67,6 +92,11 @@ struct RootView: View {
         .onChange(of: appVM.shouldShowOnboarding) { shouldShow in
             if !shouldShow {
                 activePage = .main
+            }
+        }
+        .onChange(of: appVM.hasSeenFeatureTour) { hasSeen in
+            if hasSeen && !hasCompletedOrientationSlides {
+                hasCompletedOrientationSlides = true
             }
         }
 
@@ -77,6 +107,11 @@ struct RootView: View {
             guard newPage != .main else { return }
             hideKeyboard()
         }
+    }
+    
+    private func completeOrientationSlides() {
+        hasCompletedOrientationSlides = true
+        orientationStep = .settings
     }
     
     
