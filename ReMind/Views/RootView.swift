@@ -10,43 +10,44 @@ struct RootView: View {
     // Which horizontal page we’re on
     private enum Page: Hashable { case community, main, right }
     @State private var activePage: Page = .main
-    
-    
+    @State private var showOnboardingFeatureTour: Bool = true
+
+
     var body: some View {
         Group {
             if !appVM.hasLoadedInitialProfile {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if appVM.shouldShowOnboarding {
-                OnboardingView()
-            } else {
-                ZStack(alignment: .top) {
-                    // Global background is just system color now.
-                    // The user photo is handled *inside MainView* only.
-                    Color(UIColor.systemBackground)
-                        .ignoresSafeArea()
-                    
-                    // Horizontal pager: Community ← Main → Right
-                    pager
-                    
-                    
-                    // Feature tour overlay (only on main page)
-                    if appVM.showFeatureTour, activePage == .main {
+                ZStack {
+                    OnboardingView()
+
+                    if showOnboardingFeatureTour {
                         FeatureTourOverlay(
                             step: Binding(
                                 get: { appVM.featureTourStep },
                                 set: { appVM.featureTourStep = $0 }
                             ),
                             onComplete: {
-                                Task { await appVM.completeFeatureTour(markAsSeen: true) }
+                                showOnboardingFeatureTour = false
                             },
                             onSkip: {
-                                Task { await appVM.skipFeatureTour() }
+                                showOnboardingFeatureTour = false
                             }
                         )
                         .transition(.opacity)
                         .zIndex(2)
                     }
+                }
+            } else {
+                ZStack(alignment: .top) {
+                    // Global background is just system color now.
+                    // The user photo is handled *inside MainView* only.
+                    Color(UIColor.systemBackground)
+                        .ignoresSafeArea()
+
+                    // Horizontal pager: Community ← Main → Right
+                    pager
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
@@ -54,19 +55,28 @@ struct RootView: View {
         // Animate when the onboarding gate flips
         .animation(.default, value: appVM.shouldShowOnboarding)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: appVM.featureTourStep)
-        .animation(.easeInOut(duration: 0.25), value: appVM.showFeatureTour)
+        .animation(.easeInOut(duration: 0.25), value: showOnboardingFeatureTour)
         .networkAware()
         .onAppear {
             Auth.auth().addStateDidChangeListener { _, user in
                 print("🔐 auth changed uid:", user?.uid ?? "nil")
             }
+
+            if appVM.shouldShowOnboarding {
+                appVM.featureTourStep = .settings
+                showOnboardingFeatureTour = true
+            }
         }
 
-        
+
         // Always drop users into the main page once onboarding finishes
         .onChange(of: appVM.shouldShowOnboarding) { shouldShow in
-            if !shouldShow {
+            if shouldShow {
+                appVM.featureTourStep = .settings
+                showOnboardingFeatureTour = true
+            } else {
                 activePage = .main
+                showOnboardingFeatureTour = false
             }
         }
 
@@ -78,10 +88,10 @@ struct RootView: View {
             hideKeyboard()
         }
     }
-    
-    
+
+
     // MARK: - Pager (3 horizontal screens)
-    
+
     private var pager: some View {
         TabView(selection: $activePage) {
             // LEFT: Community
@@ -89,7 +99,7 @@ struct RootView: View {
                 CommunityView()
             }
             .tag(Page.community)
-            
+
             // CENTER: main page (your existing MainView with toolbar)
             NavigationStack {
                 mainPage
@@ -107,11 +117,11 @@ struct RootView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(.container, edges: [.top, .bottom])
     }
-    
+
     @ViewBuilder
     private var mainPage: some View {
         MainView()
-        
+
     }
-    
+
 }
