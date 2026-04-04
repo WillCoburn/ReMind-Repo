@@ -115,7 +115,7 @@ struct PhoneEntryScreen: View {
             }
 
             if !isKeyboardVisible {
-                Text("Enter your phone number to continue.")
+                Text("Enter your phone number to start micro-journaling.")
                     .font(.title2.weight(.semibold))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
