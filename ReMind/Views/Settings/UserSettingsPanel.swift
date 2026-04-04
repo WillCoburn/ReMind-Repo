@@ -70,7 +70,7 @@ struct UserSettingsForm: View {
 
   var body: some View {
       VStack(alignment: .leading, spacing: 20) {
-          RemindersPerWeekSection(remindersPerWeek: $remindersPerWeek)
+          RemindersPerWeekSection(remindersPerWeek: $remindersPerWeek, isProUser: appVM.isEntitled)
               .onChange(of: remindersPerWeek) { _ in handleSettingChange() }
 
           Divider()
