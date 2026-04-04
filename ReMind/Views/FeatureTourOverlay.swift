@@ -14,23 +14,23 @@ struct FeatureTourOverlay: View {
         .init(
             step: .settings,
             title: "Welcome in!",
-            message: "Your future self appreciates it.",
+            message: "Nice job taking a step to be kinder to yourself.",
             imageName: "OnboardMeditate",
             textAlignment: .center
         ),
         .init(
             step: .export,
-            title: "Remind is your new home for those moments of clarity that always seem to slip away.",
-            message: "Save them here instead – they'll be stored as a text message to your future self.",
+            title: "Use this to jot down your moments clarity and positivity when they come.",
+            message: "They'll be texted back to you at random times to encourage the future you, hopefully when you need it most.",
             imageName: "Onboard2",
-            textAlignment: .leading
+            textAlignment: .center
         ),
         .init(
             step: .sendNow,
             title: "",
-            message: "Or if you have something you want to share, the community page is the place to uplift others.",
+            message: "If you have some positivity to share, the community page is the place to uplift others.",
             imageName: "OnboardCommunity",
-            textAlignment: .leading
+            textAlignment: .center
         )
     ]
 
