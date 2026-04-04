@@ -24,6 +24,7 @@ struct RightPanelPlaceholderView: View {
     @State private var restoreMessage: String?
     @State private var mailError: String?
     @State private var showCommunityGuidelines = false
+    @State private var showFreeLimitsWhy = false
 
     var body: some View {
         ZStack {
@@ -124,6 +125,11 @@ struct RightPanelPlaceholderView: View {
                 Text(mailError ?? "")
             }
         )
+        .alert("Why the limits?", isPresented: $showFreeLimitsWhy) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("I'm very sorry to have to limit your experience :( But using a toll-free number costs money every time a text is sent, so I'm running a loss on free users and have to put up some guardrails.")
+        }
         .onAppear {
             //no rc calls
 
@@ -145,18 +151,42 @@ struct RightPanelPlaceholderView: View {
     private var settingsList: some View {
         VStack(spacing: 12) {
             if !appVM.isProUser {
-                Text("Free users limited to 3 auto, 1 instant messages/week")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.yellow.opacity(0.16))
-                    )
-            }
+                HStack(spacing: 12) {
+                    Text("Free users limited to 3 random reminders a week")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundColor(.black.opacity(0.8))
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
+                    Button("Why?") {
+                        showFreeLimitsWhy = true
+                    }
+                    .font(.footnote.weight(.semibold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.7))
+                    .foregroundColor(.black.opacity(0.8))
+                    .clipShape(Capsule())
+
+                    Button("Upgrade") {
+                        RevenueCatManager.shared.forceIdentify {
+                            showPaywall = true
+                        }
+                    }
+                    .font(.footnote.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.figmaBlue)
+                    .foregroundColor(.white)
+                    .clipShape(Capsule())
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.yellow.opacity(0.20))
+                )
+            }
             // CLEANUP AFTER: remove remaining trial-only view helpers below once old versions are sunset.
             
             // Top group
@@ -474,21 +504,9 @@ struct RemindersPerWeekSheet: View {
                 )
                 .onChange(of: remindersPerWeek) { _ in onChange() }
 
-                HStack(spacing: 6) {
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(Color.figmaBlue.opacity(0.20))
-                        .frame(height: 8)
-                        .frame(maxWidth: .infinity)
-
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(Color.gray.opacity(0.22))
-                        .frame(height: 8)
-                        .frame(maxWidth: .infinity)
-
-                    Text("Pro")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
+                Text("Upgrade to access up to 20 reminders/week!")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Text("\(SettingsHelpers.remindersDisplay(remindersPerWeek)) reminders")
