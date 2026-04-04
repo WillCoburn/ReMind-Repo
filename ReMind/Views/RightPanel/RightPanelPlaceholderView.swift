@@ -67,6 +67,7 @@ struct RightPanelPlaceholderView: View {
             case .reminders:
                 RemindersPerWeekSheet(
                     remindersPerWeek: $remindersPerWeek,
+                    isProUser: appVM.isEntitled,
                     onChange: persistSettingsDebounced,
                     onDone: { activeSheet = nil; persistSettingsDebounced() }
                 )
@@ -476,13 +477,29 @@ struct SafariView: UIViewControllerRepresentable {
 
 struct RemindersPerWeekSheet: View {
     @Binding var remindersPerWeek: Double
+    let isProUser: Bool
 
     var onChange: () -> Void
     var onDone: () -> Void
 
     private let minReminders: Double = 1
     private let maxReminders: Double = 20
+    private let freeMaxReminders: Double = 3
     private let stepReminders: Double = 1
+
+    private var sliderBinding: Binding<Double> {
+        Binding(
+            get: { remindersPerWeek },
+            set: { newValue in
+                let clamped = min(max(newValue, minReminders), maxReminders)
+                remindersPerWeek = isProUser ? clamped : min(clamped, freeMaxReminders)
+            }
+        )
+    }
+
+    private var freeTrackWidthRatio: CGFloat {
+        CGFloat((freeMaxReminders - minReminders) / (maxReminders - minReminders))
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -494,12 +511,47 @@ struct RemindersPerWeekSheet: View {
             Text("Automated Reminders Per Week")
                 .font(.headline)
 
+            if !isProUser {
+                Text("Free: up to 3/week. Upgrade for up to 20/week.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Slider(
-                value: $remindersPerWeek,
+                value: sliderBinding,
                 in: minReminders...maxReminders,
                 step: stepReminders
             )
             .onChange(of: remindersPerWeek) { _ in onChange() }
+
+            if !isProUser {
+                GeometryReader { geo in
+                    HStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(Color.figmaBlue.opacity(0.28))
+                            .frame(width: max((geo.size.width * freeTrackWidthRatio) - 6, 0), height: 10)
+
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(Color.gray.opacity(0.28))
+                            .frame(height: 10)
+                    }
+                }
+                .frame(height: 10)
+            }
+
+            HStack {
+                Text("1")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("3 Free max")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(isProUser ? .secondary : .figmaBlue)
+                Spacer()
+                Label("20 Pro", systemImage: "lock.fill")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
 
             Text("\(SettingsHelpers.remindersDisplay(remindersPerWeek)) reminders")
                 .font(.subheadline)
@@ -512,6 +564,15 @@ struct RemindersPerWeekSheet: View {
         }
         .padding()
         .presentationDetents([.medium])
+        .onAppear {
+            let lowerBounded = max(remindersPerWeek, minReminders)
+            remindersPerWeek = isProUser ? min(lowerBounded, maxReminders) : min(lowerBounded, freeMaxReminders)
+        }
+        .onChange(of: isProUser) { pro in
+            guard !pro else { return }
+            remindersPerWeek = min(remindersPerWeek, freeMaxReminders)
+            onChange()
+        }
     }
 }
 
