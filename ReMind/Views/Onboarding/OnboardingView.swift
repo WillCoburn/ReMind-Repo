@@ -170,6 +170,9 @@ struct OnboardingView: View {
         do {
             _ = try await Auth.auth().signIn(with: credential)
             await appVM.setPhoneProfileAndLoad(phoneDigits)
+            // Keep the server-side flag aligned with the new pre-auth orientation flow.
+            // This prevents legacy in-app feature-tour prompts after successful auth.
+            await appVM.completeFeatureTour(markAsSeen: true)
 
             do {
                 _ = try await functions.httpsCallable("triggerWelcome").call([:])

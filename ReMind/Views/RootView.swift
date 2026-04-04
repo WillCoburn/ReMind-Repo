@@ -6,10 +6,20 @@ import FirebaseAuth
 
 struct RootView: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @AppStorage("hasCompletedOrientationSlides") private var hasCompletedOrientationSlides = false
 
     // Which horizontal page we’re on
     private enum Page: Hashable { case community, main, right }
     @State private var activePage: Page = .main
+    @State private var orientationStep: AppViewModel.FeatureTourStep = .settings
+    
+    /// New launch flow gate:
+    /// 1) If the user is not onboarded yet, show orientation slides first (once).
+    /// 2) Then show phone auth onboarding.
+    /// 3) Authenticated users go to the app.
+    private var shouldShowOrientationSlides: Bool {
+        appVM.shouldShowOnboarding && !hasCompletedOrientationSlides
+    }
     
     
     var body: some View {
@@ -17,6 +27,12 @@ struct RootView: View {
             if !appVM.hasLoadedInitialProfile {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if shouldShowOrientationSlides {
+                FeatureTourOverlay(
+                    step: $orientationStep,
+                    onComplete: { completeOrientationSlides() },
+                    onSkip: { completeOrientationSlides() }
+                )
             } else if appVM.shouldShowOnboarding {
                 OnboardingView()
             } else {
@@ -31,7 +47,7 @@ struct RootView: View {
                     
                     
                     // Feature tour overlay (only on main page)
-                    if appVM.showFeatureTour, activePage == .main {
+                    if appVM.showFeatureTour, activePage == .main, !hasCompletedOrientationSlides {
                         FeatureTourOverlay(
                             step: Binding(
                                 get: { appVM.featureTourStep },
@@ -60,6 +76,7 @@ struct RootView: View {
             Auth.auth().addStateDidChangeListener { _, user in
                 print("🔐 auth changed uid:", user?.uid ?? "nil")
             }
+
         }
 
         
@@ -69,14 +86,16 @@ struct RootView: View {
                 activePage = .main
             }
         }
-
-
-
         // Dismiss keyboard if user swipes away from the main page
         .onChange(of: activePage) { newPage in
             guard newPage != .main else { return }
             hideKeyboard()
         }
+    }
+    
+    private func completeOrientationSlides() {
+        hasCompletedOrientationSlides = true
+        orientationStep = .settings
     }
     
     
