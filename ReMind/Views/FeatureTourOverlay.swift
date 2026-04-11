@@ -21,7 +21,14 @@ struct FeatureTourOverlay: View {
         .init(
             step: .export,
             title: "Think of this app as a micro-journal for your flashes of clarity and positivity.",
-            message: "These things that inspire you will be randomly texted back, hopefully to remind you when you need it most.",
+            message: "",
+            imageName: nil,
+            textAlignment: .center
+        ),
+        .init(
+            step: .reminders,
+            title: "These things that inspire you will be randomly texted back, hopefully to remind you when you need it most.",
+            message: "",
             imageName: nil,
             textAlignment: .center
         ),
@@ -201,6 +208,8 @@ private struct FeatureTourPageView: View {
                 WelcomeTourIllustration()
             case .export:
                 ExportTourIllustration()
+            case .reminders:
+                ReminderTourIllustration()
             case .sendNow:
                 CommunityTourIllustration()
             case .phoneNumber:
@@ -282,6 +291,72 @@ private struct WelcomeTourIllustration: View {
 
 private struct ExportTourIllustration: View {
     @State private var bob = false
+    @State private var scribbleProgress: CGFloat = 0
+    @State private var pencilOffset: CGFloat = -56
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.figmaBlue.opacity(0.08))
+                .frame(width: 240, height: 240)
+
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white, Color(red: 238/255, green: 246/255, blue: 1)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: 230, height: 170)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(Color.figmaBlue.opacity(0.25), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 14, x: 0, y: 8)
+                .offset(y: bob ? -6 : 6)
+                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: bob)
+
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.white)
+                .frame(width: 180, height: 130)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.figmaBlue.opacity(0.2), lineWidth: 1)
+                )
+
+            VStack(spacing: 13) {
+                ForEach(0..<3, id: \.self) { idx in
+                    Capsule()
+                        .fill(Color.figmaBlue.opacity(0.14))
+                        .frame(width: 130, height: 7)
+                        .overlay(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.figmaBlue.opacity(0.55))
+                                .frame(width: max(0, 130 * scribbleProgress - CGFloat(idx * 36)), height: 7)
+                        }
+                }
+            }
+
+            Image(systemName: "pencil.tip")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(Color.figmaBlue)
+                .rotationEffect(.degrees(-18))
+                .offset(x: pencilOffset, y: 12)
+                .animation(.easeInOut(duration: 1.3).repeatForever(autoreverses: true), value: pencilOffset)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 280)
+        .onAppear {
+            bob = true
+            scribbleProgress = 1
+            pencilOffset = 56
+        }
+    }
+}
+
+private struct ReminderTourIllustration: View {
+    @State private var bob = false
     @State private var tilt = false
     @State private var waveShift = false
 
@@ -308,7 +383,6 @@ private struct ExportTourIllustration: View {
                 .offset(y: bob ? -6 : 6)
                 .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: bob)
 
-            // Ocean
             VStack(spacing: 8) {
                 Capsule()
                     .fill(Color.figmaBlue.opacity(0.24))
@@ -322,7 +396,6 @@ private struct ExportTourIllustration: View {
             .offset(y: 22)
             .animation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true), value: waveShift)
 
-            // Message in a bottle
             ZStack {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color.white.opacity(0.95))
@@ -546,6 +619,13 @@ struct FeatureTourOverlay_Previews: PreviewProvider {
                 onSkip: {}
             )
             .previewDisplayName("Send Now")
+
+            FeatureTourOverlay(
+                step: .constant(.reminders),
+                onComplete: {},
+                onSkip: {}
+            )
+            .previewDisplayName("Reminders")
 
             FeatureTourOverlay(
                 step: .constant(.phoneNumber),
