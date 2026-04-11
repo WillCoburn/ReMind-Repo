@@ -267,113 +267,63 @@ private struct FeatureTourPageView: View {
 }
 
 private struct WelcomeTourIllustration: View {
+    @State private var handWave = false
+    @State private var badgePop = false
+    @State private var confettiRise = false
+
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { context in
-            let cycleDuration = 6.4
-            let elapsed = context.date.timeIntervalSinceReferenceDate
-            let phase = CGFloat(elapsed.truncatingRemainder(dividingBy: cycleDuration) / cycleDuration)
+        ZStack {
+            Circle()
+                .fill(Color.figmaBlue.opacity(0.08))
+                .frame(width: 240, height: 240)
 
-            let stemProgress = min(max((phase - 0.10) / 0.50, 0), 1)
-            let leftLeafProgress = min(max((phase - 0.34) / 0.28, 0), 1)
-            let rightLeafProgress = min(max((phase - 0.42) / 0.30, 0), 1)
-            let topLeafProgress = min(max((phase - 0.56) / 0.30, 0), 1)
-            let seedVisible = phase < 0.36
+            Image(systemName: "sparkles")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Color.figmaBlue.opacity(0.55))
+                .offset(x: confettiRise ? -60 : -42, y: confettiRise ? -64 : -26)
+                .opacity(confettiRise ? 0.95 : 0.25)
+                .animation(.easeOut(duration: 1.2).repeatForever(autoreverses: true), value: confettiRise)
 
-            ZStack {
-                Circle()
-                    .fill(Color.figmaBlue.opacity(0.08))
-                    .frame(width: 240, height: 240)
+            Image(systemName: "sparkles")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.figmaBlue.opacity(0.45))
+                .offset(x: confettiRise ? 56 : 40, y: confettiRise ? -56 : -22)
+                .opacity(confettiRise ? 0.9 : 0.3)
+                .animation(.easeOut(duration: 1.0).repeatForever(autoreverses: true).delay(0.2), value: confettiRise)
 
-                Ellipse()
-                    .fill(Color.figmaBlue.opacity(0.14))
-                    .frame(width: 138, height: 18)
-                    .offset(y: 78)
+            Circle()
+                .fill(Color.white)
+                .frame(width: 126, height: 126)
+                .shadow(color: .black.opacity(0.08), radius: 14, x: 0, y: 8)
 
-                Ellipse()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 158/255, green: 115/255, blue: 76/255),
-                                Color(red: 122/255, green: 84/255, blue: 53/255)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .frame(width: 146, height: 66)
-                    .offset(y: 44)
+            Circle()
+                .fill(Color.figmaBlue.opacity(0.14))
+                .frame(width: 102, height: 102)
 
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 126/255, green: 201/255, blue: 109/255),
-                                Color(red: 86/255, green: 167/255, blue: 86/255)
-                            ],
-                            startPoint: .bottom,
-                            endPoint: .top
-                        )
-                    )
-                    .frame(width: 9, height: 8 + (82 * stemProgress))
-                    .offset(y: 28 - (76 * stemProgress))
+            Image(systemName: "hand.wave.fill")
+                .font(.system(size: 58, weight: .semibold))
+                .foregroundStyle(Color.figmaBlue)
+                .rotationEffect(.degrees(handWave ? 15 : -12), anchor: .bottomTrailing)
+                .offset(y: 2)
+                .animation(.easeInOut(duration: 0.42).repeatForever(autoreverses: true), value: handWave)
 
-                if seedVisible {
-                    Ellipse()
-                        .fill(Color(red: 126/255, green: 88/255, blue: 58/255))
-                        .frame(width: 17, height: 12)
-                        .offset(y: 24 - (16 * stemProgress))
-                        .rotationEffect(.degrees(-10 * stemProgress))
-                        .opacity(1.0 - (stemProgress * 1.15))
-                }
-
-                LeafShape()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(red: 160/255, green: 228/255, blue: 133/255), Color(red: 95/255, green: 184/255, blue: 101/255)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 50, height: 34)
-                    .overlay {
-                        LeafShape().stroke(Color.white.opacity(0.5), lineWidth: 1.1)
-                    }
-                    .rotationEffect(.degrees(-12.0 - (20.0 * leftLeafProgress)))                    .scaleEffect(x: 0.25 + (0.75 * leftLeafProgress), y: 0.15 + (0.85 * leftLeafProgress), anchor: .leading)
-                    .offset(x: -20, y: -32 - (16 * stemProgress))
-                    .opacity(leftLeafProgress)
-
-                LeafShape()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(red: 146/255, green: 220/255, blue: 128/255), Color(red: 90/255, green: 176/255, blue: 97/255)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 56, height: 34)
-                    .overlay {
-                        LeafShape().stroke(Color.white.opacity(0.5), lineWidth: 1.1)
-                    }
-                    .rotationEffect(.degrees(12.0 + (22.0 * rightLeafProgress)))
-                    .scaleEffect(x: 0.25 + (0.75 * rightLeafProgress), y: 0.15 + (0.85 * rightLeafProgress), anchor: .trailing)
-                    .offset(x: 22, y: -36 - (20 * stemProgress))
-                    .opacity(rightLeafProgress)
-
-                LeafShape()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(red: 170/255, green: 233/255, blue: 142/255), Color(red: 98/255, green: 188/255, blue: 108/255)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .frame(width: 36, height: 26)
-                    .rotationEffect(.degrees(-90.0 + (95.0 * topLeafProgress)))                    .scaleEffect(0.2 + (0.8 * topLeafProgress), anchor: .bottom)
-                    .offset(x: 2, y: -70 - (18 * stemProgress))
-                    .opacity(topLeafProgress * 0.95)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 280)
+            Image(systemName: "heart.fill")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(Color(red: 1.0, green: 123/255, blue: 155/255))
+                .padding(8)
+                .background(Color.white)
+                .clipShape(Circle())
+                .scaleEffect(badgePop ? 1.0 : 0.74)
+                .offset(x: 54, y: -44)
+                .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
+                .animation(.spring(response: 0.42, dampingFraction: 0.62).repeatForever(autoreverses: true), value: badgePop)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 280)
+        .onAppear {
+            handWave = true
+            badgePop = true
+            confettiRise = true
         }
     }
 }
@@ -423,11 +373,12 @@ private struct ExportTourIllustration: View {
                     JournalPen()
                         .stroke(Color.white.opacity(0.72), lineWidth: 0.9)
                 }
-                .rotationEffect(.degrees(penWiggle ? -31 : -22))
+                .rotationEffect(.degrees(-27 + (penWiggle ? 4.5 : -4.5)))
                 .offset(
                     x: -44 + (88 * writingProgress),
-                    y: penWiggle ? 2 : -2
+                    y: penWiggle ? 1.5 : -1.5
                 )
+                .animation(.easeInOut(duration: 0.22).repeatForever(autoreverses: true), value: penWiggle)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
@@ -444,7 +395,6 @@ private struct ExportTourIllustration: View {
 
 private struct ReminderTourIllustration: View {
     @State private var driftSlow = false
-    @State private var driftFast = false
     @State private var bottleBob = false
     @State private var bottleTilt = false
     @State private var noteLag = false
@@ -460,12 +410,6 @@ private struct ReminderTourIllustration: View {
                 SineWaveLine(amplitude: 7, frequency: 1.35, color: Color(red: 78/255, green: 135/255, blue: 226/255).opacity(0.68), lineWidth: 5)
                     .offset(x: driftSlow ? -30 : 30)
                     .animation(.linear(duration: 4.6).repeatForever(autoreverses: true), value: driftSlow)
-                SineWaveLine(amplitude: 9, frequency: 1.15, color: Color(red: 100/255, green: 162/255, blue: 235/255).opacity(0.50), lineWidth: 4)
-                    .offset(x: driftFast ? 38 : -38)
-                    .animation(.linear(duration: 3.8).repeatForever(autoreverses: true), value: driftFast)
-                SineWaveLine(amplitude: 6, frequency: 1.55, color: Color(red: 155/255, green: 202/255, blue: 250/255).opacity(0.45), lineWidth: 3)
-                    .offset(x: driftSlow ? 34 : -34)
-                    .animation(.linear(duration: 5.1).repeatForever(autoreverses: true), value: driftSlow)
             }
             .frame(width: 250)
             .offset(y: 44)
@@ -502,12 +446,12 @@ private struct ReminderTourIllustration: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(Color(red: 250/255, green: 244/255, blue: 228/255).opacity(0.98))
-                            .frame(width: 54, height: 32)
+                            .frame(width: 48, height: 28)
                             .rotationEffect(.degrees(-16))
                             .overlay {
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Capsule().fill(Color.figmaBlue.opacity(0.35)).frame(width: 26, height: 3)
-                                    Capsule().fill(Color.figmaBlue.opacity(0.26)).frame(width: 18, height: 3)
+                                    Capsule().fill(Color.figmaBlue.opacity(0.35)).frame(width: 22, height: 2.5)
+                                    Capsule().fill(Color.figmaBlue.opacity(0.26)).frame(width: 15, height: 2.5)
                                 }
                                 .offset(x: -6, y: 1)
                             }
@@ -543,7 +487,6 @@ private struct ReminderTourIllustration: View {
         .frame(height: 280)
         .onAppear {
             driftSlow = true
-            driftFast = true
             bottleBob = true
             bottleTilt = true
             noteLag = true
@@ -737,31 +680,6 @@ private struct OceanBottleShape: Shape {
             control: CGPoint(x: rect.width * 0.72, y: rect.height * 0.36)
         )
         path.addLine(to: CGPoint(x: neckX + neckWidth, y: lipY))
-        path.closeSubpath()
-        return path
-    }
-}
-
-private struct LeafShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.midY))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.midX, y: rect.minY),
-            control: CGPoint(x: rect.minX + rect.width * 0.18, y: rect.minY)
-        )
-        path.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: rect.midY),
-            control: CGPoint(x: rect.maxX - rect.width * 0.18, y: rect.minY)
-        )
-        path.addQuadCurve(
-            to: CGPoint(x: rect.midX, y: rect.maxY),
-            control: CGPoint(x: rect.maxX - rect.width * 0.18, y: rect.maxY)
-        )
-        path.addQuadCurve(
-            to: CGPoint(x: rect.minX, y: rect.midY),
-            control: CGPoint(x: rect.minX + rect.width * 0.18, y: rect.maxY)
-        )
         path.closeSubpath()
         return path
     }
