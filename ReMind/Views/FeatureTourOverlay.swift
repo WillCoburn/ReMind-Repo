@@ -667,12 +667,7 @@ private struct CommunityTourIllustration: View {
                         .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: pulse)
                 }
 
-            ForEach([
-                (x: -82.0, y: -52.0),
-                (x: 84.0, y: -36.0),
-                (x: -74.0, y: 56.0),
-                (x: 76.0, y: 62.0)
-            ], id: \.x) { point in
+            ForEach(CommunityAvatarOffset.allCases) { point in
                 Image(systemName: "person.fill")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.white)
@@ -690,6 +685,19 @@ private struct CommunityTourIllustration: View {
             pulse = true
         }
     }
+}
+
+private struct CommunityAvatarOffset: Identifiable {
+    let id: Int
+    let x: CGFloat
+    let y: CGFloat
+
+    static let allCases: [CommunityAvatarOffset] = [
+        .init(id: 0, x: -82, y: -52),
+        .init(id: 1, x: 84, y: -36),
+        .init(id: 2, x: -74, y: 56),
+        .init(id: 3, x: 76, y: 62)
+    ]
 }
 
 private struct OceanBottleShape: Shape {
