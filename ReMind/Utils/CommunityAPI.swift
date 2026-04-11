@@ -67,16 +67,30 @@ struct CommunityComment: Identifiable, Hashable {
 
     init?(from doc: DocumentSnapshot) {
         guard let data = doc.data(),
-              let authorId = data["authorId"] as? String,
-              let text = data["text"] as? String,
-              let createdAt = data["createdAt"] as? Timestamp else {
+              let text = data["text"] as? String else {
             return nil
+        }
+
+        let authorId = data["authorId"] as? String ?? ""
+        let createdAt: Date
+        if let ts = data["createdAt"] as? Timestamp {
+            createdAt = ts.dateValue()
+        } else if let date = data["createdAt"] as? Date {
+            createdAt = date
+        } else if let seconds = data["createdAt"] as? TimeInterval {
+            createdAt = Date(timeIntervalSince1970: seconds)
+        } else if let createdAtString = data["createdAt"] as? String,
+                  let parsed = ISO8601DateFormatter().date(from: createdAtString) {
+            createdAt = parsed
+        } else {
+            // Keep thread render resilient if a manually-created doc has no timestamp.
+            createdAt = Date.distantPast
         }
 
         self.id = doc.documentID
         self.authorId = authorId
         self.text = text
-        self.createdAt = createdAt.dateValue()
+        self.createdAt = createdAt
     }
 }
 
@@ -157,7 +171,6 @@ final class CommunityAPI {
         db.collection("communityPosts")
             .document(postId)
             .collection("comments")
-            .order(by: "createdAt", descending: false)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
                     print("[CommunityAPI] observeComments error:", error)
@@ -169,7 +182,9 @@ final class CommunityAPI {
                     return
                 }
 
-                let comments = snapshot.documents.compactMap { CommunityComment(from: $0) }
+                let comments = snapshot.documents
+                    .compactMap { CommunityComment(from: $0) }
+                    .sorted(by: { $0.createdAt < $1.createdAt })
                 onChange(comments)
             }
     }
