@@ -323,7 +323,7 @@ private struct WelcomeTourIllustration: View {
                         .frame(width: 17, height: 12)
                         .offset(y: 24 - (16 * stemProgress))
                         .rotationEffect(.degrees(-10 * stemProgress))
-                        .opacity(1 - (stemProgress * 1.15))
+                        .opacity(1.0 - (stemProgress * 1.15))
                 }
 
                 LeafShape()
@@ -338,8 +338,7 @@ private struct WelcomeTourIllustration: View {
                     .overlay {
                         LeafShape().stroke(Color.white.opacity(0.5), lineWidth: 1.1)
                     }
-                    .rotationEffect(.degrees(-12 - (20 * leftLeafProgress)))
-                    .scaleEffect(x: 0.25 + (0.75 * leftLeafProgress), y: 0.15 + (0.85 * leftLeafProgress), anchor: .leading)
+                    .rotationEffect(.degrees(-12.0 - (20.0 * leftLeafProgress)))                    .scaleEffect(x: 0.25 + (0.75 * leftLeafProgress), y: 0.15 + (0.85 * leftLeafProgress), anchor: .leading)
                     .offset(x: -20, y: -32 - (16 * stemProgress))
                     .opacity(leftLeafProgress)
 
@@ -355,7 +354,7 @@ private struct WelcomeTourIllustration: View {
                     .overlay {
                         LeafShape().stroke(Color.white.opacity(0.5), lineWidth: 1.1)
                     }
-                    .rotationEffect(.degrees(12 + (22 * rightLeafProgress)))
+                    .rotationEffect(.degrees(12.0 + (22.0 * rightLeafProgress)))
                     .scaleEffect(x: 0.25 + (0.75 * rightLeafProgress), y: 0.15 + (0.85 * rightLeafProgress), anchor: .trailing)
                     .offset(x: 22, y: -36 - (20 * stemProgress))
                     .opacity(rightLeafProgress)
@@ -369,8 +368,7 @@ private struct WelcomeTourIllustration: View {
                         )
                     )
                     .frame(width: 36, height: 26)
-                    .rotationEffect(.degrees(-90 + (95 * topLeafProgress)))
-                    .scaleEffect(0.2 + (0.8 * topLeafProgress), anchor: .bottom)
+                    .rotationEffect(.degrees(-90.0 + (95.0 * topLeafProgress)))                    .scaleEffect(0.2 + (0.8 * topLeafProgress), anchor: .bottom)
                     .offset(x: 2, y: -70 - (18 * stemProgress))
                     .opacity(topLeafProgress * 0.95)
             }
