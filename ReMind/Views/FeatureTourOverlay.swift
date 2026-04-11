@@ -22,7 +22,14 @@ struct FeatureTourOverlay: View {
             step: .export,
             title: "Think of this app as a micro-journal for your flashes of clarity and positivity.",
             message: "These things that inspire you will be randomly texted back, hopefully to remind you when you need it most.",
-            imageName: "Onboard2",
+            imageName: nil,
+            textAlignment: .center
+        ),
+        .init(
+            step: .sendNow,
+            title: "",
+            message: "If you have some positivity to share, the community page is the place to uplift others.",
+            imageName: nil,
             textAlignment: .center
         ),
         .init(
@@ -31,17 +38,10 @@ struct FeatureTourOverlay: View {
             message: "We never share it or use it for spam — it’s only used to send your own entries back to you.",
             imageName: nil,
             textAlignment: .center
-        ),
-        .init(
-            step: .sendNow,
-            title: "",
-            message: "If you have some positivity to share, the community page is the place to uplift others.",
-            imageName: "OnboardCommunity",
-            textAlignment: .center
         )
     ]
 
-    private var isOnLastPage: Bool { step == .sendNow }
+    private var isOnLastPage: Bool { step == .phoneNumber }
     private var orderedSteps: [AppViewModel.FeatureTourStep] { pages.map { $0.step } }
     private var currentIndex: Int { orderedSteps.firstIndex(of: step) ?? 0 }
     private var totalPages: Int { pages.count }
@@ -196,15 +196,160 @@ private struct FeatureTourPageView: View {
 
     private var illustration: some View {
         Group {
-            if page.step == .phoneNumber {
+            switch page.step {
+            case .settings:
+                WelcomeTourIllustration()
+            case .export:
+                ExportTourIllustration()
+            case .sendNow:
+                CommunityTourIllustration()
+            case .phoneNumber:
                 PhoneNumberTourIllustration()
-            } else if let imageName = page.imageName {
+            }
+            if let imageName = page.imageName {
                 Image(imageName)
                     .resizable()
                     .scaledToFit()
                     .frame(maxWidth: 360)
                     .frame(maxWidth: .infinity)
             }
+        }
+    }
+}
+
+private struct WelcomeTourIllustration: View {
+    @State private var bob = false
+    @State private var glow = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.figmaBlue.opacity(0.12))
+                .frame(width: 240, height: 240)
+                .scaleEffect(glow ? 1.02 : 0.90)
+                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: glow)
+
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(.white)
+                .frame(width: 240, height: 150)
+                .shadow(color: .black.opacity(0.07), radius: 14, x: 0, y: 8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(Color.figmaBlue.opacity(0.20), lineWidth: 1)
+                )
+                .offset(y: bob ? -6 : 6)
+                .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: bob)
+
+            VStack(spacing: 12) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundStyle(Color.figmaBlue)
+
+                Text("Welcome")
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.primary)
+
+                HStack(spacing: 8) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        Capsule()
+                            .fill(Color.figmaBlue.opacity(0.25))
+                            .frame(width: 34, height: 8)
+                    }
+                }
+            }
+
+            HStack(spacing: 8) {
+                ForEach(["heart.fill", "sun.max.fill"], id: \.self) { icon in
+                    Image(systemName: icon)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color.figmaBlue)
+                        .padding(9)
+                        .background(.white)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                }
+            }
+            .offset(x: 92, y: -64)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 280)
+        .onAppear {
+            bob = true
+            glow = true
+        }
+    }
+}
+
+private struct ExportTourIllustration: View {
+    @State private var bob = false
+    @State private var orbit = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.figmaBlue.opacity(0.10))
+                .frame(width: 230, height: 230)
+
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white, Color(red: 239/255, green: 247/255, blue: 1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 200, height: 190)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.figmaBlue.opacity(0.25), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 14, x: 0, y: 8)
+                .offset(y: bob ? -6 : 6)
+                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: bob)
+
+            VStack(spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "quote.bubble.fill")
+                        .foregroundStyle(Color.figmaBlue)
+                    Text("A tiny win today")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(.white)
+                .clipShape(Capsule())
+
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.figmaBlue.opacity(0.75))
+
+                HStack(spacing: 8) {
+                    Image(systemName: "message.fill")
+                        .foregroundStyle(Color.figmaBlue)
+                    Text("Sent back when needed")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(.white)
+                .clipShape(Capsule())
+            }
+
+            Circle()
+                .fill(Color.white)
+                .frame(width: 34, height: 34)
+                .overlay(Image(systemName: "clock.fill").foregroundStyle(Color.figmaBlue))
+                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                .offset(x: orbit ? 88 : 74, y: orbit ? -64 : -78)
+                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: orbit)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 280)
+        .onAppear {
+            bob = true
+            orbit = true
         }
     }
 }
@@ -281,6 +426,75 @@ private struct PhoneNumberTourIllustration: View {
                     .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
             }
             .offset(x: 95, y: -70)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 280)
+        .onAppear {
+            bob = true
+            pulse = true
+        }
+    }
+}
+
+private struct CommunityTourIllustration: View {
+    @State private var bob = false
+    @State private var pulse = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.figmaBlue.opacity(0.10))
+                .frame(width: 230, height: 230)
+                .scaleEffect(pulse ? 1.0 : 0.93)
+                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulse)
+
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(.white)
+                .frame(width: 220, height: 170)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(Color.figmaBlue.opacity(0.25), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 14, x: 0, y: 8)
+                .offset(y: bob ? -5 : 5)
+                .animation(.easeInOut(duration: 1.7).repeatForever(autoreverses: true), value: bob)
+
+            VStack(spacing: 12) {
+                HStack(spacing: 8) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .background(Color.figmaBlue.opacity(0.85))
+                            .clipShape(Circle())
+                    }
+                }
+
+                Text("Community")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.primary)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "heart.fill")
+                    Text("Share positivity")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.figmaBlue)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.figmaBlue.opacity(0.12))
+                .clipShape(Capsule())
+            }
+
+            Image(systemName: "paperplane.fill")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Color.figmaBlue)
+                .padding(10)
+                .background(.white)
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                .offset(x: 96, y: -66)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
