@@ -197,7 +197,7 @@ struct RightPanelPlaceholderView: View {
     private func settingsSectionHeader(_ title: String) -> some View {
         Text(title)
             .font(.footnote.weight(.semibold))
-            .foregroundColor(.secondary)
+            .foregroundColor(.figmaBlue)
             .padding(.horizontal, 20)
             .textCase(.uppercase)
             .frame(maxWidth: .infinity, alignment: .leading)

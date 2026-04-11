@@ -87,7 +87,7 @@ struct UserSettingsForm: View {
 
           Text("Automatic Reminder Settings")
               .font(.subheadline)
-              .foregroundStyle(.secondary)
+              .foregroundStyle(.figmaBlue)
 
           RemindersPerWeekSection(remindersPerWeek: $remindersPerWeek, isProUser: appVM.isProUser)
               .onChange(of: remindersPerWeek) { _ in handleSettingChange() }
@@ -112,7 +112,7 @@ struct UserSettingsForm: View {
 
           Text("My Experience")
               .font(.subheadline)
-              .foregroundStyle(.secondary)
+              .foregroundStyle(.figmaBlue)
 
           SubscriptionSection(
               appVM: appVM,
@@ -136,7 +136,7 @@ struct UserSettingsForm: View {
 
           Text("Account")
               .font(.subheadline)
-              .foregroundStyle(.secondary)
+              .foregroundStyle(.figmaBlue)
 
           FeedbackSupportSection(
               showMailSheet: $showMailSheet,
