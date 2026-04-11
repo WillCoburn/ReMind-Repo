@@ -456,6 +456,7 @@ private struct CommunityThreadView: View {
     @State private var blockedListener: ListenerRegistration?
     @State private var newCommentText: String = ""
     @State private var sendError: String?
+    @State private var commentsLoadError: String?
     @State private var isSending = false
 
     var body: some View {
@@ -470,9 +471,9 @@ private struct CommunityThreadView: View {
                             .allowsHitTesting(false)
 
                         if comments.isEmpty {
-                            Text(post.commentCount > 0 ? "Replies are syncing. Pull down to refresh in a moment." : "No replies yet. Start the discussion.")
+                            Text(emptyStateMessage)
                                 .font(.subheadline)
-                                .foregroundColor(Color.palettePewter.opacity(0.9))
+                                .foregroundColor(Color.black.opacity(0.75))
                                 .padding(.vertical, 8)
                         } else {
                             ForEach(comments) { comment in
@@ -514,7 +515,7 @@ private struct CommunityThreadView: View {
                         .overlay(alignment: .leading) {
                             if newCommentText.isEmpty {
                                 Text("Write a reply…")
-                                    .foregroundColor(Color.palettePewter.opacity(0.9))
+                                    .foregroundColor(Color.black.opacity(0.65))
                                     .padding(.horizontal, 14)
                             }
                         }
@@ -568,12 +569,20 @@ private struct CommunityThreadView: View {
     }
 
     private func startListeners() {
-        listener = CommunityAPI.shared.observeComments(postId: post.id) { newComments in
-            Task { @MainActor in
-                allComments = newComments
-                comments = filteredComments(from: newComments)
+        listener = CommunityAPI.shared.observeComments(
+            postId: post.id,
+            onChange: { newComments in
+                Task { @MainActor in
+                    allComments = newComments
+                    comments = filteredComments(from: newComments)
+                }
+            },
+            onError: { error in
+                Task { @MainActor in
+                    commentsLoadError = error?.localizedDescription
+                }
             }
-        }
+        )
 
         blockedListener = blockService.listenBlockedAuthorIds { ids in
             Task { @MainActor in
@@ -618,6 +627,16 @@ private struct CommunityThreadView: View {
             }
             return !blockedAuthorIds.contains(comment.authorId)
         }
+    }
+
+    private var emptyStateMessage: String {
+        if commentsLoadError != nil {
+            return "Unable to load replies right now. Pull to refresh."
+        }
+        if post.commentCount > 0 {
+            return "Replies are syncing. Pull down to refresh in a moment."
+        }
+        return "No replies yet. Start the discussion."
     }
 }
 

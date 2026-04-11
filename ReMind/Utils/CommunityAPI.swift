@@ -184,7 +184,8 @@ final class CommunityAPI {
 
     func observeComments(
         postId: String,
-        onChange: @escaping ([CommunityComment]) -> Void
+        onChange: @escaping ([CommunityComment]) -> Void,
+        onError: ((Error?) -> Void)? = nil
     ) -> ListenerRegistration {
         db.collection("communityPosts")
             .document(postId)
@@ -192,6 +193,7 @@ final class CommunityAPI {
             .addSnapshotListener { snapshot, error in
                 if let error = error {
                     print("[CommunityAPI] observeComments error:", error)
+                    onError?(error)
                     onChange([])
                     return
                 }
@@ -203,6 +205,7 @@ final class CommunityAPI {
                 let comments = snapshot.documents
                     .compactMap { CommunityComment(from: $0) }
                     .sorted(by: { $0.createdAt < $1.createdAt })
+                onError?(nil)
                 onChange(comments)
             }
     }
