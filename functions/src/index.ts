@@ -172,12 +172,191 @@ export const createCommunityComment = onCall(async (request) => {
       authorId: uid,
       text,
       createdAt: now,
+      likeCount: 0,
+      reportCount: 0,
+      isHidden: false,
     });
     tx.update(postRef, {
       commentCount: currentCount + 1,
     });
 
     return { ok: true };
+  });
+});
+
+export const toggleCommunityCommentLike = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "You must be signed in to like replies.");
+  }
+
+  const postId = (request.data?.postId ?? "") as string;
+  const commentId = (request.data?.commentId ?? "") as string;
+  if (!postId || !commentId) {
+    throw new HttpsError("invalid-argument", "A postId and commentId are required.");
+  }
+
+  const godModeUser = isGodMode(request.auth);
+  const commentRef = db
+    .collection("communityPosts")
+    .doc(postId)
+    .collection("comments")
+    .doc(commentId);
+
+  return await db.runTransaction(async (tx) => {
+    const commentSnap = await tx.get(commentRef);
+    if (!commentSnap.exists) {
+      throw new HttpsError("not-found", "Reply not found.");
+    }
+
+    const currentCount = (commentSnap.data()?.likeCount ?? 0) as number;
+    if (godModeUser) {
+      const nextCount = currentCount + 1;
+      tx.update(commentRef, { likeCount: nextCount });
+      return { liked: true, likeCount: nextCount, godMode: true };
+    }
+
+    const likeRef = commentRef.collection("likes").doc(uid);
+    const likeSnap = await tx.get(likeRef);
+    const alreadyLiked = likeSnap.exists;
+
+    const nextCount = alreadyLiked
+      ? Math.max(0, currentCount - 1)
+      : currentCount + 1;
+
+    if (alreadyLiked) {
+      tx.delete(likeRef);
+    } else {
+      tx.set(likeRef, { createdAt: Timestamp.now() });
+    }
+
+    tx.update(commentRef, { likeCount: nextCount });
+    return { liked: !alreadyLiked, likeCount: nextCount };
+  });
+});
+
+export const toggleCommunityCommentReport = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "You must be signed in to report replies.");
+  }
+
+  const postId = (request.data?.postId ?? "") as string;
+  const commentId = (request.data?.commentId ?? "") as string;
+  if (!postId || !commentId) {
+    throw new HttpsError("invalid-argument", "A postId and commentId are required.");
+  }
+
+  const now = Timestamp.now();
+  const godModeUser = isGodMode(request.auth);
+  const limiterRef = db.collection("communityReportLimits").doc(uid);
+  const commentRef = db
+    .collection("communityPosts")
+    .doc(postId)
+    .collection("comments")
+    .doc(commentId);
+
+  return await db.runTransaction(async (tx) => {
+    const commentSnap = await tx.get(commentRef);
+    if (!commentSnap.exists) {
+      throw new HttpsError("not-found", "Reply not found.");
+    }
+
+    const currentCount = (commentSnap.data()?.reportCount ?? 0) as number;
+    const alreadyHidden = Boolean(commentSnap.data()?.isHidden);
+
+    if (godModeUser) {
+      const nextCount = currentCount + 1;
+      const updates: Record<string, unknown> = { reportCount: nextCount };
+      if (nextCount >= 5 && !alreadyHidden) {
+        updates["isHidden"] = true;
+        updates["hiddenReason"] = "reports";
+        updates["hiddenAt"] = Timestamp.now();
+      }
+      tx.update(commentRef, updates);
+      return {
+        reported: true,
+        reportCount: nextCount,
+        removed: Boolean(updates["isHidden"] ?? alreadyHidden),
+        godMode: true,
+      };
+    }
+
+    const reportRef = commentRef.collection("flags").doc(uid);
+    const reportSnap = await tx.get(reportRef);
+    const alreadyReported = reportSnap.exists;
+
+    if (!alreadyReported) {
+      const limiterSnap = await tx.get(limiterRef);
+      const limiterData = limiterSnap.data() as
+        | CommunityReportLimitDoc
+        | undefined;
+      const cutoffMillis = now.toMillis() - REPORT_LIMIT_WINDOW_MS;
+      let recentReports = (limiterData?.recentReports ?? []).filter(
+        (entry): entry is Timestamp => entry instanceof Timestamp
+      );
+      recentReports = recentReports.filter(
+        (entry) => entry.toMillis() > cutoffMillis
+      );
+
+      if (recentReports.length >= REPORT_LIMIT_PER_HOUR) {
+        throw new HttpsError(
+          "resource-exhausted",
+          REPORT_LIMIT_MESSAGE,
+          REPORT_LIMIT_MESSAGE
+        );
+      }
+
+      recentReports.push(now);
+      tx.set(
+        limiterRef,
+        { recentReports: recentReports.slice(-REPORT_LIMIT_PER_HOUR) },
+        { merge: true }
+      );
+    } else {
+      const limiterSnap = await tx.get(limiterRef);
+      if (limiterSnap.exists) {
+        const limiterData = limiterSnap.data() as CommunityReportLimitDoc;
+        const cutoffMillis = now.toMillis() - REPORT_LIMIT_WINDOW_MS;
+        const trimmedReports = (limiterData.recentReports ?? [])
+          .filter((entry): entry is Timestamp => entry instanceof Timestamp)
+          .filter((entry) => entry.toMillis() > cutoffMillis)
+          .slice(-REPORT_LIMIT_PER_HOUR);
+
+        tx.set(
+          limiterRef,
+          { recentReports: trimmedReports },
+          { merge: true }
+        );
+      }
+    }
+
+    const nextCount = alreadyReported
+      ? Math.max(0, currentCount - 1)
+      : currentCount + 1;
+
+    if (alreadyReported) {
+      tx.delete(reportRef);
+    } else {
+      tx.set(reportRef, { createdAt: now });
+    }
+
+    const updates: Record<string, unknown> = {
+      reportCount: nextCount,
+    };
+
+    if (!alreadyReported && nextCount >= 5 && !alreadyHidden) {
+      updates["isHidden"] = true;
+      updates["hiddenReason"] = "reports";
+      updates["hiddenAt"] = Timestamp.now();
+    }
+
+    tx.update(commentRef, updates);
+    return {
+      reported: !alreadyReported,
+      reportCount: nextCount,
+      removed: Boolean(updates["isHidden"] ?? alreadyHidden),
+    };
   });
 });
 

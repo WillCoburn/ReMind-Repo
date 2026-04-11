@@ -31,23 +31,47 @@ service cloud.firestore {
     // Community posts logic (unchanged)
     match /communityPosts/{postId} {
       allow read: if true;
-
-      allow update: if request.auth != null && (
-        isAllowedIncrement("likeCount") ||
-        isAllowedIncrement("reportCount")
-      );
-
-      allow create, delete: if false;
+      allow create, update, delete: if false;
 
       match /comments/{commentId} {
         allow read: if true;
         allow create, update, delete: if false;
+
+        match /likes/{uid} {
+          allow read: if true;
+          allow create: if isSelf(uid) &&
+                        !exists(/databases/$(database)/documents/communityPosts/$(postId)/comments/$(commentId)/likes/$(uid));
+          allow delete: if isSelf(uid);
+          allow update: if false;
+        }
+
+        match /flags/{uid} {
+          allow read: if true;
+          allow create: if isSelf(uid) &&
+                        !exists(/databases/$(database)/documents/communityPosts/$(postId)/comments/$(commentId)/flags/$(uid));
+          allow delete: if isSelf(uid);
+          allow update: if false;
+        }
+      }
+      match /likes/{uid} {
+        allow read: if true;
+        allow create: if isSelf(uid) &&
+                      !exists(/databases/$(database)/documents/communityPosts/$(postId)/likes/$(uid));
+        allow delete: if isSelf(uid);
+        allow update: if false;
       }
 
-      function isAllowedIncrement(field) {
-        return request.resource.data.diff(resource.data).affectedKeys().hasOnly([field]) &&
-               request.resource.data[field] == resource.data[field] + 1;
+      match /reports/{uid} {
+        allow read: if true;
+        allow create: if isSelf(uid) &&
+                      !exists(/databases/$(database)/documents/communityPosts/$(postId)/reports/$(uid));
+        allow delete: if isSelf(uid);
+        allow update: if false;
       }
+    }
+
+    function isSelf(uid) {
+      return request.auth != null && request.auth.uid == uid;
     }
   }
 }

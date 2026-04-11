@@ -64,6 +64,9 @@ struct CommunityComment: Identifiable, Hashable {
     let authorId: String
     let text: String
     let createdAt: Date
+    let likeCount: Int
+    let reportCount: Int
+    let isHidden: Bool
 
     init?(from doc: DocumentSnapshot) {
         guard let data = doc.data() else {
@@ -95,6 +98,9 @@ struct CommunityComment: Identifiable, Hashable {
         self.authorId = authorId
         self.text = text
         self.createdAt = createdAt
+        self.likeCount = data["likeCount"] as? Int ?? 0
+        self.reportCount = data["reportCount"] as? Int ?? 0
+        self.isHidden = data["isHidden"] as? Bool ?? false
     }
 
     private static func extractText(from data: [String: Any]) -> String {
@@ -180,6 +186,22 @@ final class CommunityAPI {
             "text": text,
         ]
         _ = try await functions.httpsCallable("createCommunityComment").call(data)
+    }
+
+    func toggleCommentLike(postId: String, commentId: String) async throws {
+        let data: [String: Any] = [
+            "postId": postId,
+            "commentId": commentId,
+        ]
+        _ = try await functions.httpsCallable("toggleCommunityCommentLike").call(data)
+    }
+
+    func toggleCommentReport(postId: String, commentId: String) async throws {
+        let data: [String: Any] = [
+            "postId": postId,
+            "commentId": commentId,
+        ]
+        _ = try await functions.httpsCallable("toggleCommunityCommentReport").call(data)
     }
 
     func observeComments(

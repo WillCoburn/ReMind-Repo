@@ -459,6 +459,8 @@ private struct CommunityThreadView: View {
     @State private var commentsLoadError: String?
     @State private var hasLoadedInitialCommentsSnapshot = false
     @State private var isSending = false
+    @State private var likedCommentIds: Set<String> = []
+    @State private var reportedCommentIds: Set<String> = []
 
     var body: some View {
         ZStack {
@@ -481,9 +483,41 @@ private struct CommunityThreadView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text(comment.text)
                                         .foregroundColor(.black)
-                                    Text(timeAgoString(from: comment.createdAt))
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                    HStack(spacing: 12) {
+                                        Button {
+                                            handleCommentLike(comment)
+                                        } label: {
+                                            Label(
+                                                "\(comment.likeCount)",
+                                                systemImage: likedCommentIds.contains(comment.id) ? "heart.fill" : "heart"
+                                            )
+                                            .font(.subheadline.weight(.semibold))
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 6)
+                                            .foregroundColor(.figmaBlue)
+                                        }
+                                        .buttonStyle(.plain)
+
+                                        Button {
+                                            handleCommentReport(comment)
+                                        } label: {
+                                            Label(
+                                                "\(comment.reportCount)",
+                                                systemImage: reportedCommentIds.contains(comment.id) ? "flag.fill" : "flag"
+                                            )
+                                            .font(.subheadline.weight(.semibold))
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 6)
+                                            .foregroundColor(.figmaBlue)
+                                        }
+                                        .buttonStyle(.plain)
+
+                                        Spacer()
+
+                                        Label(timeAgoString(from: comment.createdAt), systemImage: "clock")
+                                            .font(.caption)
+                                            .foregroundColor(.gray.opacity(0.9))
+                                    }
                                 }
                                 .padding(12)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -531,8 +565,10 @@ private struct CommunityThreadView: View {
                         if isSending {
                             ProgressView()
                                 .frame(maxWidth: .infinity)
+                                .tint(.white)
                         } else {
                             Text("Reply")
+                                .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                         }
                     }
@@ -580,6 +616,7 @@ private struct CommunityThreadView: View {
                     hasLoadedInitialCommentsSnapshot = true
                     allComments = newComments
                     comments = filteredComments(from: newComments)
+                    syncCommentInteractionState(for: comments)
                     if post.commentCount > 0 && newComments.isEmpty {
                         print(
                             "[CommunityThreadView] post=\(post.id) has commentCount=\(post.commentCount) but listener returned 0 comments."
@@ -599,6 +636,7 @@ private struct CommunityThreadView: View {
             Task { @MainActor in
                 blockedAuthorIds = ids
                 comments = filteredComments(from: allComments)
+                syncCommentInteractionState(for: comments)
             }
         }
     }
@@ -632,11 +670,87 @@ private struct CommunityThreadView: View {
 
     private func filteredComments(from source: [CommunityComment]) -> [CommunityComment] {
         source.filter { comment in
+            if comment.isHidden {
+                return false
+            }
             guard !comment.authorId.isEmpty else { return true }
             if let currentUserId, comment.authorId == currentUserId {
                 return true
             }
             return !blockedAuthorIds.contains(comment.authorId)
+        }
+    }
+
+    private func handleCommentLike(_ comment: CommunityComment) {
+        Task {
+            do {
+                try await CommunityAPI.shared.toggleCommentLike(postId: post.id, commentId: comment.id)
+            } catch {
+                await MainActor.run {
+                    sendError = "Couldn't update like right now. Please try again."
+                }
+            }
+        }
+    }
+
+    private func handleCommentReport(_ comment: CommunityComment) {
+        Task {
+            do {
+                try await CommunityAPI.shared.toggleCommentReport(postId: post.id, commentId: comment.id)
+            } catch {
+                await MainActor.run {
+                    sendError = "Couldn't update flag right now. Please try again."
+                }
+            }
+        }
+    }
+
+    private func syncCommentInteractionState(for comments: [CommunityComment]) {
+        guard let uid = currentUserId else {
+            likedCommentIds = []
+            reportedCommentIds = []
+            return
+        }
+        let commentIds = comments.map(\.id)
+        guard !commentIds.isEmpty else {
+            likedCommentIds = []
+            reportedCommentIds = []
+            return
+        }
+
+        Task {
+            let db = Firestore.firestore()
+            var likedIds = Set<String>()
+            var flaggedIds = Set<String>()
+
+            await withTaskGroup(of: (String, Bool, Bool).self) { group in
+                for commentId in commentIds {
+                    group.addTask {
+                        do {
+                            let commentRef = db.collection("communityPosts")
+                                .document(post.id)
+                                .collection("comments")
+                                .document(commentId)
+                            async let likeSnap = commentRef.collection("likes").document(uid).getDocument()
+                            async let flagSnap = commentRef.collection("flags").document(uid).getDocument()
+                            let (resolvedLikeSnap, resolvedFlagSnap) = try await (likeSnap, flagSnap)
+                            return (commentId, resolvedLikeSnap.exists, resolvedFlagSnap.exists)
+                        } catch {
+                            return (commentId, false, false)
+                        }
+                    }
+                }
+
+                for await (commentId, isLiked, isFlagged) in group {
+                    if isLiked { likedIds.insert(commentId) }
+                    if isFlagged { flaggedIds.insert(commentId) }
+                }
+            }
+
+            await MainActor.run {
+                likedCommentIds = likedIds
+                reportedCommentIds = flaggedIds
+            }
         }
     }
 
