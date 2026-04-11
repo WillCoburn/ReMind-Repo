@@ -14,35 +14,35 @@ struct FeatureTourOverlay: View {
         .init(
             step: .settings,
             title: "Welcome!",
-            message: "Nice job being kinder to yourself.",
+            message: "Nice job planting a seed of self-kindness.",
             imageName: nil,
             textAlignment: .center
         ),
         .init(
             step: .export,
-            title: "Think of this app as a micro-journal for flashes of clarity, positivity, or whatever inspires you.",
+            title: "Use this app as a micro-journal for flashes of clarity, positivity, or anything else that inspires you.",
             message: "",
             imageName: nil,
             textAlignment: .center
         ),
         .init(
             step: .reminders,
-            title: "A few times a week, an entry will be texted back to you to keep you grounded in your best headspace. Sometimes they come when you need it most.",
-            message: "",
+            title: "Your entries will be texted back to help you stay in your best headspace.",
+            message: "Think of it as a message in a bottle for your future self. Sometimes they come when you need it most.",
             imageName: nil,
             textAlignment: .center
         ),
         .init(
             step: .sendNow,
-            title: "",
-            message: "If you have some positivity to share, the community page is the place to uplift others.",
+            title: "Use the community page to share with and uplift others.",
+            message: "This forum is anonymous and moderated to create a safe and respectful space.",
             imageName: nil,
             textAlignment: .center
         ),
         .init(
             step: .phoneNumber,
-            title: "heads up! We are about to ask for your phone number.",
-            message: "We never share it or use it for spam — it’s only used to send your own entries back to you.",
+            title: "But first, we have to ask for your digits.",
+            message: "We will NEVER share your number or use it for spam — it’s only used to send your own entries back to you.",
             imageName: nil,
             textAlignment: .center
         )
@@ -198,47 +198,15 @@ private struct FeatureTourPageView: View {
         )
     }
 
-    @ViewBuilder
     private var titleText: some View {
-        switch page.step {
-        case .export:
-            (
-                Text("Think of this app as a ")
-                + Text("micro-journal for flashes of clarity, positivity, or whatever inspires you.").bold()
-            )
+        Text(page.title)
             .font(.title2.weight(.semibold))
-        case .reminders:
-            (
-                Text("A few times a week, an entry ")
-                + Text("will be texted back to you to keep you grounded").bold()
-                + Text(" in your best headspace. Sometimes they come when you need it most.")
-            )
-            .font(.title2.weight(.semibold))
-        case .phoneNumber:
-            Text(page.title)
-                .font(.title2.weight(.semibold))
-        default:
-            Text(page.title)
-                .font(.title2.weight(.semibold))
-        }
     }
 
-    @ViewBuilder
     private var messageText: some View {
-        switch page.step {
-        case .sendNow:
-            (
-                Text("If you have some positivity to share, the ")
-                + Text("community page is the place to uplift others").bold()
-                + Text(".")
-            )
-            .font(.title3.weight(.semibold))
+        Text(page.message)
+            .font(.body)
             .foregroundColor(.secondary)
-        default:
-            Text(page.message)
-                .font(.body)
-                .foregroundColor(.secondary)
-        }
     }
 
     private var illustration: some View {
@@ -793,13 +761,7 @@ private struct PhoneNumberTourIllustration: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.primary)
 
-                HStack(spacing: 6) {
-                    ForEach(0..<3, id: \.self) { index in
-                        Circle()
-                            .fill(Color.figmaBlue.opacity(index == 1 ? 0.9 : 0.4))
-                            .frame(width: 6, height: 6)
-                    }
-                }
+
             }
 
             HStack(spacing: 14) {
