@@ -416,10 +416,10 @@ private struct WelcomeTourIllustration: View {
                 .overlay(
                     Circle()
                         .fill(Color.white.opacity(0.42))
-                        .frame(width: 5, height: 5)
+                        .frame(width: 9, height: 9)
                 )
-                .frame(width: 30, height: 30)
-                .offset(y: -48)
+                .frame(width: 60, height: 60)
+                .offset(y: -60)
                 .opacity(bloomVisible ? 1 : 0)
                 .scaleEffect(bloomVisible ? 1 : 0.25)
                 .shadow(color: Color(red: 180/255, green: 130/255, blue: 168/255).opacity(0.18), radius: 3, x: 0, y: 1)
