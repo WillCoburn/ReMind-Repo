@@ -189,19 +189,35 @@ final class CommunityAPI {
     }
 
     func toggleCommentLike(postId: String, commentId: String) async throws {
+        // Keep both keys during rollout so we remain compatible with backends
+        // that still read `replyId` for sub-comment reactions.
         let data: [String: Any] = [
             "postId": postId,
             "commentId": commentId,
+            "replyId": commentId,
         ]
-        _ = try await functions.httpsCallable("toggleCommunityCommentLike").call(data)
+        do {
+            _ = try await functions.httpsCallable("toggleCommunityCommentLike").call(data)
+        } catch {
+            print("[CommunityAPI] toggleCommunityCommentLike failed post=\(postId) comment=\(commentId):", error)
+            throw error
+        }
     }
 
     func toggleCommentReport(postId: String, commentId: String) async throws {
+        // Keep both keys during rollout so we remain compatible with backends
+        // that still read `replyId` for sub-comment reactions.
         let data: [String: Any] = [
             "postId": postId,
             "commentId": commentId,
+            "replyId": commentId,
         ]
-        _ = try await functions.httpsCallable("toggleCommunityCommentReport").call(data)
+        do {
+            _ = try await functions.httpsCallable("toggleCommunityCommentReport").call(data)
+        } catch {
+            print("[CommunityAPI] toggleCommunityCommentReport failed post=\(postId) comment=\(commentId):", error)
+            throw error
+        }
     }
 
     func observeComments(
