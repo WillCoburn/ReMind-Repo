@@ -456,64 +456,72 @@ private struct CommunityThreadView: View {
     @State private var isSending = false
 
     var body: some View {
-        VStack(spacing: 12) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    CommunityPostRow(post: post, isLiked: false, isReported: false)
-                        .allowsHitTesting(false)
+        ZStack {
+            Color.white.ignoresSafeArea()
+            Color.blue.opacity(0.04).ignoresSafeArea()
 
-                    if comments.isEmpty {
-                        Text("No replies yet. Start the discussion.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 8)
-                    } else {
-                        ForEach(comments) { comment in
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(comment.text)
-                                    .foregroundColor(.black)
-                                Text(timeAgoString(from: comment.createdAt))
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+            VStack(spacing: 12) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        CommunityPostRow(post: post, isLiked: false, isReported: false)
+                            .allowsHitTesting(false)
+
+                        if comments.isEmpty {
+                            Text("No replies yet. Start the discussion.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 8)
+                        } else {
+                            ForEach(comments) { comment in
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(comment.text)
+                                        .foregroundColor(.black)
+                                    Text(timeAgoString(from: comment.createdAt))
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(Color.paletteIvory.opacity(0.9))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(Color.figmaBlue.opacity(0.5), lineWidth: 1)
+                                )
                             }
-                            .padding(12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color.paletteIvory.opacity(0.9))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .stroke(Color.figmaBlue.opacity(0.5), lineWidth: 1)
-                            )
                         }
                     }
+                    .padding(.horizontal)
+                    .padding(.top, 8)
                 }
-                .padding(.horizontal)
-                .padding(.top, 8)
-            }
 
-            VStack(spacing: 8) {
-                TextField("Write a reply…", text: $newCommentText, axis: .vertical)
-                    .lineLimit(1...5)
-                    .textFieldStyle(.roundedBorder)
+                VStack(spacing: 8) {
+                    TextField("Write a reply…", text: $newCommentText, axis: .vertical)
+                        .lineLimit(1...5)
+                        .textFieldStyle(.roundedBorder)
 
-                Button {
-                    Task { await sendComment() }
-                } label: {
-                    if isSending {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                    } else {
-                        Text("Reply")
-                            .frame(maxWidth: .infinity)
+                    Button {
+                        Task { await sendComment() }
+                    } label: {
+                        if isSending {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Text("Reply")
+                                .frame(maxWidth: .infinity)
+                        }
                     }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isSending || newCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(isSending || newCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .padding()
+                .background(
+                    Color.white.opacity(0.94)
+                        .overlay(Color.blue.opacity(0.04))
+                )
             }
-            .padding()
-            .background(.ultraThinMaterial)
         }
         .navigationTitle("Thread")
         .navigationBarTitleDisplayMode(.inline)
