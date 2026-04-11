@@ -15,19 +15,19 @@ struct FeatureTourOverlay: View {
             step: .settings,
             title: "Welcome in!",
             message: "Nice job being kinder to yourself.",
-            imageName: "OnboardMeditate",
+            imageName: nil,
             textAlignment: .center
         ),
         .init(
             step: .export,
-            title: "Think of this app as a micro-journal for your flashes of clarity and positivity.",
+            title: "Think of this app as a micro-journal for flashes of clarity, positivity, or whatever inspires you.",
             message: "",
             imageName: nil,
             textAlignment: .center
         ),
         .init(
             step: .reminders,
-            title: "These things that inspire you will be randomly texted back, hopefully to remind you when you need it most.",
+            title: "A few times a week, an entry will be texted back to you to keep you grounded in your best headspace. Sometimes they come when you need it most.",
             message: "",
             imageName: nil,
             textAlignment: .center
@@ -41,7 +41,7 @@ struct FeatureTourOverlay: View {
         ),
         .init(
             step: .phoneNumber,
-            title: "Next, we’ll ask for your phone number.",
+            title: "heads up! We are about to ask for your phone number.",
             message: "We never share it or use it for spam — it’s only used to send your own entries back to you.",
             imageName: nil,
             textAlignment: .center
@@ -177,16 +177,13 @@ private struct FeatureTourPageView: View {
 
     private var textBlock: some View {
         VStack(alignment: page.textAlignment, spacing: 12) {
-            Text(page.title)
-                .font(.title2.weight(.semibold))
+            titleText
                 .multilineTextAlignment(
                     page.textAlignment == .center ? .center : .leading
                 )
 
             if !page.message.isEmpty {
-                Text(page.message)
-                    .font(.body)
-                    .foregroundColor(.secondary)
+                messageText
                     .multilineTextAlignment(
                         page.textAlignment == .center ? .center : .leading
                     )
@@ -199,6 +196,49 @@ private struct FeatureTourPageView: View {
                 vertical: .center
             )
         )
+    }
+
+    @ViewBuilder
+    private var titleText: some View {
+        switch page.step {
+        case .export:
+            (
+                Text("Think of this app as a ")
+                + Text("micro-journal for flashes of clarity, positivity, or whatever inspires you.").bold()
+            )
+            .font(.title2.weight(.semibold))
+        case .reminders:
+            (
+                Text("A few times a week, an entry ")
+                + Text("will be texted back to you to keep you grounded").bold()
+                + Text(" in your best headspace. Sometimes they come when you need it most.")
+            )
+            .font(.title2.weight(.semibold))
+        case .phoneNumber:
+            Text(page.title)
+                .font(.title2.weight(.semibold))
+        default:
+            Text(page.title)
+                .font(.title2.weight(.semibold))
+        }
+    }
+
+    @ViewBuilder
+    private var messageText: some View {
+        switch page.step {
+        case .sendNow:
+            (
+                Text("If you have some positivity to share, the ")
+                + Text("community page is the place to uplift others").bold()
+                + Text(".")
+            )
+            .font(.title3.weight(.semibold))
+            .foregroundColor(.secondary)
+        default:
+            Text(page.message)
+                .font(.body)
+                .foregroundColor(.secondary)
+        }
     }
 
     private var illustration: some View {
@@ -228,142 +268,58 @@ private struct FeatureTourPageView: View {
 
 private struct WelcomeTourIllustration: View {
     @State private var bob = false
-    @State private var glow = false
+    @State private var sunrise = false
 
     var body: some View {
         ZStack {
             Circle()
-                .fill(Color.figmaBlue.opacity(0.12))
+                .fill(Color.figmaBlue.opacity(0.10))
                 .frame(width: 240, height: 240)
-                .scaleEffect(glow ? 1.02 : 0.90)
-                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: glow)
 
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.white)
-                .frame(width: 240, height: 150)
-                .shadow(color: .black.opacity(0.07), radius: 14, x: 0, y: 8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(0.20), lineWidth: 1)
+            Capsule()
+                .fill(Color.figmaBlue.opacity(0.18))
+                .frame(width: 176, height: 12)
+                .offset(y: 42)
+
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [Color(red: 255/255, green: 244/255, blue: 191/255), Color.figmaBlue.opacity(0.65)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
                 )
-                .offset(y: bob ? -6 : 6)
-                .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: bob)
+                .frame(width: 94, height: 94)
+                .offset(y: sunrise ? -2 : 22)
+                .shadow(color: Color.figmaBlue.opacity(0.25), radius: 16, x: 0, y: 6)
+                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: sunrise)
 
-            VStack(spacing: 12) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 30, weight: .semibold))
-                    .foregroundStyle(Color.figmaBlue)
-
-                Text("Welcome")
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(.primary)
-
-                HStack(spacing: 8) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        Capsule()
-                            .fill(Color.figmaBlue.opacity(0.25))
-                            .frame(width: 34, height: 8)
-                    }
-                }
+            Path { path in
+                path.move(to: CGPoint(x: 84, y: 153))
+                path.addQuadCurve(to: CGPoint(x: 216, y: 153), control: CGPoint(x: 150, y: 122))
             }
-
-            HStack(spacing: 8) {
-                ForEach(["heart.fill", "sun.max.fill"], id: \.self) { icon in
-                    Image(systemName: icon)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(Color.figmaBlue)
-                        .padding(9)
-                        .background(.white)
-                        .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
-                }
-            }
-            .offset(x: 92, y: -64)
+            .stroke(Color.figmaBlue.opacity(0.55), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+            .offset(y: bob ? -2 : 2)
+            .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: bob)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
         .onAppear {
             bob = true
-            glow = true
+            sunrise = true
         }
     }
 }
 
 private struct ExportTourIllustration: View {
     @State private var bob = false
-    @State private var scribbleProgress: CGFloat = 0
-    @State private var pencilOffset: CGFloat = -56
+    @State private var cursorVisible = false
+    @State private var lineProgress: CGFloat = 0
 
     var body: some View {
         ZStack {
             Circle()
                 .fill(Color.figmaBlue.opacity(0.08))
-                .frame(width: 240, height: 240)
-
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.white, Color(red: 238/255, green: 246/255, blue: 1)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(width: 230, height: 170)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(0.25), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.08), radius: 14, x: 0, y: 8)
-                .offset(y: bob ? -6 : 6)
-                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: bob)
-
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.white)
-                .frame(width: 180, height: 130)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(0.2), lineWidth: 1)
-                )
-
-            VStack(spacing: 13) {
-                ForEach(0..<3, id: \.self) { idx in
-                    Capsule()
-                        .fill(Color.figmaBlue.opacity(0.14))
-                        .frame(width: 130, height: 7)
-                        .overlay(alignment: .leading) {
-                            Capsule()
-                                .fill(Color.figmaBlue.opacity(0.55))
-                                .frame(width: max(0, 130 * scribbleProgress - CGFloat(idx * 36)), height: 7)
-                        }
-                }
-            }
-
-            Image(systemName: "pencil.tip")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(Color.figmaBlue)
-                .rotationEffect(.degrees(-18))
-                .offset(x: pencilOffset, y: 12)
-                .animation(.easeInOut(duration: 1.3).repeatForever(autoreverses: true), value: pencilOffset)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 280)
-        .onAppear {
-            bob = true
-            scribbleProgress = 1
-            pencilOffset = 56
-        }
-    }
-}
-
-private struct ReminderTourIllustration: View {
-    @State private var bob = false
-    @State private var tilt = false
-    @State private var waveShift = false
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.figmaBlue.opacity(0.10))
                 .frame(width: 230, height: 230)
 
             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -383,61 +339,98 @@ private struct ReminderTourIllustration: View {
                 .offset(y: bob ? -6 : 6)
                 .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: bob)
 
-            VStack(spacing: 8) {
-                Capsule()
-                    .fill(Color.figmaBlue.opacity(0.24))
-                    .frame(width: 182, height: 10)
-                    .offset(x: waveShift ? 8 : -8)
-                Capsule()
-                    .fill(Color.figmaBlue.opacity(0.14))
-                    .frame(width: 170, height: 8)
-                    .offset(x: waveShift ? -10 : 10)
-            }
-            .offset(y: 22)
-            .animation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true), value: waveShift)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white)
+                .frame(width: 170, height: 122)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.figmaBlue.opacity(0.2), lineWidth: 1)
+                )
 
-            ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.white.opacity(0.95))
-                    .frame(width: 96, height: 44)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(Color.figmaBlue.opacity(0.35), lineWidth: 1)
-                    )
+            VStack(alignment: .leading, spacing: 12) {
+                Capsule()
+                    .fill(Color.figmaBlue.opacity(0.12))
+                    .frame(width: 108, height: 7)
 
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(Color(red: 250/255, green: 253/255, blue: 1))
-                    .frame(width: 46, height: 26)
-                    .overlay(
-                        VStack(spacing: 3) {
-                            Capsule().fill(Color.figmaBlue.opacity(0.30)).frame(width: 28, height: 3)
-                            Capsule().fill(Color.figmaBlue.opacity(0.25)).frame(width: 24, height: 3)
-                            Capsule().fill(Color.figmaBlue.opacity(0.20)).frame(width: 18, height: 3)
+                ForEach(0..<2, id: \.self) { idx in
+                    Capsule()
+                        .fill(Color.figmaBlue.opacity(0.14))
+                        .frame(width: 132, height: 7)
+                        .overlay(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.figmaBlue.opacity(0.55))
+                                .frame(width: max(0, 126 * lineProgress - CGFloat(idx * 46)), height: 7)
                         }
-                    )
+                }
 
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(Color.figmaBlue.opacity(0.22))
-                    .frame(width: 36, height: 8)
-                    .offset(y: -23)
-
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 12, height: 12)
-                    .overlay(Circle().stroke(Color.figmaBlue.opacity(0.35), lineWidth: 1))
-                    .offset(x: 36, y: -4)
+                Rectangle()
+                    .fill(cursorVisible ? Color.figmaBlue.opacity(0.95) : .clear)
+                    .frame(width: 2, height: 16)
+                    .offset(x: min(126, 126 * lineProgress), y: -3)
             }
-            .rotationEffect(.degrees(tilt ? 8 : -8))
-            .offset(y: bob ? -4 : 4)
-            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: tilt)
+            .frame(width: 140, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 280)
+        .onAppear {
+            bob = true
+            withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
+                lineProgress = 1
+            }
+            withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                cursorVisible.toggle()
+            }
+        }
+    }
+}
+
+private struct ReminderTourIllustration: View {
+    @State private var bob = false
+    @State private var tilt = false
+    @State private var waveOffset1: CGFloat = -28
+    @State private var waveOffset2: CGFloat = 24
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.figmaBlue.opacity(0.10))
+                .frame(width: 230, height: 230)
+            WaveStrip(width: 248, amplitude: 7, phase: waveOffset1, color: Color.figmaBlue.opacity(0.34))
+                .offset(y: 34)
+            WaveStrip(width: 242, amplitude: 6, phase: waveOffset2, color: Color.figmaBlue.opacity(0.20))
+                .offset(y: 48)
+
+            BottleSilhouette()
+                .fill(Color.white)
+                .frame(width: 110, height: 164)
+                .overlay(
+                    BottleSilhouette()
+                        .stroke(Color.figmaBlue.opacity(0.40), lineWidth: 2)
+                )
+                .overlay {
+                    VStack(spacing: 5) {
+                        Capsule().fill(Color.figmaBlue.opacity(0.20)).frame(width: 44, height: 6)
+                        Capsule().fill(Color.figmaBlue.opacity(0.16)).frame(width: 40, height: 6)
+                        Capsule().fill(Color.figmaBlue.opacity(0.12)).frame(width: 28, height: 6)
+                    }
+                    .offset(y: 26)
+                }
+                .rotationEffect(.degrees(tilt ? 6 : -6))
+                .offset(y: bob ? -7 : 7)
+                .shadow(color: .black.opacity(0.08), radius: 14, x: 0, y: 7)
+                .animation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true), value: tilt)
+                .animation(.easeInOut(duration: 1.9).repeatForever(autoreverses: true), value: bob)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
         .onAppear {
             bob = true
             tilt = true
-            waveShift = true
+            waveOffset1 = 26
+            waveOffset2 = -24
         }
+        .animation(.linear(duration: 3.3).repeatForever(autoreverses: true), value: waveOffset1)
+        .animation(.linear(duration: 3.8).repeatForever(autoreverses: true), value: waveOffset2)
     }
 }
 
@@ -524,71 +517,112 @@ private struct PhoneNumberTourIllustration: View {
 }
 
 private struct CommunityTourIllustration: View {
-    @State private var bob = false
+    @State private var ripple = false
     @State private var pulse = false
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(Color.figmaBlue.opacity(0.10))
-                .frame(width: 230, height: 230)
-                .scaleEffect(pulse ? 1.0 : 0.93)
-                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulse)
-
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.white)
-                .frame(width: 220, height: 170)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(0.25), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.08), radius: 14, x: 0, y: 8)
-                .offset(y: bob ? -5 : 5)
-                .animation(.easeInOut(duration: 1.7).repeatForever(autoreverses: true), value: bob)
-
-            VStack(spacing: 12) {
-                HStack(spacing: 8) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(.white)
-                            .padding(8)
-                            .background(Color.figmaBlue.opacity(0.85))
-                            .clipShape(Circle())
-                    }
-                }
-
-                Text("Community")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(.primary)
-
-                HStack(spacing: 6) {
-                    Image(systemName: "heart.fill")
-                    Text("Share positivity")
-                }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.figmaBlue)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.figmaBlue.opacity(0.12))
-                .clipShape(Capsule())
+            ForEach(0..<3, id: \.self) { idx in
+                Circle()
+                    .stroke(Color.figmaBlue.opacity(0.18 - Double(idx) * 0.04), lineWidth: 2)
+                    .frame(width: 122 + CGFloat(idx * 40), height: 122 + CGFloat(idx * 40))
+                    .scaleEffect(ripple ? 1.03 : 0.93)
+                    .opacity(ripple ? 0.45 : 0.9)
+                    .animation(
+                        .easeInOut(duration: 1.8)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(idx) * 0.18),
+                        value: ripple
+                    )
             }
 
-            Image(systemName: "paperplane.fill")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Color.figmaBlue)
-                .padding(10)
-                .background(.white)
-                .clipShape(Circle())
-                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
-                .offset(x: 96, y: -66)
+            Circle()
+                .fill(Color.figmaBlue.opacity(0.15))
+                .frame(width: 98, height: 98)
+                .overlay {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(Color.figmaBlue)
+                        .scaleEffect(pulse ? 1.04 : 0.90)
+                        .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: pulse)
+                }
+
+            ForEach([
+                (x: -82.0, y: -52.0),
+                (x: 84.0, y: -36.0),
+                (x: -74.0, y: 56.0),
+                (x: 76.0, y: 62.0)
+            ], id: \.x) { point in
+                Image(systemName: "person.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(8)
+                    .background(Color.figmaBlue.opacity(0.85))
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
+                    .offset(x: point.x, y: point.y)
+            }
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
         .onAppear {
-            bob = true
+            ripple = true
             pulse = true
         }
+    }
+}
+
+private struct BottleSilhouette: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let neckWidth = rect.width * 0.22
+        let neckX = rect.midX - neckWidth / 2
+        let shoulderY = rect.height * 0.26
+        let bodyBottom = rect.height * 0.95
+
+        path.move(to: CGPoint(x: neckX, y: rect.height * 0.02))
+        path.addLine(to: CGPoint(x: neckX, y: shoulderY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.width * 0.16, y: rect.height * 0.45),
+            control: CGPoint(x: rect.width * 0.22, y: rect.height * 0.31)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: rect.width * 0.22, y: bodyBottom),
+            control: CGPoint(x: rect.width * 0.06, y: rect.height * 0.72)
+        )
+        path.addLine(to: CGPoint(x: rect.width * 0.78, y: bodyBottom))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.width * 0.84, y: rect.height * 0.45),
+            control: CGPoint(x: rect.width * 0.94, y: rect.height * 0.72)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: neckX + neckWidth, y: shoulderY),
+            control: CGPoint(x: rect.width * 0.78, y: rect.height * 0.31)
+        )
+        path.addLine(to: CGPoint(x: neckX + neckWidth, y: rect.height * 0.02))
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct WaveStrip: View {
+    let width: CGFloat
+    let amplitude: CGFloat
+    let phase: CGFloat
+    let color: Color
+
+    var body: some View {
+        Path { path in
+            let baseline: CGFloat = 0
+            path.move(to: CGPoint(x: 0, y: baseline))
+            for x in stride(from: 0, through: width, by: 3) {
+                let progress = x / width
+                let y = sin(progress * .pi * 2 + phase) * amplitude
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+        }
+        .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+        .frame(width: width, height: 24)
     }
 }
 
