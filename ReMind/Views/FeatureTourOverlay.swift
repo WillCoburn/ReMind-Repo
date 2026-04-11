@@ -13,7 +13,7 @@ struct FeatureTourOverlay: View {
     private let pages: [FeatureTourPage] = [
         .init(
             step: .settings,
-            title: "Welcome in!",
+            title: "Welcome!",
             message: "Nice job being kinder to yourself.",
             imageName: nil,
             textAlignment: .center
@@ -267,194 +267,200 @@ private struct FeatureTourPageView: View {
 }
 
 private struct WelcomeTourIllustration: View {
-    @State private var doorOpen = false
-    @State private var glowExpanded = false
-    @State private var sparkleDrift = false
+    @State private var sproutGrow = false
+    @State private var leafWiggle = false
+    @State private var pulse = false
 
     var body: some View {
         ZStack {
             Circle()
                 .fill(Color.figmaBlue.opacity(0.08))
                 .frame(width: 240, height: 240)
+                .scaleEffect(pulse ? 1.02 : 0.95)
+                .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: pulse)
 
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.figmaBlue.opacity(0.12))
-                .frame(width: 150, height: 16)
-                .offset(y: 80)
+            Ellipse()
+                .fill(Color.figmaBlue.opacity(0.14))
+                .frame(width: 138, height: 18)
+                .offset(y: 78)
 
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white.opacity(0.92))
-                .frame(width: 160, height: 200)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(0.18), lineWidth: 1)
-                )
-
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 46, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 255/255, green: 243/255, blue: 202/255).opacity(0.95),
-                            Color(red: 255/255, green: 225/255, blue: 153/255).opacity(0.75)
+                            Color(red: 183/255, green: 137/255, blue: 94/255),
+                            Color(red: 151/255, green: 107/255, blue: 68/255)
                         ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: glowExpanded ? 92 : 64, height: glowExpanded ? 164 : 132)
-                .offset(x: 18, y: 6)
-                .blur(radius: glowExpanded ? 1 : 0)
-                .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: glowExpanded)
-
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.white, Color(red: 235/255, green: 244/255, blue: 1)],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
-                .frame(width: 78, height: 170)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(0.35), lineWidth: 2)
-                )
-                .overlay(alignment: .leading) {
-                    Circle()
-                        .fill(Color.figmaBlue.opacity(0.55))
-                        .frame(width: 7, height: 7)
-                        .padding(.leading, 10)
+                .frame(width: 126, height: 95)
+                .offset(y: 28)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 46, style: .continuous)
+                        .stroke(Color.black.opacity(0.10), lineWidth: 1)
+                        .offset(y: 28)
                 }
-                .offset(x: -20, y: 0)
-                .rotation3DEffect(
-                    .degrees(doorOpen ? -13 : -2),
-                    axis: (x: 0, y: 1, z: 0),
-                    anchor: .leading,
-                    perspective: 0.7
-                )
-                .shadow(color: .black.opacity(0.09), radius: 9, x: 4, y: 6)
-                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: doorOpen)
 
-            ForEach(0..<4, id: \.self) { idx in
+            Capsule()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 112/255, green: 194/255, blue: 106/255),
+                            Color(red: 86/255, green: 171/255, blue: 90/255)
+                        ],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                )
+                .frame(width: 12, height: sproutGrow ? 88 : 26)
+                .offset(y: sproutGrow ? -10 : 16)
+                .animation(.spring(response: 1.0, dampingFraction: 0.7).repeatForever(autoreverses: true), value: sproutGrow)
+
+            LeafShape()
+                .fill(
+                    LinearGradient(
+                        colors: [Color(red: 146/255, green: 222/255, blue: 130/255), Color(red: 96/255, green: 186/255, blue: 105/255)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 48, height: 34)
+                .overlay {
+                    LeafShape()
+                        .stroke(Color.white.opacity(0.5), lineWidth: 1.2)
+                }
+                .rotationEffect(.degrees(leafWiggle ? -15 : -27))
+                .offset(x: -21, y: -46)
+                .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: leafWiggle)
+
+            LeafShape()
+                .fill(
+                    LinearGradient(
+                        colors: [Color(red: 133/255, green: 211/255, blue: 124/255), Color(red: 90/255, green: 177/255, blue: 99/255)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 56, height: 36)
+                .overlay {
+                    LeafShape()
+                        .stroke(Color.white.opacity(0.5), lineWidth: 1.2)
+                }
+                .rotationEffect(.degrees(leafWiggle ? 23 : 12))
+                .offset(x: 22, y: -48)
+                .animation(.easeInOut(duration: 1.3).repeatForever(autoreverses: true), value: leafWiggle)
+
+            ForEach(0..<3, id: \.self) { idx in
                 SparkleMark()
                     .fill(Color(red: 255/255, green: 232/255, blue: 161/255).opacity(0.95))
-                    .frame(width: idx % 2 == 0 ? 11 : 8, height: idx % 2 == 0 ? 11 : 8)
+                    .frame(width: idx % 2 == 0 ? 10 : 7, height: idx % 2 == 0 ? 10 : 7)
                     .offset(
-                        x: [42.0, 63.0, 31.0, 68.0][idx] + (sparkleDrift ? [6.0, 8.0, 5.0, 9.0][idx] : 0),
-                        y: [-36.0, -8.0, 14.0, 32.0][idx] + (sparkleDrift ? [-5.0, -3.0, 2.0, 4.0][idx] : 0)
+                        x: [52.0, 10.0, -42.0][idx] + (leafWiggle ? [5.0, 3.0, 4.0][idx] : 0),
+                        y: [-52.0, -78.0, -58.0][idx] + (leafWiggle ? [-4.0, 2.0, -3.0][idx] : 0)
                     )
-                    .opacity(sparkleDrift ? 0.95 : 0.25)
+                    .opacity(leafWiggle ? 0.95 : 0.3)
                     .animation(
                         .easeInOut(duration: 2.0)
                             .repeatForever(autoreverses: true)
                             .delay(Double(idx) * 0.15),
-                        value: sparkleDrift
+                        value: leafWiggle
                     )
             }
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
         .onAppear {
-            doorOpen = true
-            glowExpanded = true
-            sparkleDrift = true
+            sproutGrow = true
+            leafWiggle = true
+            pulse = true
         }
     }
 }
 
 private struct ExportTourIllustration: View {
-    @State private var notebookLift = false
-    @State private var writeCycle = false
-    @State private var penJitter = false
+    @State private var pageTurn = false
+    @State private var penWrite = false
+    @State private var pulse = false
 
     var body: some View {
         ZStack {
             Circle()
                 .fill(Color.figmaBlue.opacity(0.08))
                 .frame(width: 230, height: 230)
+                .scaleEffect(pulse ? 1.01 : 0.95)
+                .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: pulse)
 
-            HStack(spacing: 0) {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white, Color(red: 246/255, green: 250/255, blue: 1)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(Color.figmaBlue.opacity(0.20), lineWidth: 1)
-                    )
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white, Color(red: 241/255, green: 248/255, blue: 1)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(Color.figmaBlue.opacity(0.20), lineWidth: 1)
-                    )
-            }
-            .frame(width: 220, height: 152)
-            .overlay {
-                Rectangle()
-                    .fill(Color.figmaBlue.opacity(0.2))
-                    .frame(width: 2, height: 142)
-            }
-            .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 9)
-            .offset(y: notebookLift ? -5 : 5)
-            .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: notebookLift)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(red: 74/255, green: 114/255, blue: 208/255).opacity(0.92))
+                .frame(width: 170, height: 210)
+                .overlay(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.white.opacity(0.24))
+                        .frame(width: 8, height: 184)
+                        .padding(.leading, 12)
+                }
+                .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 8)
 
-            VStack(alignment: .leading, spacing: 14) {
-                Capsule()
-                    .fill(Color.figmaBlue.opacity(0.12))
-                    .frame(width: 68, height: 6)
-
-                Capsule()
-                    .fill(Color.figmaBlue.opacity(0.15))
-                    .frame(width: 78, height: 6)
-                    .overlay(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.figmaBlue.opacity(0.65))
-                            .frame(width: writeCycle ? 78 : 0, height: 6)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white, Color(red: 244/255, green: 249/255, blue: 1)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: 130, height: 178)
+                .offset(x: 12, y: 4)
+                .overlay(alignment: .topTrailing) {
+                    FoldedCorner()
+                        .fill(Color(red: 222/255, green: 233/255, blue: 255/255))
+                        .frame(width: 22, height: 22)
+                        .offset(x: 1, y: 0)
+                        .rotationEffect(.degrees(pageTurn ? 0 : -8))
+                        .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: pageTurn)
+                }
+                .overlay {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Capsule().fill(Color.figmaBlue.opacity(0.18)).frame(width: 76, height: 6)
+                        Capsule().fill(Color.figmaBlue.opacity(0.22)).frame(width: 92, height: 6)
+                        Capsule().fill(Color.figmaBlue.opacity(0.20)).frame(width: 88, height: 6)
+                        Capsule().fill(Color.figmaBlue.opacity(0.20)).frame(width: 70, height: 6)
                     }
-                    .animation(.easeInOut(duration: 1.7).repeatForever(autoreverses: true), value: writeCycle)
+                    .offset(x: 3, y: 7)
+                }
 
-                Capsule()
-                    .fill(Color.figmaBlue.opacity(0.15))
-                    .frame(width: 56, height: 6)
-                    .overlay(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.figmaBlue.opacity(0.55))
-                            .frame(width: writeCycle ? 44 : 0, height: 6)
-                    }
-                    .animation(.easeInOut(duration: 1.7).repeatForever(autoreverses: true).delay(0.35), value: writeCycle)
-            }
-            .frame(width: 86, alignment: .leading)
-            .offset(x: 40, y: -8)
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color(red: 240/255, green: 108/255, blue: 118/255))
+                .frame(width: 9, height: 44)
+                .offset(x: 80, y: 56)
 
             JournalPen()
-                .fill(Color.figmaBlue.opacity(0.90))
-                .frame(width: 52, height: 14)
+                .fill(Color.figmaBlue.opacity(0.88))
+                .frame(width: 64, height: 15)
                 .overlay {
                     JournalPen()
-                        .stroke(Color.white.opacity(0.7), lineWidth: 0.9)
+                        .stroke(Color.white.opacity(0.72), lineWidth: 0.9)
                 }
-                .rotationEffect(.degrees(-18 + (penJitter ? 2 : -2)))
-                .offset(x: writeCycle ? 79 : 24, y: writeCycle ? 1 : -16)
-                .animation(.easeInOut(duration: 1.7).repeatForever(autoreverses: true), value: writeCycle)
-                .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: penJitter)
+                .rotationEffect(.degrees(-24 + (penWrite ? 5 : -4)))
+                .offset(x: penWrite ? 36 : 8, y: penWrite ? 16 : -1)
+                .animation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true), value: penWrite)
+
+            Path { path in
+                path.move(to: CGPoint(x: -12, y: 12))
+                path.addQuadCurve(to: CGPoint(x: 32, y: 18), control: CGPoint(x: 12, y: 0))
+            }
+            .stroke(Color.figmaBlue.opacity(0.35), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+            .offset(x: 14, y: penWrite ? 0 : 9)
+            .animation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true), value: penWrite)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
         .onAppear {
-            notebookLift = true
-            writeCycle = true
-            penJitter = true
+            pageTurn = true
+            penWrite = true
+            pulse = true
         }
     }
 }
@@ -489,7 +495,7 @@ private struct ReminderTourIllustration: View {
 
             OceanBottleShape()
                 .fill(Color(red: 196/255, green: 231/255, blue: 1).opacity(0.28))
-                .frame(width: 132, height: 184)
+                .frame(width: 108, height: 188)
                 .overlay {
                     OceanBottleShape()
                         .stroke(Color.figmaBlue.opacity(0.42), lineWidth: 2.1)
@@ -521,10 +527,6 @@ private struct ReminderTourIllustration: View {
                             .fill(Color(red: 250/255, green: 244/255, blue: 228/255).opacity(0.98))
                             .frame(width: 54, height: 32)
                             .rotationEffect(.degrees(-16))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .stroke(Color(red: 220/255, green: 202/255, blue: 168/255), lineWidth: 1)
-                            )
                             .overlay(alignment: .trailing) {
                                 Circle()
                                     .fill(Color(red: 247/255, green: 232/255, blue: 207/255))
@@ -731,33 +733,69 @@ private struct CommunityTourIllustration: View {
 private struct OceanBottleShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        let neckWidth = rect.width * 0.20
+        let neckWidth = rect.width * 0.18
         let neckX = rect.midX - neckWidth / 2
         let lipY = rect.height * 0.08
-        let shoulderY = rect.height * 0.24
-        let bellyY = rect.height * 0.56
+        let shoulderY = rect.height * 0.22
+        let bellyY = rect.height * 0.60
         let baseY = rect.height * 0.94
 
         path.move(to: CGPoint(x: neckX, y: lipY))
         path.addLine(to: CGPoint(x: neckX, y: shoulderY))
         path.addQuadCurve(
-            to: CGPoint(x: rect.width * 0.14, y: bellyY),
-            control: CGPoint(x: rect.width * 0.14, y: rect.height * 0.36)
+            to: CGPoint(x: rect.width * 0.22, y: bellyY),
+            control: CGPoint(x: rect.width * 0.20, y: rect.height * 0.40)
         )
         path.addQuadCurve(
-            to: CGPoint(x: rect.width * 0.24, y: baseY),
-            control: CGPoint(x: rect.width * 0.05, y: rect.height * 0.82)
+            to: CGPoint(x: rect.width * 0.34, y: baseY),
+            control: CGPoint(x: rect.width * 0.18, y: rect.height * 0.86)
         )
-        path.addLine(to: CGPoint(x: rect.width * 0.76, y: baseY))
+        path.addLine(to: CGPoint(x: rect.width * 0.66, y: baseY))
         path.addQuadCurve(
-            to: CGPoint(x: rect.width * 0.86, y: bellyY),
-            control: CGPoint(x: rect.width * 0.95, y: rect.height * 0.82)
+            to: CGPoint(x: rect.width * 0.78, y: bellyY),
+            control: CGPoint(x: rect.width * 0.82, y: rect.height * 0.86)
         )
         path.addQuadCurve(
             to: CGPoint(x: neckX + neckWidth, y: shoulderY),
-            control: CGPoint(x: rect.width * 0.86, y: rect.height * 0.36)
+            control: CGPoint(x: rect.width * 0.80, y: rect.height * 0.40)
         )
         path.addLine(to: CGPoint(x: neckX + neckWidth, y: lipY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct LeafShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.midY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.midX, y: rect.minY),
+            control: CGPoint(x: rect.minX + rect.width * 0.18, y: rect.minY)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: rect.midY),
+            control: CGPoint(x: rect.maxX - rect.width * 0.18, y: rect.minY)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: rect.midX, y: rect.maxY),
+            control: CGPoint(x: rect.maxX - rect.width * 0.18, y: rect.maxY)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: rect.minX, y: rect.midY),
+            control: CGPoint(x: rect.minX + rect.width * 0.18, y: rect.maxY)
+        )
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct FoldedCorner: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.closeSubpath()
         return path
     }
