@@ -268,7 +268,8 @@ private struct FeatureTourPageView: View {
 
 private struct WelcomeTourIllustration: View {
     @State private var cheerBounce = false
-    @State private var armCheer = false
+    @State private var blinkEyes = false
+    @State private var smilePulse = false
     @State private var sparklePop = false
 
     var body: some View {
@@ -281,14 +282,14 @@ private struct WelcomeTourIllustration: View {
                 Circle()
                     .fill(Color.figmaBlue.opacity(0.95))
                     .frame(width: 16, height: 16)
-                    .offset(y: armCheer ? -12 : 10)
-                    .animation(.easeInOut(duration: 0.44).repeatForever(autoreverses: true), value: armCheer)
+                    .scaleEffect(x: 1.0, y: blinkEyes ? 0.12 : 1.0, anchor: .center)
+                    .offset(y: 10)
 
                 Circle()
                     .fill(Color.figmaBlue.opacity(0.95))
                     .frame(width: 16, height: 16)
-                    .offset(y: armCheer ? -12 : 10)
-                    .animation(.easeInOut(duration: 0.44).repeatForever(autoreverses: true).delay(0.08), value: armCheer)
+                    .scaleEffect(x: 1.0, y: blinkEyes ? 0.12 : 1.0, anchor: .center)
+                    .offset(y: 10)
             }
             .offset(y: -2)
 
@@ -328,6 +329,8 @@ private struct WelcomeTourIllustration: View {
                     SmileArc()
                         .stroke(Color.figmaBlue, style: StrokeStyle(lineWidth: 4.5, lineCap: .round))
                         .frame(width: 52, height: 26)
+                        .scaleEffect(smilePulse ? 1.05 : 0.96)
+                        .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: smilePulse)
                         .offset(y: 16)
                 }
 
@@ -349,8 +352,20 @@ private struct WelcomeTourIllustration: View {
         .frame(height: 280)
         .onAppear {
             cheerBounce = true
-            armCheer = true
+            smilePulse = true
             sparklePop = true
+        }
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(2.2))
+                withAnimation(.easeInOut(duration: 0.08)) {
+                    blinkEyes = true
+                }
+                try? await Task.sleep(for: .seconds(0.11))
+                withAnimation(.easeInOut(duration: 0.08)) {
+                    blinkEyes = false
+                }
+            }
         }
     }
 }
@@ -421,7 +436,7 @@ private struct ExportTourIllustration: View {
                 )
                 .scaleEffect(bulbGlow ? 1.06 : 0.92)
                 .shadow(color: Color(red: 1.0, green: 214/255, blue: 92/255).opacity(bulbGlow ? 0.32 : 0.1), radius: bulbGlow ? 10 : 4)
-                .offset(y: -44)
+                .offset(y: -48)
             .animation(.easeInOut(duration: 0.68).repeatForever(autoreverses: true), value: bulbGlow)
         }
         .frame(maxWidth: .infinity)
