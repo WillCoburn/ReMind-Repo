@@ -282,9 +282,8 @@ private struct WelcomeTourIllustration: View {
 
 private struct ExportTourIllustration: View {
     @State private var bob = false
-    @State private var drift = false
-    @State private var noteVisible = false
-    @State private var reminderVisible = false
+    @State private var tilt = false
+    @State private var waveShift = false
 
     var body: some View {
         ZStack {
@@ -309,80 +308,62 @@ private struct ExportTourIllustration: View {
                 .offset(y: bob ? -6 : 6)
                 .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: bob)
 
-            // Water line
-            Capsule()
-                .fill(Color.figmaBlue.opacity(0.14))
-                .frame(width: 182, height: 8)
-                .offset(y: 18)
+            // Ocean
+            VStack(spacing: 8) {
+                Capsule()
+                    .fill(Color.figmaBlue.opacity(0.24))
+                    .frame(width: 182, height: 10)
+                    .offset(x: waveShift ? 8 : -8)
+                Capsule()
+                    .fill(Color.figmaBlue.opacity(0.14))
+                    .frame(width: 170, height: 8)
+                    .offset(x: waveShift ? -10 : 10)
+            }
+            .offset(y: 22)
+            .animation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true), value: waveShift)
 
-            // Floating bottle
+            // Message in a bottle
             ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(.white)
-                    .frame(width: 88, height: 42)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white.opacity(0.95))
+                    .frame(width: 96, height: 44)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(Color.figmaBlue.opacity(0.35), lineWidth: 1)
                     )
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(Color.figmaBlue.opacity(0.20))
-                            .frame(width: 36, height: 5)
-                            .offset(y: -12)
-                    }
 
-                VStack(spacing: 2) {
-                    Image(systemName: "quote.bubble.fill")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(Color.figmaBlue)
-                    Text("tiny win")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(Color.figmaBlue.opacity(0.85))
-                }
-            }
-            .rotationEffect(.degrees(drift ? 6 : -6))
-            .offset(x: drift ? 52 : -52, y: drift ? -8 : 8)
-            .animation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true), value: drift)
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(Color(red: 250/255, green: 253/255, blue: 1))
+                    .frame(width: 46, height: 26)
+                    .overlay(
+                        VStack(spacing: 3) {
+                            Capsule().fill(Color.figmaBlue.opacity(0.30)).frame(width: 28, height: 3)
+                            Capsule().fill(Color.figmaBlue.opacity(0.25)).frame(width: 24, height: 3)
+                            Capsule().fill(Color.figmaBlue.opacity(0.20)).frame(width: 18, height: 3)
+                        }
+                    )
 
-            // Draft note (before it goes in bottle)
-            HStack(spacing: 6) {
-                Image(systemName: "square.and.pencil")
-                Text("A tiny win today")
-            }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Color.figmaBlue)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(.white)
-            .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
-            .offset(x: -34, y: -56)
-            .opacity(noteVisible ? 1 : 0)
-            .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: noteVisible)
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(Color.figmaBlue.opacity(0.22))
+                    .frame(width: 36, height: 8)
+                    .offset(y: -23)
 
-            // Return reminder bubble (later)
-            HStack(spacing: 6) {
-                Image(systemName: "message.fill")
-                Text("Sent back when needed")
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 12, height: 12)
+                    .overlay(Circle().stroke(Color.figmaBlue.opacity(0.35), lineWidth: 1))
+                    .offset(x: 36, y: -4)
             }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Color.figmaBlue)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(.white)
-            .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
-            .offset(x: 24, y: 62)
-            .opacity(reminderVisible ? 1 : 0.45)
-            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: reminderVisible)
+            .rotationEffect(.degrees(tilt ? 8 : -8))
+            .offset(y: bob ? -4 : 4)
+            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: tilt)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
         .onAppear {
             bob = true
-            drift = true
-            noteVisible = true
-            reminderVisible = true
+            tilt = true
+            waveShift = true
         }
     }
 }
