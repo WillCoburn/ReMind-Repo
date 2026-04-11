@@ -15,6 +15,8 @@ extension AppViewModel {
         case .export:
             featureTourStep = .sendNow
         case .sendNow:
+            featureTourStep = .phoneNumber
+        case .phoneNumber:
             await completeFeatureTour(markAsSeen: true)
         }
     }
