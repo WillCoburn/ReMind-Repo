@@ -469,7 +469,7 @@ private struct CommunityThreadView: View {
                         if comments.isEmpty {
                             Text("No replies yet. Start the discussion.")
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Color.palettePewter.opacity(0.95))
                                 .padding(.vertical, 8)
                         } else {
                             ForEach(comments) { comment in
@@ -500,7 +500,16 @@ private struct CommunityThreadView: View {
                 VStack(spacing: 8) {
                     TextField("Write a reply…", text: $newCommentText, axis: .vertical)
                         .lineLimit(1...5)
-                        .textFieldStyle(.roundedBorder)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color.paletteIvory.opacity(0.9))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.figmaBlue, lineWidth: 1)
+                        )
 
                     Button {
                         Task { await sendComment() }
@@ -514,6 +523,7 @@ private struct CommunityThreadView: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(Color.figmaBlue)
                     .disabled(isSending || newCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
                 .padding()
