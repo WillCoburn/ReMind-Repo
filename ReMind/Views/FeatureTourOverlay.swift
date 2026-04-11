@@ -527,12 +527,6 @@ private struct ReminderTourIllustration: View {
                             .fill(Color(red: 250/255, green: 244/255, blue: 228/255).opacity(0.98))
                             .frame(width: 54, height: 32)
                             .rotationEffect(.degrees(-16))
-                            .overlay(alignment: .trailing) {
-                                Circle()
-                                    .fill(Color(red: 247/255, green: 232/255, blue: 207/255))
-                                    .frame(width: 10, height: 10)
-                                    .offset(x: 4, y: -4)
-                            }
                             .overlay {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Capsule().fill(Color.figmaBlue.opacity(0.35)).frame(width: 26, height: 3)
@@ -540,17 +534,6 @@ private struct ReminderTourIllustration: View {
                                 }
                                 .offset(x: -6, y: 1)
                             }
-
-                        Circle()
-                            .fill(Color(red: 184/255, green: 94/255, blue: 87/255))
-                            .frame(width: 7, height: 7)
-                            .offset(x: 12, y: 2)
-
-                        Capsule()
-                            .fill(Color(red: 196/255, green: 157/255, blue: 103/255))
-                            .frame(width: 9, height: 20)
-                            .rotationEffect(.degrees(78))
-                            .offset(x: -17, y: -3)
                     }
                     .offset(x: noteLag ? -2 : 2, y: noteLag ? 18 : 14)
                     .animation(.easeInOut(duration: 1.9).repeatForever(autoreverses: true).delay(0.18), value: noteLag)
