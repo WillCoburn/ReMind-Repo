@@ -13,11 +13,13 @@ extension AppViewModel {
         case .settings:
             featureTourStep = .export
         case .export:
+            featureTourStep = .reminders
+        case .reminders:
             featureTourStep = .sendNow
-        case .phoneNumber:
-            await completeFeatureTour(markAsSeen: true)
         case .sendNow:
             featureTourStep = .phoneNumber
+        case .phoneNumber:
+            await completeFeatureTour(markAsSeen: true)
         }
     }
 
