@@ -13,6 +13,8 @@ extension AppViewModel {
         case .settings:
             featureTourStep = .export
         case .export:
+            featureTourStep = .phoneNumber
+        case .phoneNumber:
             featureTourStep = .sendNow
         case .sendNow:
             featureTourStep = .phoneNumber

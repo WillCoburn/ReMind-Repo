@@ -24,6 +24,13 @@ struct FeatureTourOverlay: View {
             textAlignment: .center
         ),
         .init(
+            step: .phoneNumber,
+            title: "Next, we’ll ask for your phone number.",
+            message: "We never share it or use it for spam — it’s only used to send your own entries back to you.",
+            imageName: nil,
+            textAlignment: .center
+        ),
+        .init(
             step: .sendNow,
             title: "",
             message: "If you have some positivity to share, the community page is the place to uplift others.",
@@ -118,11 +125,13 @@ private struct FeatureTourPage: Identifiable {
     let step: AppViewModel.FeatureTourStep
     let title: String
     let message: String
+    let imageName: String?
     let textAlignment: HorizontalAlignment
 
     init(step: AppViewModel.FeatureTourStep,
          title: String,
          message: String,
+         imageName: String?,
          textAlignment: HorizontalAlignment) {
 
         self.id = step
@@ -188,193 +197,17 @@ private struct FeatureTourPageView: View {
 
     @ViewBuilder
     private var illustration: some View {
-        switch page.step {
-        case .settings:
-            WelcomeTourIllustration()
-        case .export:
-            JournalTourIllustration()
-        case .sendNow:
-            CommunityTourIllustration()
-        case .phoneNumber:
-            PhoneNumberTourIllustration()
-        }
-    }
-}
-
-private struct WelcomeTourIllustration: View {
-    @State private var bob = false
-    @State private var ring = false
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.figmaBlue.opacity(0.10))
-                .frame(width: 240, height: 240)
-                .scaleEffect(ring ? 1.02 : 0.92)
-                .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: ring)
-
-            Circle()
-                .fill(.white)
-                .frame(width: 160, height: 160)
-                .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 8)
-                .overlay(
-                    Circle()
-                        .stroke(Color.figmaBlue.opacity(0.25), lineWidth: 1)
-                )
-                .overlay {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 40, weight: .semibold))
-                        .foregroundStyle(Color.figmaBlue)
-                }
-                .offset(y: bob ? -6 : 6)
-                .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: bob)
-
-            HStack(spacing: 12) {
-                Image(systemName: "heart.fill")
-                Image(systemName: "sun.max.fill")
+        Group {
+            if page.step == .phoneNumber {
+                PhoneNumberTourIllustration()
+            } else if let imageName = page.imageName {
+                Image(imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 360)
+                    .frame(maxWidth: .infinity)
             }
-            .font(.system(size: 16, weight: .bold))
-            .foregroundStyle(Color.figmaBlue.opacity(0.9))
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(.white)
-            .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 6)
-            .offset(y: 95)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 280)
-        .onAppear {
-            bob = true
-            ring = true
-        }
-    }
-}
-
-private struct JournalTourIllustration: View {
-    @State private var floatCard = false
-    @State private var pulse = false
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.figmaBlue.opacity(0.10))
-                .frame(width: 250, height: 230)
-                .scaleEffect(pulse ? 1 : 0.95)
-                .animation(.easeInOut(duration: 1.3).repeatForever(autoreverses: true), value: pulse)
-
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    Circle().fill(Color.figmaBlue).frame(width: 8, height: 8)
-                    Text("Moment captured")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.figmaBlue)
-                }
-
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.figmaBlue.opacity(0.22))
-                    .frame(height: 10)
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.figmaBlue.opacity(0.14))
-                    .frame(height: 10)
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.figmaBlue.opacity(0.18))
-                    .frame(height: 10)
-
-                HStack {
-                    Spacer()
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(Color.figmaBlue)
-                }
-            }
-            .padding(20)
-            .frame(width: 220)
-            .background(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: .black.opacity(0.09), radius: 14, x: 0, y: 8)
-            .offset(y: floatCard ? -6 : 7)
-            .animation(.easeInOut(duration: 1.7).repeatForever(autoreverses: true), value: floatCard)
-
-            HStack(spacing: 10) {
-                Text("Sent back later")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(Color.figmaBlue)
-                Image(systemName: "message.fill")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(8)
-                    .background(Color.figmaBlue)
-                    .clipShape(Circle())
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(.white)
-            .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 5)
-            .offset(x: 52, y: 90)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 280)
-        .onAppear {
-            floatCard = true
-            pulse = true
-        }
-    }
-}
-
-private struct CommunityTourIllustration: View {
-    @State private var glow = false
-    @State private var wave = false
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.figmaBlue.opacity(0.10))
-                .frame(width: 230, height: 230)
-                .scaleEffect(glow ? 1.03 : 0.92)
-                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: glow)
-
-            VStack(spacing: 12) {
-                HStack(spacing: 10) {
-                    avatar(symbol: "person.fill")
-                    avatar(symbol: "person.fill")
-                    avatar(symbol: "person.fill")
-                }
-
-                HStack(spacing: 8) {
-                    Text("You’ve got this 💛")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.figmaBlue)
-                    Image(systemName: "bubble.left.and.bubble.right.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(Color.figmaBlue)
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(.white)
-                .clipShape(Capsule())
-                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 6)
-            }
-            .offset(y: wave ? -6 : 6)
-            .animation(.easeInOut(duration: 1.9).repeatForever(autoreverses: true), value: wave)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 280)
-        .onAppear {
-            glow = true
-            wave = true
-        }
-    }
-
-    private func avatar(symbol: String) -> some View {
-        Image(systemName: symbol)
-            .font(.system(size: 15, weight: .bold))
-            .foregroundStyle(Color.figmaBlue)
-            .frame(width: 38, height: 38)
-            .background(.white)
-            .clipShape(Circle())
-            .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
     }
 }
 

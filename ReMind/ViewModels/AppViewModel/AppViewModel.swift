@@ -38,7 +38,7 @@ final class AppViewModel: ObservableObject {
 
     // MARK: - Feature tour state
     enum FeatureTourStep: Int, CaseIterable {
-        case settings, export, sendNow, phoneNumber
+        case settings, export, phoneNumber, sendNow
         var index: Int { rawValue + 1 }
     }
 
