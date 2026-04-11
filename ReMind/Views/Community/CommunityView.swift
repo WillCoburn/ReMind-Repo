@@ -13,6 +13,7 @@ struct CommunityView: View {
     @State private var showComposer = false
     @State private var actionErrorMessage: String?
     @State private var reportLimitMessage: String?
+    @State private var pendingPostReport: CommunityPost?
 
     @State private var likedPostIds: Set<String> = []
     @State private var reportedPostIds: Set<String> = []
@@ -84,6 +85,23 @@ struct CommunityView: View {
             NavigationStack {
                 CommunityThreadView(post: post)
             }
+        }
+        .alert(item: $pendingPostReport) { post in
+            let canRemoveReport = !appVM.isGodModeUser && reportedPostIds.contains(post.id)
+            return Alert(
+                title: Text("Report Post"),
+                message: Text(
+                    canRemoveReport
+                    ? "Remove your report from this post?"
+                    : "Are you sure you want to report this post?"
+                ),
+                primaryButton: .destructive(
+                    Text(canRemoveReport ? "Remove Report" : "Report")
+                ) {
+                    handleReport(post)
+                },
+                secondaryButton: .cancel()
+            )
         }
         // Hide the nav bar so the custom header/background fill the safe areas.
         .toolbar(.hidden, for: .navigationBar)
@@ -164,7 +182,7 @@ struct CommunityView: View {
                                     isLiked: isLiked(post),
                                     isReported: isReported(post),
                                     onLike: { handleLike(post) },
-                                    onReport: { handleReport(post) },
+                                    onReport: { pendingPostReport = post },
                                     onOpenThread: {
                                         selectedPostForThread = post
                                     },
@@ -462,6 +480,7 @@ private struct CommunityThreadView: View {
     @State private var isSending = false
     @State private var likedCommentIds: Set<String> = []
     @State private var reportedCommentIds: Set<String> = []
+    @State private var pendingCommentReport: CommunityComment?
 
     var body: some View {
         ZStack {
@@ -500,7 +519,7 @@ private struct CommunityThreadView: View {
                                         .buttonStyle(.plain)
 
                                         Button {
-                                            handleCommentReport(comment)
+                                            pendingCommentReport = comment
                                         } label: {
                                             Label(
                                                 "\(comment.reportCount)",
@@ -604,6 +623,23 @@ private struct CommunityThreadView: View {
             },
             message: { Text(sendError ?? "Please try again.") }
         )
+        .alert(item: $pendingCommentReport) { comment in
+            let canRemoveReport = !appVM.isGodModeUser && reportedCommentIds.contains(comment.id)
+            return Alert(
+                title: Text("Report Comment"),
+                message: Text(
+                    canRemoveReport
+                    ? "Remove your report from this comment?"
+                    : "Are you sure you want to report this comment?"
+                ),
+                primaryButton: .destructive(
+                    Text(canRemoveReport ? "Remove Report" : "Report")
+                ) {
+                    handleCommentReport(comment)
+                },
+                secondaryButton: .cancel()
+            )
+        }
     }
 
     private func startListeners() {
