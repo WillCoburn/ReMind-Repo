@@ -274,6 +274,7 @@ private struct WelcomeTourIllustration: View {
     @State private var leavesStageOne = false
     @State private var leavesStageTwo = false
     @State private var idleBreathing = false
+    @State private var animationRunID = UUID()
 
     var body: some View {
         ZStack {
@@ -326,9 +327,15 @@ private struct WelcomeTourIllustration: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 40, height: 22)
-                    .rotationEffect(.degrees(-28))
-                    .offset(x: -22, y: -4)
+                    .overlay(
+                        SeedLeafShape()
+                            .stroke(Color.white.opacity(0.20), lineWidth: 1)
+                            .scaleEffect(x: 0.72, y: 0.18, anchor: .leading)
+                            .offset(x: 4, y: -1)
+                    )
+                    .frame(width: 44, height: 24)
+                    .rotationEffect(.degrees(-31))
+                    .offset(x: -24, y: -2)
                     .opacity(leavesStageOne ? 1 : 0)
                     .scaleEffect(leavesStageOne ? 1 : 0.2, anchor: .trailing)
 
@@ -340,9 +347,15 @@ private struct WelcomeTourIllustration: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 40, height: 22)
-                    .rotationEffect(.degrees(28))
-                    .offset(x: 22, y: -10)
+                    .overlay(
+                        SeedLeafShape()
+                            .stroke(Color.white.opacity(0.20), lineWidth: 1)
+                            .scaleEffect(x: 0.72, y: 0.18, anchor: .leading)
+                            .offset(x: 4, y: -1)
+                    )
+                    .frame(width: 44, height: 24)
+                    .rotationEffect(.degrees(31))
+                    .offset(x: 24, y: -10)
                     .opacity(leavesStageOne ? 1 : 0)
                     .scaleEffect(leavesStageOne ? 1 : 0.2, anchor: .leading)
 
@@ -354,11 +367,17 @@ private struct WelcomeTourIllustration: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 28, height: 16)
-                    .rotationEffect(.degrees(-4))
-                    .offset(x: -2, y: -42)
+                    .overlay(
+                        SeedLeafShape()
+                            .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                            .scaleEffect(x: 0.68, y: 0.16, anchor: .leading)
+                            .offset(x: 3, y: -1)
+                    )
+                    .frame(width: 32, height: 18)
+                    .rotationEffect(.degrees(-32))
+                    .offset(x: -17, y: -41)
                     .opacity(leavesStageTwo ? 1 : 0)
-                    .scaleEffect(leavesStageTwo ? 1 : 0.2, anchor: .bottom)
+                    .scaleEffect(leavesStageTwo ? 1 : 0.2, anchor: .trailing)
 
                 SeedLeafShape()
                     .fill(
@@ -368,9 +387,15 @@ private struct WelcomeTourIllustration: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 24, height: 14)
-                    .rotationEffect(.degrees(20))
-                    .offset(x: 14, y: -28)
+                    .overlay(
+                        SeedLeafShape()
+                            .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                            .scaleEffect(x: 0.68, y: 0.16, anchor: .leading)
+                            .offset(x: 3, y: -1)
+                    )
+                    .frame(width: 30, height: 17)
+                    .rotationEffect(.degrees(35))
+                    .offset(x: 18, y: -34)
                     .opacity(leavesStageTwo ? 1 : 0)
                     .scaleEffect(leavesStageTwo ? 1 : 0.2, anchor: .leading)
             }
@@ -391,8 +416,8 @@ private struct WelcomeTourIllustration: View {
                 .opacity(seedHidden ? 0 : 1)
                 .offset(y: seedDropped ? 66 : -34)
                 .shadow(color: .black.opacity(0.12), radius: 3, x: 0, y: 1)
-                .animation(.easeInOut(duration: 0.42), value: seedDropped)
-                .animation(.easeOut(duration: 0.16), value: seedHidden)
+                .animation(.easeInOut(duration: 0.56), value: seedDropped)
+                .animation(.easeOut(duration: 0.20), value: seedHidden)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
@@ -400,6 +425,8 @@ private struct WelcomeTourIllustration: View {
         .offset(y: idleBreathing ? -1.5 : 1.5)
         .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: idleBreathing)
         .onAppear {
+            let runID = UUID()
+            animationRunID = runID
             glowPulse = false
             seedDropped = false
             seedHidden = false
@@ -408,32 +435,44 @@ private struct WelcomeTourIllustration: View {
             leavesStageTwo = false
             idleBreathing = false
 
-            glowPulse = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+                guard animationRunID == runID else { return }
+                glowPulse = true
+            }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                guard animationRunID == runID else { return }
                 seedDropped = true
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
+                guard animationRunID == runID else { return }
                 seedHidden = true
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.50) {
-                withAnimation(.easeOut(duration: 0.50)) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.70) {
+                guard animationRunID == runID else { return }
+                withAnimation(.easeOut(duration: 0.66)) {
                     stemGrown = true
                 }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
-                withAnimation(.easeOut(duration: 0.28)) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.90) {
+                guard animationRunID == runID else { return }
+                withAnimation(.easeOut(duration: 0.36)) {
                     leavesStageOne = true
                 }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.78) {
-                withAnimation(.easeOut(duration: 0.26)) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.14) {
+                guard animationRunID == runID else { return }
+                withAnimation(.easeOut(duration: 0.34)) {
                     leavesStageTwo = true
                 }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.10) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.52) {
+                guard animationRunID == runID else { return }
                 idleBreathing = true
             }
+        }
+        .onDisappear {
+            animationRunID = UUID()
         }
     }
 }
@@ -441,14 +480,18 @@ private struct WelcomeTourIllustration: View {
 private struct SeedLeafShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.midY))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: rect.midY),
-            control: CGPoint(x: rect.midX, y: rect.minY)
+        let base = CGPoint(x: rect.minX, y: rect.midY)
+        let tip = CGPoint(x: rect.maxX, y: rect.midY)
+        path.move(to: base)
+        path.addCurve(
+            to: tip,
+            control1: CGPoint(x: rect.minX + rect.width * 0.28, y: rect.minY - rect.height * 0.08),
+            control2: CGPoint(x: rect.minX + rect.width * 0.78, y: rect.minY + rect.height * 0.06)
         )
-        path.addQuadCurve(
-            to: CGPoint(x: rect.minX, y: rect.midY),
-            control: CGPoint(x: rect.midX, y: rect.maxY)
+        path.addCurve(
+            to: base,
+            control1: CGPoint(x: rect.minX + rect.width * 0.78, y: rect.maxY - rect.height * 0.06),
+            control2: CGPoint(x: rect.minX + rect.width * 0.28, y: rect.maxY + rect.height * 0.08)
         )
         return path
     }
