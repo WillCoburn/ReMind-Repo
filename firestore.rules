@@ -39,6 +39,11 @@ service cloud.firestore {
 
       allow create, delete: if false;
 
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create, update, delete: if false;
+      }
+
       function isAllowedIncrement(field) {
         return request.resource.data.diff(resource.data).affectedKeys().hasOnly([field]) &&
                request.resource.data[field] == resource.data[field] + 1;

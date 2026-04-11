@@ -7,6 +7,7 @@ struct CommunityPostRow: View {
 
     var onLike: (() -> Void)? = nil
     var onReport: (() -> Void)? = nil
+    var onOpenThread: (() -> Void)? = nil
     var onBlock: (() -> Void)? = nil
 
     @State private var showBlockConfirm = false
@@ -43,6 +44,20 @@ struct CommunityPostRow: View {
                     Label(
                         "\(post.reportCount)",
                         systemImage: isReported ? "flag.fill" : "flag"
+                    )
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .foregroundColor(.figmaBlue)
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Button {
+                    onOpenThread?()
+                } label: {
+                    Label(
+                        "\(post.commentCount)",
+                        systemImage: "text.bubble"
                     )
                     .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 8)

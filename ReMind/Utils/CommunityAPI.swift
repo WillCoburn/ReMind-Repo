@@ -12,6 +12,7 @@ struct CommunityPost: Identifiable, Hashable {
     let createdAt: Date
     let likeCount: Int
     let reportCount: Int
+    let commentCount: Int
     let isHidden: Bool
     let expiresAt: Date
     
@@ -22,6 +23,7 @@ struct CommunityPost: Identifiable, Hashable {
          createdAt: Date,
          likeCount: Int,
          reportCount: Int,
+         commentCount: Int,
          isHidden: Bool,
          expiresAt: Date
      ) {
@@ -31,6 +33,7 @@ struct CommunityPost: Identifiable, Hashable {
          self.createdAt = createdAt
          self.likeCount = likeCount
          self.reportCount = reportCount
+         self.commentCount = commentCount
          self.isHidden = isHidden
          self.expiresAt = expiresAt
      }
@@ -51,7 +54,29 @@ struct CommunityPost: Identifiable, Hashable {
         self.expiresAt = expiresAtTs.dateValue()
         self.likeCount = data["likeCount"] as? Int ?? 0
         self.reportCount = data["reportCount"] as? Int ?? 0
+        self.commentCount = data["commentCount"] as? Int ?? 0
         self.isHidden = data["isHidden"] as? Bool ?? false
+    }
+}
+
+struct CommunityComment: Identifiable, Hashable {
+    let id: String
+    let authorId: String
+    let text: String
+    let createdAt: Date
+
+    init?(from doc: DocumentSnapshot) {
+        guard let data = doc.data(),
+              let authorId = data["authorId"] as? String,
+              let text = data["text"] as? String,
+              let createdAt = data["createdAt"] as? Timestamp else {
+            return nil
+        }
+
+        self.id = doc.documentID
+        self.authorId = authorId
+        self.text = text
+        self.createdAt = createdAt.dateValue()
     }
 }
 
@@ -115,5 +140,37 @@ final class CommunityAPI {
     func toggleReport(postId: String) async throws {
         let data: [String: Any] = ["postId": postId]
         _ = try await functions.httpsCallable("toggleCommunityReport").call(data)
+    }
+
+    func createComment(postId: String, text: String) async throws {
+        let data: [String: Any] = [
+            "postId": postId,
+            "text": text,
+        ]
+        _ = try await functions.httpsCallable("createCommunityComment").call(data)
+    }
+
+    func observeComments(
+        postId: String,
+        onChange: @escaping ([CommunityComment]) -> Void
+    ) -> ListenerRegistration {
+        db.collection("communityPosts")
+            .document(postId)
+            .collection("comments")
+            .order(by: "createdAt", descending: false)
+            .addSnapshotListener { snapshot, error in
+                if let error = error {
+                    print("[CommunityAPI] observeComments error:", error)
+                    onChange([])
+                    return
+                }
+                guard let snapshot = snapshot else {
+                    onChange([])
+                    return
+                }
+
+                let comments = snapshot.documents.compactMap { CommunityComment(from: $0) }
+                onChange(comments)
+            }
     }
 }

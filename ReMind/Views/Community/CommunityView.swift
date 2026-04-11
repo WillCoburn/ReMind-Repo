@@ -21,6 +21,7 @@ struct CommunityView: View {
     @State private var blockListener: ListenerRegistration?
     @State private var isAtTop = true
     @State private var isStartingListener = false
+    @State private var selectedPostForThread: CommunityPost?
 
     private var isUserActive: Bool { true }
 
@@ -78,6 +79,11 @@ struct CommunityView: View {
         )
         .onAppear { startListeningIfNeeded() }
         .onDisappear { stopListening() }
+        .sheet(item: $selectedPostForThread) { post in
+            NavigationStack {
+                CommunityThreadView(post: post)
+            }
+        }
         // Hide the nav bar so the custom header/background fill the safe areas.
         .toolbar(.hidden, for: .navigationBar)
     }
@@ -158,6 +164,9 @@ struct CommunityView: View {
                                     isReported: isReported(post),
                                     onLike: { handleLike(post) },
                                     onReport: { handleReport(post) },
+                                    onOpenThread: {
+                                        selectedPostForThread = post
+                                    },
                                     onBlock: {
                                         Task {
                                             await blockAuthor(post.authorId)
@@ -427,9 +436,147 @@ private extension CommunityPost {
             createdAt: createdAt,
             likeCount: max(0, likeCount + likeDelta),
             reportCount: max(0, reportCount + reportDelta),
+            commentCount: commentCount,
             isHidden: isHidden,
             expiresAt: expiresAt
         )
+    }
+}
+
+private struct CommunityThreadView: View {
+    let post: CommunityPost
+
+    private let blockService: BlockService = FirestoreBlockService()
+    @State private var comments: [CommunityComment] = []
+    @State private var blockedAuthorIds: Set<String> = []
+    @State private var listener: ListenerRegistration?
+    @State private var blockedListener: ListenerRegistration?
+    @State private var newCommentText: String = ""
+    @State private var sendError: String?
+    @State private var isSending = false
+
+    var body: some View {
+        VStack(spacing: 12) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    CommunityPostRow(post: post, isLiked: false, isReported: false)
+                        .allowsHitTesting(false)
+
+                    if comments.isEmpty {
+                        Text("No replies yet. Start the discussion.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 8)
+                    } else {
+                        ForEach(comments) { comment in
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(comment.text)
+                                    .foregroundColor(.black)
+                                Text(timeAgoString(from: comment.createdAt))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color.paletteIvory.opacity(0.9))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(Color.figmaBlue.opacity(0.5), lineWidth: 1)
+                            )
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
+            }
+
+            VStack(spacing: 8) {
+                TextField("Write a reply…", text: $newCommentText, axis: .vertical)
+                    .lineLimit(1...5)
+                    .textFieldStyle(.roundedBorder)
+
+                Button {
+                    Task { await sendComment() }
+                } label: {
+                    if isSending {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Text("Reply")
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isSending || newCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding()
+            .background(.ultraThinMaterial)
+        }
+        .navigationTitle("Thread")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            startListeners()
+        }
+        .onDisappear {
+            listener?.remove()
+            blockedListener?.remove()
+        }
+        .alert(
+            "Unable to send reply",
+            isPresented: Binding(
+                get: { sendError != nil },
+                set: { if !$0 { sendError = nil } }
+            ),
+            actions: {
+                Button("OK", role: .cancel) { sendError = nil }
+            },
+            message: { Text(sendError ?? "Please try again.") }
+        )
+    }
+
+    private func startListeners() {
+        listener = CommunityAPI.shared.observeComments(postId: post.id) { newComments in
+            Task { @MainActor in
+                comments = newComments.filter { !blockedAuthorIds.contains($0.authorId) }
+            }
+        }
+
+        blockedListener = blockService.listenBlockedAuthorIds { ids in
+            Task { @MainActor in
+                blockedAuthorIds = ids
+                comments = comments.filter { !ids.contains($0.authorId) }
+            }
+        }
+    }
+
+    private func sendComment() async {
+        let text = newCommentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        await MainActor.run { isSending = true }
+
+        do {
+            try await CommunityAPI.shared.createComment(postId: post.id, text: text)
+            await MainActor.run {
+                newCommentText = ""
+                isSending = false
+            }
+        } catch {
+            await MainActor.run {
+                sendError = "Please check your connection and try again."
+                isSending = false
+            }
+        }
+    }
+
+    private func timeAgoString(from date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        if interval < 60 { return "Just now" }
+        if interval < 3600 { return "\(Int(interval / 60))m ago" }
+        if interval < 86_400 { return "\(Int(interval / 3600))h ago" }
+        return "\(Int(interval / 86_400))d ago"
     }
 }
 
