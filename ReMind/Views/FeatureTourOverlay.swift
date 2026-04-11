@@ -273,6 +273,7 @@ private struct WelcomeTourIllustration: View {
     @State private var stemGrown = false
     @State private var leavesStageOne = false
     @State private var leavesStageTwo = false
+    @State private var bloomVisible = false
     @State private var idleBreathing = false
     @State private var animationRunID = UUID()
 
@@ -401,6 +402,28 @@ private struct WelcomeTourIllustration: View {
             }
             .offset(y: 8)
 
+            SimpleBloomShape()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 231/255, green: 198/255, blue: 222/255),
+                            Color(red: 212/255, green: 174/255, blue: 203/255)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    Circle()
+                        .fill(Color.white.opacity(0.42))
+                        .frame(width: 3, height: 3)
+                )
+                .frame(width: 18, height: 18)
+                .offset(y: -42)
+                .opacity(bloomVisible ? 1 : 0)
+                .scaleEffect(bloomVisible ? 1 : 0.25)
+                .shadow(color: Color(red: 180/255, green: 130/255, blue: 168/255).opacity(0.18), radius: 3, x: 0, y: 1)
+
             Circle()
                 .fill(
                     LinearGradient(
@@ -427,52 +450,71 @@ private struct WelcomeTourIllustration: View {
         .onAppear {
             let runID = UUID()
             animationRunID = runID
+            resetAnimationState()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                guard animationRunID == runID else { return }
+                startAnimationSequence(runID: runID)
+            }
+        }
+        .onDisappear {
+            animationRunID = UUID()
+        }
+    }
+
+    private func resetAnimationState() {
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
             glowPulse = false
             seedDropped = false
             seedHidden = false
             stemGrown = false
             leavesStageOne = false
             leavesStageTwo = false
+            bloomVisible = false
             idleBreathing = false
+        }
+    }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
-                guard animationRunID == runID else { return }
-                glowPulse = true
-            }
+    private func startAnimationSequence(runID: UUID) {
+        glowPulse = true
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-                guard animationRunID == runID else { return }
-                seedDropped = true
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
-                guard animationRunID == runID else { return }
-                seedHidden = true
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.70) {
-                guard animationRunID == runID else { return }
-                withAnimation(.easeOut(duration: 0.66)) {
-                    stemGrown = true
-                }
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.90) {
-                guard animationRunID == runID else { return }
-                withAnimation(.easeOut(duration: 0.36)) {
-                    leavesStageOne = true
-                }
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.14) {
-                guard animationRunID == runID else { return }
-                withAnimation(.easeOut(duration: 0.34)) {
-                    leavesStageTwo = true
-                }
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.52) {
-                guard animationRunID == runID else { return }
-                idleBreathing = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+            guard animationRunID == runID else { return }
+            seedDropped = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.78) {
+            guard animationRunID == runID else { return }
+            seedHidden = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.92) {
+            guard animationRunID == runID else { return }
+            withAnimation(.easeOut(duration: 0.84)) {
+                stemGrown = true
             }
         }
-        .onDisappear {
-            animationRunID = UUID()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.18) {
+            guard animationRunID == runID else { return }
+            withAnimation(.easeOut(duration: 0.42)) {
+                leavesStageOne = true
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.48) {
+            guard animationRunID == runID else { return }
+            withAnimation(.easeOut(duration: 0.40)) {
+                leavesStageTwo = true
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.78) {
+            guard animationRunID == runID else { return }
+            withAnimation(.easeOut(duration: 0.32)) {
+                bloomVisible = true
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.08) {
+            guard animationRunID == runID else { return }
+            idleBreathing = true
         }
     }
 }
@@ -493,6 +535,35 @@ private struct SeedLeafShape: Shape {
             control1: CGPoint(x: rect.minX + rect.width * 0.78, y: rect.maxY - rect.height * 0.06),
             control2: CGPoint(x: rect.minX + rect.width * 0.28, y: rect.maxY + rect.height * 0.08)
         )
+        return path
+    }
+}
+
+private struct SimpleBloomShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let petalRadius = min(rect.width, rect.height) * 0.22
+        let ringRadius = min(rect.width, rect.height) * 0.26
+
+        let offsets = [
+            CGPoint(x: 0, y: -ringRadius),
+            CGPoint(x: ringRadius, y: 0),
+            CGPoint(x: 0, y: ringRadius),
+            CGPoint(x: -ringRadius, y: 0),
+            CGPoint(x: 0, y: 0)
+        ]
+
+        for offset in offsets {
+            let petalRect = CGRect(
+                x: center.x + offset.x - petalRadius,
+                y: center.y + offset.y - petalRadius,
+                width: petalRadius * 2,
+                height: petalRadius * 2
+            )
+            path.addEllipse(in: petalRect)
+        }
+
         return path
     }
 }
