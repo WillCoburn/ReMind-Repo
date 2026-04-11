@@ -70,11 +70,7 @@ struct CommunityComment: Identifiable, Hashable {
             return nil
         }
 
-        let text = (data["text"] as? String)
-            ?? (data["content"] as? String)
-            ?? (data["body"] as? String)
-            ?? (data["message"] as? String)
-            ?? ""
+        let text = Self.extractText(from: data)
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
@@ -99,6 +95,20 @@ struct CommunityComment: Identifiable, Hashable {
         self.authorId = authorId
         self.text = text
         self.createdAt = createdAt
+    }
+
+    private static func extractText(from data: [String: Any]) -> String {
+        let candidates = ["text", "content", "body", "message"]
+        for key in candidates {
+            guard let raw = data[key] else { continue }
+            if let value = raw as? String { return value }
+            if let value = raw as? NSString { return value as String }
+            if let nested = raw as? [String: Any] {
+                if let value = nested["text"] as? String { return value }
+                if let value = nested["value"] as? String { return value }
+            }
+        }
+        return ""
     }
 }
 
