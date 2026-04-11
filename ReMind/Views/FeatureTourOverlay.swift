@@ -267,9 +267,9 @@ private struct FeatureTourPageView: View {
 }
 
 private struct WelcomeTourIllustration: View {
-    @State private var handWave = false
-    @State private var badgePop = false
-    @State private var confettiRise = false
+    @State private var cheerBounce = false
+    @State private var armCheer = false
+    @State private var sparklePop = false
 
     var body: some View {
         ZStack {
@@ -277,53 +277,80 @@ private struct WelcomeTourIllustration: View {
                 .fill(Color.figmaBlue.opacity(0.08))
                 .frame(width: 240, height: 240)
 
+            HStack(spacing: 112) {
+                Circle()
+                    .fill(Color.figmaBlue.opacity(0.95))
+                    .frame(width: 16, height: 16)
+                    .offset(y: armCheer ? -12 : 10)
+                    .animation(.easeInOut(duration: 0.44).repeatForever(autoreverses: true), value: armCheer)
+
+                Circle()
+                    .fill(Color.figmaBlue.opacity(0.95))
+                    .frame(width: 16, height: 16)
+                    .offset(y: armCheer ? -12 : 10)
+                    .animation(.easeInOut(duration: 0.44).repeatForever(autoreverses: true).delay(0.08), value: armCheer)
+            }
+            .offset(y: -2)
+
+            BrainMascotShape()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 160/255, green: 202/255, blue: 1),
+                            Color(red: 117/255, green: 174/255, blue: 1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 156, height: 132)
+                .overlay {
+                    BrainMascotShape()
+                        .stroke(Color.figmaBlue.opacity(0.35), lineWidth: 2)
+                }
+                .overlay {
+                    BrainGroovesShape()
+                        .stroke(Color.figmaBlue.opacity(0.26), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                }
+                .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
+                .offset(y: cheerBounce ? -7 : 7)
+                .animation(.easeInOut(duration: 0.62).repeatForever(autoreverses: true), value: cheerBounce)
+                .overlay {
+                    HStack(spacing: 24) {
+                        Circle().fill(Color.figmaBlue).frame(width: 8, height: 8)
+                        Circle().fill(Color.figmaBlue).frame(width: 8, height: 8)
+                    }
+                    .offset(y: -10)
+                }
+                .overlay {
+                    SmileArc()
+                        .stroke(Color.figmaBlue, style: StrokeStyle(lineWidth: 4.5, lineCap: .round))
+                        .frame(width: 52, height: 26)
+                        .offset(y: 16)
+                }
+
             Image(systemName: "sparkles")
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color.figmaBlue.opacity(0.55))
-                .offset(x: confettiRise ? -60 : -42, y: confettiRise ? -64 : -26)
-                .opacity(confettiRise ? 0.95 : 0.25)
-                .animation(.easeOut(duration: 1.2).repeatForever(autoreverses: true), value: confettiRise)
+                .foregroundStyle(Color.figmaBlue.opacity(0.6))
+                .scaleEffect(sparklePop ? 1.0 : 0.7)
+                .offset(x: -72, y: -62)
+                .animation(.spring(response: 0.45, dampingFraction: 0.6).repeatForever(autoreverses: true), value: sparklePop)
 
             Image(systemName: "sparkles")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Color.figmaBlue.opacity(0.45))
-                .offset(x: confettiRise ? 56 : 40, y: confettiRise ? -56 : -22)
-                .opacity(confettiRise ? 0.9 : 0.3)
-                .animation(.easeOut(duration: 1.0).repeatForever(autoreverses: true).delay(0.2), value: confettiRise)
-
-            Circle()
-                .fill(Color.white)
-                .frame(width: 126, height: 126)
-                .shadow(color: .black.opacity(0.08), radius: 14, x: 0, y: 8)
-
-            Circle()
-                .fill(Color.figmaBlue.opacity(0.14))
-                .frame(width: 102, height: 102)
-
-            Image(systemName: "hand.wave.fill")
-                .font(.system(size: 58, weight: .semibold))
-                .foregroundStyle(Color.figmaBlue)
-                .rotationEffect(.degrees(handWave ? 15 : -12), anchor: .bottomTrailing)
-                .offset(y: 2)
-                .animation(.easeInOut(duration: 0.42).repeatForever(autoreverses: true), value: handWave)
-
-            Image(systemName: "heart.fill")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(Color(red: 1.0, green: 123/255, blue: 155/255))
-                .padding(8)
-                .background(Color.white)
-                .clipShape(Circle())
-                .scaleEffect(badgePop ? 1.0 : 0.74)
-                .offset(x: 54, y: -44)
-                .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
-                .animation(.spring(response: 0.42, dampingFraction: 0.62).repeatForever(autoreverses: true), value: badgePop)
+                .foregroundStyle(Color.figmaBlue.opacity(0.52))
+                .scaleEffect(sparklePop ? 1.0 : 0.76)
+                .offset(x: 74, y: -50)
+                .animation(.spring(response: 0.45, dampingFraction: 0.6).repeatForever(autoreverses: true).delay(0.1), value: sparklePop)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
         .onAppear {
-            handWave = true
-            badgePop = true
-            confettiRise = true
+            cheerBounce = true
+            armCheer = true
+            sparklePop = true
         }
     }
 }
@@ -331,6 +358,7 @@ private struct WelcomeTourIllustration: View {
 private struct ExportTourIllustration: View {
     @State private var pulse = false
     @State private var penWiggle = false
+    @State private var bulbGlow = false
 
     var body: some View {
         ZStack {
@@ -351,7 +379,7 @@ private struct ExportTourIllustration: View {
                 .frame(width: 148, height: 194)
                 .overlay {
                     VStack(alignment: .leading, spacing: 10) {
-                        ForEach(0..<6, id: \.self) { _ in
+                        ForEach(0..<4, id: \.self) { _ in
                             Capsule().fill(Color.figmaBlue.opacity(0.18)).frame(width: 108, height: 5)
                         }
                     }
@@ -378,13 +406,85 @@ private struct ExportTourIllustration: View {
                     y: 18 + (penWiggle ? 1.0 : -1.0)
                 )
                 .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: penWiggle)
+
+            VStack(spacing: 6) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 1.0, green: 214/255, blue: 92/255),
+                                Color(red: 1.0, green: 186/255, blue: 66/255)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .scaleEffect(bulbGlow ? 1.08 : 0.9)
+                    .shadow(color: Color(red: 1.0, green: 214/255, blue: 92/255).opacity(bulbGlow ? 0.45 : 0.1), radius: bulbGlow ? 14 : 4)
+
+                HStack(spacing: 10) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        Capsule()
+                            .fill(Color(red: 1.0, green: 207/255, blue: 89/255).opacity(0.8))
+                            .frame(width: 4, height: 13)
+                    }
+                }
+                .opacity(bulbGlow ? 0.95 : 0.35)
+                .scaleEffect(y: bulbGlow ? 1.0 : 0.55, anchor: .bottom)
+            }
+            .offset(y: -86)
+            .animation(.easeInOut(duration: 0.68).repeatForever(autoreverses: true), value: bulbGlow)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
         .onAppear {
             pulse = true
             penWiggle = true
+            bulbGlow = true
         }
+    }
+}
+
+private struct BrainMascotShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.addEllipse(in: rect)
+        return path
+    }
+}
+
+private struct BrainGroovesShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.width * 0.26, y: rect.height * 0.18))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.width * 0.3, y: rect.height * 0.84),
+            control: CGPoint(x: rect.width * 0.18, y: rect.height * 0.52)
+        )
+        path.move(to: CGPoint(x: rect.width * 0.5, y: rect.height * 0.12))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.width * 0.5, y: rect.height * 0.88),
+            control: CGPoint(x: rect.width * 0.62, y: rect.height * 0.52)
+        )
+        path.move(to: CGPoint(x: rect.width * 0.74, y: rect.height * 0.18))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.width * 0.7, y: rect.height * 0.84),
+            control: CGPoint(x: rect.width * 0.82, y: rect.height * 0.52)
+        )
+        return path
+    }
+}
+
+private struct SmileArc: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX + rect.width * 0.1, y: rect.midY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX - rect.width * 0.1, y: rect.midY),
+            control: CGPoint(x: rect.midX, y: rect.maxY)
+        )
+        return path
     }
 }
 
