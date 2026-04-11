@@ -14,14 +14,14 @@ struct FeatureTourOverlay: View {
         .init(
             step: .settings,
             title: "Welcome in!",
-            message: "Nice job taking a step to be kinder to yourself.",
+            message: "Nice job being kinder to yourself.",
             imageName: "OnboardMeditate",
             textAlignment: .center
         ),
         .init(
             step: .export,
-            title: "Use this to jot down your moments clarity and positivity when they come.",
-            message: "They'll be texted back to you at random times to encourage the future you, hopefully when you need it most.",
+            title: "Think of this app as a micro-journal for your flashes of clarity and positivity.",
+            message: "These things that inspire you will be randomly texted back, hopefully to remind you when you need it most.",
             imageName: "Onboard2",
             textAlignment: .center
         ),
