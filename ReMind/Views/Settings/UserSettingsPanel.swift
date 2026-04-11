@@ -67,6 +67,8 @@ struct UserSettingsForm: View {
   @State private var mailError: String?
   @State private var restoreMessage: String?
   @State private var showPaywall = false
+  @State private var showDeleteSheet = false
+  @State private var showCommunityGuidelines = false
 
   var body: some View {
       VStack(alignment: .leading, spacing: 20) {
@@ -83,16 +85,12 @@ struct UserSettingsForm: View {
                   )
           }
 
+          Text("Automatic Reminder Settings")
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+
           RemindersPerWeekSection(remindersPerWeek: $remindersPerWeek, isProUser: appVM.isProUser)
               .onChange(of: remindersPerWeek) { _ in handleSettingChange() }
-
-          Divider()
-
-          TimeZoneSection(
-              tzIdentifier: $tzIdentifier,
-              usTimeZones: SettingsHelpers.usTimeZones()
-          )
-          .onChange(of: tzIdentifier) { _ in handleSettingChange() }
 
           Divider()
 
@@ -106,21 +104,15 @@ struct UserSettingsForm: View {
 
           Divider()
 
-          BackgroundPickerSection(
-              photoItem: $photoItem,
-              bgImageBase64: $bgImageBase64,
-              loadError: $loadError
+          TimeZoneSection(
+              tzIdentifier: $tzIdentifier,
+              usTimeZones: SettingsHelpers.usTimeZones()
           )
-          .onChange(of: bgImageBase64) { _ in handleSettingChange() }
+          .onChange(of: tzIdentifier) { _ in handleSettingChange() }
 
-          Divider()
-
-          FeedbackSupportSection(
-              showMailSheet: $showMailSheet,
-              mailError: $mailError
-          )
-
-          Divider()
+          Text("My Experience")
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
 
           SubscriptionSection(
               appVM: appVM,
@@ -135,10 +127,49 @@ struct UserSettingsForm: View {
 
           Divider()
 
+          BackgroundPickerSection(
+              photoItem: $photoItem,
+              bgImageBase64: $bgImageBase64,
+              loadError: $loadError
+          )
+          .onChange(of: bgImageBase64) { _ in handleSettingChange() }
+
+          Text("Account")
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+
+          FeedbackSupportSection(
+              showMailSheet: $showMailSheet,
+              mailError: $mailError
+          )
+
+          Divider()
+
+          Button {
+              showCommunityGuidelines = true
+          } label: {
+              Label("Community Guidelines", systemImage: "book.fill")
+                  .font(.subheadline.weight(.semibold))
+                  .foregroundColor(.accentColor)
+          }
+
+          Divider()
+
           Button(role: .destructive) {
               appVM.logout()
           } label: {
               Text("Log Out")
+                  .frame(maxWidth: .infinity)
+          }
+          .frame(maxWidth: .infinity, alignment: .center)
+          .padding(.vertical, 12)
+
+          Divider()
+
+          Button(role: .destructive) {
+              showDeleteSheet = true
+          } label: {
+              Text("Delete Account")
                   .frame(maxWidth: .infinity)
           }
           .frame(maxWidth: .infinity, alignment: .center)
@@ -156,6 +187,13 @@ struct UserSettingsForm: View {
         }
         .sheet(isPresented: $showPaywall) {
             SubscriptionSheet()
+        }
+        .sheet(isPresented: $showDeleteSheet) {
+            DeleteAccountSheet(isPresented: $showDeleteSheet)
+                .environmentObject(appVM)
+        }
+        .sheet(isPresented: $showCommunityGuidelines) {
+            SafariView(url: URL(string: "https://re-mind-app.github.io/remind-site/")!)
         }
         .onAppear {
             //no RC calls
