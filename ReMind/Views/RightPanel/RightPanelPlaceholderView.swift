@@ -187,9 +187,27 @@ struct RightPanelPlaceholderView: View {
                         .fill(Color.yellow.opacity(0.20))
                 )
             }
-            // CLEANUP AFTER: remove remaining trial-only view helpers below once old versions are sunset.
-            
-            // Top group
+
+            automaticSettingsSection
+            experienceSection
+            accountSection
+        }
+    }
+
+    private func settingsSectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.footnote.weight(.semibold))
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 20)
+            .textCase(.uppercase)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 2)
+    }
+
+    private var automaticSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            settingsSectionHeader("Automatic Reminder Settings")
+
             VStack(spacing: 0) {
                 SettingsRow(
                     title: "Automated Reminders Per Week",
@@ -214,22 +232,45 @@ struct RightPanelPlaceholderView: View {
             }
             .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
 
-            // Middle group
+    private var experienceSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            settingsSectionHeader("My Experience")
+
             VStack(spacing: 0) {
+                SettingsRow(
+                    title: "Subscription",
+                    value: nil,
+                    isDestructive: false,
+                    action: { activeSheet = .subscription }
+                )
+
                 SettingsRow(
                     title: "Personalize Background",
                     value: nil,
                     isDestructive: false,
                     action: { activeSheet = .background }
                 )
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
 
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            settingsSectionHeader("Account")
+
+            VStack(spacing: 0) {
                 SettingsRow(
                     title: "Contact Us",
                     value: nil,
                     isDestructive: false,
                     action: openSupport
                 )
+
                 SettingsRow(
                     title: "Community Guidelines",
                     value: nil,
@@ -237,18 +278,6 @@ struct RightPanelPlaceholderView: View {
                     action: { showCommunityGuidelines = true }
                 )
 
-                SettingsRow(
-                    title: "Subscription",
-                    value: nil,
-                    isDestructive: false,
-                    action: { activeSheet = .subscription }
-                )
-            }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-            // Bottom group
-            VStack(spacing: 0) {
                 SettingsRow(
                     title: "Log Out",
                     value: nil,
