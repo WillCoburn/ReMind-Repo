@@ -26,6 +26,13 @@ struct FeatureTourOverlay: View {
             textAlignment: .center
         ),
         .init(
+            step: .phoneNumber,
+            title: "Next, we’ll ask for your phone number.",
+            message: "We never share it or use it for spam — it’s only used to send your own entries back to you.",
+            imageName: nil,
+            textAlignment: .center
+        ),
+        .init(
             step: .sendNow,
             title: "",
             message: "If you have some positivity to share, the community page is the place to uplift others.",
@@ -115,13 +122,13 @@ private struct FeatureTourPage: Identifiable {
     let step: AppViewModel.FeatureTourStep
     let title: String
     let message: String
-    let imageName: String
+    let imageName: String?
     let textAlignment: HorizontalAlignment
 
     init(step: AppViewModel.FeatureTourStep,
          title: String,
          message: String,
-         imageName: String,
+         imageName: String?,
          textAlignment: HorizontalAlignment) {
 
         self.id = step
@@ -188,11 +195,99 @@ private struct FeatureTourPageView: View {
     }
 
     private var illustration: some View {
-        Image(page.imageName)
-            .resizable()
-            .scaledToFit()
-            .frame(maxWidth: 360)
-            .frame(maxWidth: .infinity)
+        Group {
+            if page.step == .phoneNumber {
+                PhoneNumberTourIllustration()
+            } else if let imageName = page.imageName {
+                Image(imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 360)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+    }
+}
+
+private struct PhoneNumberTourIllustration: View {
+    @State private var bob = false
+    @State private var pulse = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.figmaBlue.opacity(0.10))
+                .frame(width: 220, height: 220)
+                .scaleEffect(pulse ? 1.0 : 0.92)
+                .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: pulse)
+
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white, Color(red: 238/255, green: 246/255, blue: 1)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: 140, height: 220)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .stroke(Color.figmaBlue.opacity(0.25), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 10)
+                .offset(y: bob ? -5 : 5)
+                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: bob)
+                .overlay(alignment: .top) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.figmaBlue.opacity(0.25))
+                        .frame(width: 42, height: 5)
+                        .padding(.top, 10)
+                }
+
+            VStack(spacing: 10) {
+                Image(systemName: "phone.fill")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundStyle(Color.figmaBlue)
+
+                Text("(555) 123-4567")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                HStack(spacing: 6) {
+                    ForEach(0..<3, id: \.self) { index in
+                        Circle()
+                            .fill(Color.figmaBlue.opacity(index == 1 ? 0.9 : 0.4))
+                            .frame(width: 6, height: 6)
+                    }
+                }
+            }
+
+            HStack(spacing: 14) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(Color.figmaBlue)
+                    .padding(10)
+                    .background(.white)
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+
+                Text("Private")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.figmaBlue)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(.white)
+                    .clipShape(Capsule())
+                    .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+            }
+            .offset(x: 95, y: -70)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 280)
+        .onAppear {
+            bob = true
+            pulse = true
+        }
     }
 }
 
@@ -223,6 +318,13 @@ struct FeatureTourOverlay_Previews: PreviewProvider {
                 onSkip: {}
             )
             .previewDisplayName("Send Now")
+
+            FeatureTourOverlay(
+                step: .constant(.phoneNumber),
+                onComplete: {},
+                onSkip: {}
+            )
+            .previewDisplayName("Phone Number")
         }
     }
 }
