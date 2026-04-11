@@ -66,8 +66,16 @@ struct CommunityComment: Identifiable, Hashable {
     let createdAt: Date
 
     init?(from doc: DocumentSnapshot) {
-        guard let data = doc.data(),
-              let text = data["text"] as? String else {
+        guard let data = doc.data() else {
+            return nil
+        }
+
+        let text = (data["text"] as? String)
+            ?? (data["content"] as? String)
+            ?? (data["body"] as? String)
+            ?? (data["message"] as? String)
+            ?? ""
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
 
