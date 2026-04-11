@@ -76,6 +76,7 @@ export const createCommunityPost = onCall(async (request) => {
     expiresAt,
     likeCount: 0,
     reportCount: 0,
+    commentCount: 0,
     isHidden: false,
   });
 
@@ -129,6 +130,54 @@ export const toggleCommunityLike = onCall(async (request) => {
     });
 
     return { liked: !alreadyLiked, likeCount: nextCount };
+  });
+});
+
+export const createCommunityComment = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "You must be signed in to reply.");
+  }
+
+  const postId = (request.data?.postId ?? "") as string;
+  if (!postId) {
+    throw new HttpsError("invalid-argument", "A postId is required.");
+  }
+
+  const textRaw = (request.data?.text ?? "") as string;
+  const text = textRaw.trim();
+  if (!text) {
+    throw new HttpsError("invalid-argument", "Reply text is required.");
+  }
+  if (text.length > 500) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Reply must be ≤ 500 characters."
+    );
+  }
+
+  const postRef = db.collection("communityPosts").doc(postId);
+  const commentRef = postRef.collection("comments").doc();
+
+  return await db.runTransaction(async (tx) => {
+    const postSnap = await tx.get(postRef);
+    if (!postSnap.exists) {
+      throw new HttpsError("not-found", "Post not found.");
+    }
+
+    const now = Timestamp.now();
+    const currentCount = (postSnap.data()?.commentCount ?? 0) as number;
+
+    tx.set(commentRef, {
+      authorId: uid,
+      text,
+      createdAt: now,
+    });
+    tx.update(postRef, {
+      commentCount: currentCount + 1,
+    });
+
+    return { ok: true };
   });
 });
 
