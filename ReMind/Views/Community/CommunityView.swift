@@ -1,6 +1,7 @@
 import SwiftUI
 import FirebaseFirestore
 import FirebaseFunctions
+import FirebaseAuth
 
 struct CommunityView: View {
     @EnvironmentObject private var appVM: AppViewModel
@@ -447,6 +448,8 @@ private struct CommunityThreadView: View {
     let post: CommunityPost
 
     private let blockService: BlockService = FirestoreBlockService()
+    private let currentUserId = Auth.auth().currentUser?.uid
+    @State private var allComments: [CommunityComment] = []
     @State private var comments: [CommunityComment] = []
     @State private var blockedAuthorIds: Set<String> = []
     @State private var listener: ListenerRegistration?
@@ -467,9 +470,9 @@ private struct CommunityThreadView: View {
                             .allowsHitTesting(false)
 
                         if comments.isEmpty {
-                            Text("No replies yet. Start the discussion.")
+                            Text(post.commentCount > 0 ? "Replies are syncing. Pull down to refresh in a moment." : "No replies yet. Start the discussion.")
                                 .font(.subheadline)
-                                .foregroundColor(Color.palettePewter.opacity(0.95))
+                                .foregroundColor(Color.palettePewter.opacity(0.9))
                                 .padding(.vertical, 8)
                         } else {
                             ForEach(comments) { comment in
@@ -498,14 +501,23 @@ private struct CommunityThreadView: View {
                 }
 
                 VStack(spacing: 8) {
-                    TextField("Write a reply…", text: $newCommentText, axis: .vertical)
+                    TextField("", text: $newCommentText, axis: .vertical)
                         .lineLimit(1...5)
+                        .foregroundColor(.black)
+                        .tint(.black)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 12)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
                                 .fill(Color.paletteIvory.opacity(0.9))
                         )
+                        .overlay(alignment: .leading) {
+                            if newCommentText.isEmpty {
+                                Text("Write a reply…")
+                                    .foregroundColor(Color.palettePewter.opacity(0.9))
+                                    .padding(.horizontal, 14)
+                            }
+                        }
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
                                 .stroke(Color.figmaBlue, lineWidth: 1)
@@ -558,14 +570,15 @@ private struct CommunityThreadView: View {
     private func startListeners() {
         listener = CommunityAPI.shared.observeComments(postId: post.id) { newComments in
             Task { @MainActor in
-                comments = newComments.filter { !blockedAuthorIds.contains($0.authorId) }
+                allComments = newComments
+                comments = filteredComments(from: newComments)
             }
         }
 
         blockedListener = blockService.listenBlockedAuthorIds { ids in
             Task { @MainActor in
                 blockedAuthorIds = ids
-                comments = comments.filter { !ids.contains($0.authorId) }
+                comments = filteredComments(from: allComments)
             }
         }
     }
@@ -595,6 +608,16 @@ private struct CommunityThreadView: View {
         if interval < 3600 { return "\(Int(interval / 60))m ago" }
         if interval < 86_400 { return "\(Int(interval / 3600))h ago" }
         return "\(Int(interval / 86_400))d ago"
+    }
+
+    private func filteredComments(from source: [CommunityComment]) -> [CommunityComment] {
+        source.filter { comment in
+            guard !comment.authorId.isEmpty else { return true }
+            if let currentUserId, comment.authorId == currentUserId {
+                return true
+            }
+            return !blockedAuthorIds.contains(comment.authorId)
+        }
     }
 }
 
