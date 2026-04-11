@@ -447,6 +447,7 @@ private extension CommunityPost {
 private struct CommunityThreadView: View {
     let post: CommunityPost
 
+    @EnvironmentObject private var appVM: AppViewModel
     private let blockService: BlockService = FirestoreBlockService()
     private let currentUserId = Auth.auth().currentUser?.uid
     @State private var allComments: [CommunityComment] = []
@@ -489,7 +490,7 @@ private struct CommunityThreadView: View {
                                         } label: {
                                             Label(
                                                 "\(comment.likeCount)",
-                                                systemImage: likedCommentIds.contains(comment.id) ? "heart.fill" : "heart"
+                                                systemImage: isCommentLiked(comment.id) ? "heart.fill" : "heart"
                                             )
                                             .font(.subheadline.weight(.semibold))
                                             .padding(.horizontal, 8)
@@ -503,7 +504,7 @@ private struct CommunityThreadView: View {
                                         } label: {
                                             Label(
                                                 "\(comment.reportCount)",
-                                                systemImage: reportedCommentIds.contains(comment.id) ? "flag.fill" : "flag"
+                                                systemImage: isCommentReported(comment.id) ? "flag.fill" : "flag"
                                             )
                                             .font(.subheadline.weight(.semibold))
                                             .padding(.horizontal, 8)
@@ -682,10 +683,18 @@ private struct CommunityThreadView: View {
     }
 
     private func handleCommentLike(_ comment: CommunityComment) {
+        let godModeEnabled = appVM.isGodModeUser
         Task {
             do {
                 try await CommunityAPI.shared.toggleCommentLike(postId: post.id, commentId: comment.id)
+                if godModeEnabled {
+                    await MainActor.run {
+                        syncCommentInteractionState(for: comments)
+                    }
+                }
             } catch {
+                let nsError = error as NSError
+                print("[CommunityThreadView] like failed post=\(post.id) comment=\(comment.id) domain=\(nsError.domain) code=\(nsError.code) message=\(nsError.localizedDescription)")
                 await MainActor.run {
                     sendError = "Couldn't update like right now. Please try again."
                 }
@@ -694,10 +703,18 @@ private struct CommunityThreadView: View {
     }
 
     private func handleCommentReport(_ comment: CommunityComment) {
+        let godModeEnabled = appVM.isGodModeUser
         Task {
             do {
                 try await CommunityAPI.shared.toggleCommentReport(postId: post.id, commentId: comment.id)
+                if godModeEnabled {
+                    await MainActor.run {
+                        syncCommentInteractionState(for: comments)
+                    }
+                }
             } catch {
+                let nsError = error as NSError
+                print("[CommunityThreadView] flag failed post=\(post.id) comment=\(comment.id) domain=\(nsError.domain) code=\(nsError.code) message=\(nsError.localizedDescription)")
                 await MainActor.run {
                     sendError = "Couldn't update flag right now. Please try again."
                 }
@@ -705,7 +722,23 @@ private struct CommunityThreadView: View {
         }
     }
 
+    private func isCommentLiked(_ commentId: String) -> Bool {
+        guard !appVM.isGodModeUser else { return false }
+        return likedCommentIds.contains(commentId)
+    }
+
+    private func isCommentReported(_ commentId: String) -> Bool {
+        guard !appVM.isGodModeUser else { return false }
+        return reportedCommentIds.contains(commentId)
+    }
+
     private func syncCommentInteractionState(for comments: [CommunityComment]) {
+        guard !appVM.isGodModeUser else {
+            likedCommentIds = []
+            reportedCommentIds = []
+            return
+        }
+
         guard let uid = currentUserId else {
             likedCommentIds = []
             reportedCommentIds = []

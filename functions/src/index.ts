@@ -6,6 +6,7 @@
 import "./config/options";
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import * as logger from "firebase-functions/logger";
 import { Timestamp } from "firebase-admin/firestore";
 import { db } from "./config/options";
 import { isGodMode } from "./config/godMode";
@@ -19,6 +20,17 @@ const COMMUNITY_POST_LIMIT_PER_DAY = 5;
 
 interface CommunityReportLimitDoc {
   recentReports?: Timestamp[];
+}
+
+
+function resolveCommentId(data: Record<string, unknown> | undefined): string {
+  const candidates = [data?.commentId, data?.replyId, data?.subCommentId];
+  for (const raw of candidates) {
+    if (typeof raw === "string" && raw.trim().length > 0) {
+      return raw.trim();
+    }
+  }
+  return "";
 }
 
 // -----------------------------
@@ -191,8 +203,13 @@ export const toggleCommunityCommentLike = onCall(async (request) => {
   }
 
   const postId = (request.data?.postId ?? "") as string;
-  const commentId = (request.data?.commentId ?? "") as string;
+  const commentId = resolveCommentId(request.data as Record<string, unknown> | undefined);
   if (!postId || !commentId) {
+    logger.error("toggleCommunityCommentLike invalid arguments", {
+      uid,
+      postId,
+      payloadKeys: Object.keys((request.data ?? {}) as Record<string, unknown>),
+    });
     throw new HttpsError("invalid-argument", "A postId and commentId are required.");
   }
 
@@ -206,6 +223,7 @@ export const toggleCommunityCommentLike = onCall(async (request) => {
   return await db.runTransaction(async (tx) => {
     const commentSnap = await tx.get(commentRef);
     if (!commentSnap.exists) {
+      logger.error("toggleCommunityCommentLike missing comment", { uid, postId, commentId });
       throw new HttpsError("not-found", "Reply not found.");
     }
 
@@ -242,8 +260,13 @@ export const toggleCommunityCommentReport = onCall(async (request) => {
   }
 
   const postId = (request.data?.postId ?? "") as string;
-  const commentId = (request.data?.commentId ?? "") as string;
+  const commentId = resolveCommentId(request.data as Record<string, unknown> | undefined);
   if (!postId || !commentId) {
+    logger.error("toggleCommunityCommentReport invalid arguments", {
+      uid,
+      postId,
+      payloadKeys: Object.keys((request.data ?? {}) as Record<string, unknown>),
+    });
     throw new HttpsError("invalid-argument", "A postId and commentId are required.");
   }
 
@@ -259,6 +282,7 @@ export const toggleCommunityCommentReport = onCall(async (request) => {
   return await db.runTransaction(async (tx) => {
     const commentSnap = await tx.get(commentRef);
     if (!commentSnap.exists) {
+      logger.error("toggleCommunityCommentReport missing comment", { uid, postId, commentId });
       throw new HttpsError("not-found", "Reply not found.");
     }
 
