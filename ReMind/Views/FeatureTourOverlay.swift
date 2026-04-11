@@ -267,90 +267,190 @@ private struct FeatureTourPageView: View {
 }
 
 private struct WelcomeTourIllustration: View {
-    @State private var badgePop = false
-    @State private var handWave = false
     @State private var glowPulse = false
-    @State private var confettiFloat = false
+    @State private var seedDropped = false
+    @State private var seedHidden = false
+    @State private var stemGrown = false
+    @State private var leavesStageOne = false
+    @State private var leavesStageTwo = false
+    @State private var idleBreathing = false
 
     var body: some View {
         ZStack {
             Circle()
                 .fill(Color.figmaBlue.opacity(0.08))
                 .frame(width: 240, height: 240)
-                .scaleEffect(glowPulse ? 1.04 : 0.92)
-                .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: glowPulse)
+                .scaleEffect(glowPulse ? 1.03 : 0.95)
+                .animation(
+                    .easeInOut(duration: 1.8).repeatForever(autoreverses: true),
+                    value: glowPulse
+                )
 
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            Ellipse()
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white,
-                            Color(red: 238/255, green: 246/255, blue: 1)
+                            Color(red: 168/255, green: 121/255, blue: 90/255),
+                            Color(red: 139/255, green: 95/255, blue: 68/255)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: 152, height: 56)
+                .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 6)
+                .offset(y: 62)
+
+            Capsule()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 140/255, green: 204/255, blue: 126/255),
+                            Color(red: 94/255, green: 170/255, blue: 102/255)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: 8, height: 104)
+                .scaleEffect(y: stemGrown ? 1 : 0.02, anchor: .bottom)
+                .offset(y: 10)
+                .shadow(color: Color.green.opacity(0.2), radius: 4, x: 0, y: 2)
+
+            Group {
+                SeedLeafShape()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 139/255, green: 210/255, blue: 123/255), Color(red: 95/255, green: 179/255, blue: 110/255)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 40, height: 22)
+                    .rotationEffect(.degrees(-28))
+                    .offset(x: -22, y: -4)
+                    .opacity(leavesStageOne ? 1 : 0)
+                    .scaleEffect(leavesStageOne ? 1 : 0.2, anchor: .trailing)
+
+                SeedLeafShape()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 145/255, green: 214/255, blue: 128/255), Color(red: 102/255, green: 182/255, blue: 112/255)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 40, height: 22)
+                    .rotationEffect(.degrees(28))
+                    .offset(x: 22, y: -10)
+                    .opacity(leavesStageOne ? 1 : 0)
+                    .scaleEffect(leavesStageOne ? 1 : 0.2, anchor: .leading)
+
+                SeedLeafShape()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 156/255, green: 218/255, blue: 136/255), Color(red: 108/255, green: 188/255, blue: 118/255)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 28, height: 16)
+                    .rotationEffect(.degrees(-4))
+                    .offset(x: -2, y: -42)
+                    .opacity(leavesStageTwo ? 1 : 0)
+                    .scaleEffect(leavesStageTwo ? 1 : 0.2, anchor: .bottom)
+
+                SeedLeafShape()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 146/255, green: 209/255, blue: 127/255), Color(red: 98/255, green: 176/255, blue: 110/255)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 24, height: 14)
+                    .rotationEffect(.degrees(20))
+                    .offset(x: 14, y: -28)
+                    .opacity(leavesStageTwo ? 1 : 0)
+                    .scaleEffect(leavesStageTwo ? 1 : 0.2, anchor: .leading)
+            }
+            .offset(y: 8)
+
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 128/255, green: 94/255, blue: 68/255),
+                            Color(red: 108/255, green: 76/255, blue: 56/255)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-                .frame(width: 188, height: 152)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(0.22), lineWidth: 1.5)
-                }
-                .overlay {
-                    VStack(spacing: 12) {
-                        Text("Welcome")
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.figmaBlue)
-
-                        HStack(spacing: 10) {
-                            Image(systemName: "hand.wave.fill")
-                                .font(.system(size: 22, weight: .semibold))
-                                .rotationEffect(.degrees(handWave ? 13 : -13), anchor: .bottomLeading)
-                                .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: handWave)
-                            Text("Glad you're here")
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                .foregroundStyle(Color.figmaBlue.opacity(0.75))
-                        }
-                    }
-                }
-                .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 8)
-                .scaleEffect(badgePop ? 1.0 : 0.92)
-                .offset(y: badgePop ? -2 : 8)
-                .animation(.spring(response: 0.7, dampingFraction: 0.68).repeatForever(autoreverses: true), value: badgePop)
-                .overlay {
-                    Circle()
-                        .fill(Color.green.opacity(0.95))
-                        .frame(width: 34, height: 34)
-                        .overlay {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
-                        .offset(x: 78, y: -62)
-                }
-
-            HStack(spacing: 50) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(Color.figmaBlue.opacity(0.54))
-                Image(systemName: "circle.fill")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(Color.figmaBlue.opacity(0.38))
-                Image(systemName: "sparkles")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.figmaBlue.opacity(0.58))
-            }
-            .offset(y: confettiFloat ? -96 : -74)
-            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: confettiFloat)
+                .frame(width: 12, height: 12)
+                .opacity(seedHidden ? 0 : 1)
+                .offset(y: seedDropped ? 66 : -34)
+                .shadow(color: .black.opacity(0.12), radius: 3, x: 0, y: 1)
+                .animation(.easeInOut(duration: 0.42), value: seedDropped)
+                .animation(.easeOut(duration: 0.16), value: seedHidden)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
+        .scaleEffect(idleBreathing ? 1.01 : 0.99)
+        .offset(y: idleBreathing ? -1.5 : 1.5)
+        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: idleBreathing)
         .onAppear {
-            badgePop = true
-            handWave = true
+            glowPulse = false
+            seedDropped = false
+            seedHidden = false
+            stemGrown = false
+            leavesStageOne = false
+            leavesStageTwo = false
+            idleBreathing = false
+
             glowPulse = true
-            confettiFloat = true
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) {
+                seedDropped = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                seedHidden = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.50) {
+                withAnimation(.easeOut(duration: 0.50)) {
+                    stemGrown = true
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
+                withAnimation(.easeOut(duration: 0.28)) {
+                    leavesStageOne = true
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.78) {
+                withAnimation(.easeOut(duration: 0.26)) {
+                    leavesStageTwo = true
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.10) {
+                idleBreathing = true
+            }
         }
+    }
+}
+
+private struct SeedLeafShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.midY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: rect.midY),
+            control: CGPoint(x: rect.midX, y: rect.minY)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: rect.minX, y: rect.midY),
+            control: CGPoint(x: rect.midX, y: rect.maxY)
+        )
+        return path
     }
 }
 
