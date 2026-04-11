@@ -329,7 +329,6 @@ private struct WelcomeTourIllustration: View {
 }
 
 private struct ExportTourIllustration: View {
-    @State private var writingProgress: CGFloat = 0
     @State private var pulse = false
     @State private var penWiggle = false
 
@@ -373,20 +372,16 @@ private struct ExportTourIllustration: View {
                     JournalPen()
                         .stroke(Color.white.opacity(0.72), lineWidth: 0.9)
                 }
-                .rotationEffect(.degrees(-27 + (penWiggle ? 4.5 : -4.5)))
+                .rotationEffect(.degrees(-24 + (penWiggle ? 2.0 : -2.0)))
                 .offset(
-                    x: -44 + (88 * writingProgress),
-                    y: penWiggle ? 1.5 : -1.5
+                    x: -6 + (penWiggle ? 4.0 : -4.0),
+                    y: 18 + (penWiggle ? 1.0 : -1.0)
                 )
-                .animation(.easeInOut(duration: 0.22).repeatForever(autoreverses: true), value: penWiggle)
+                .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: penWiggle)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
         .onAppear {
-            writingProgress = 0
-            withAnimation(.linear(duration: 3.8).repeatForever(autoreverses: false)) {
-                writingProgress = 1
-            }
             pulse = true
             penWiggle = true
         }
@@ -412,7 +407,7 @@ private struct ReminderTourIllustration: View {
                     .animation(.linear(duration: 4.6).repeatForever(autoreverses: true), value: driftSlow)
             }
             .frame(width: 250)
-            .offset(y: 44)
+            .offset(y: 24)
 
             OceanBottleShape()
                 .fill(Color(red: 196/255, green: 231/255, blue: 1).opacity(0.28))
