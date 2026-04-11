@@ -407,33 +407,21 @@ private struct ExportTourIllustration: View {
                 )
                 .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: penWiggle)
 
-            VStack(spacing: 6) {
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 1.0, green: 214/255, blue: 92/255),
-                                Color(red: 1.0, green: 186/255, blue: 66/255)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
+            Image(systemName: "lightbulb.fill")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 1.0, green: 214/255, blue: 92/255),
+                            Color(red: 1.0, green: 186/255, blue: 66/255)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
-                    .scaleEffect(bulbGlow ? 1.08 : 0.9)
-                    .shadow(color: Color(red: 1.0, green: 214/255, blue: 92/255).opacity(bulbGlow ? 0.45 : 0.1), radius: bulbGlow ? 14 : 4)
-
-                HStack(spacing: 10) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        Capsule()
-                            .fill(Color(red: 1.0, green: 207/255, blue: 89/255).opacity(0.8))
-                            .frame(width: 4, height: 13)
-                    }
-                }
-                .opacity(bulbGlow ? 0.95 : 0.35)
-                .scaleEffect(y: bulbGlow ? 1.0 : 0.55, anchor: .bottom)
-            }
-            .offset(y: -86)
+                )
+                .scaleEffect(bulbGlow ? 1.06 : 0.92)
+                .shadow(color: Color(red: 1.0, green: 214/255, blue: 92/255).opacity(bulbGlow ? 0.32 : 0.1), radius: bulbGlow ? 10 : 4)
+                .offset(y: -44)
             .animation(.easeInOut(duration: 0.68).repeatForever(autoreverses: true), value: bulbGlow)
         }
         .frame(maxWidth: .infinity)
