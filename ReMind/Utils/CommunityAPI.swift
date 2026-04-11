@@ -192,19 +192,27 @@ final class CommunityAPI {
             .collection("comments")
             .addSnapshotListener { snapshot, error in
                 if let error = error {
-                    print("[CommunityAPI] observeComments error:", error)
+                    print("[CommunityAPI] observeComments error for post \(postId):", error)
                     onError?(error)
                     onChange([])
                     return
                 }
                 guard let snapshot = snapshot else {
+                    print("[CommunityAPI] observeComments received nil snapshot for post \(postId)")
                     onChange([])
                     return
                 }
 
-                let comments = snapshot.documents
-                    .compactMap { CommunityComment(from: $0) }
+                let mappedComments = snapshot.documents.map { doc in
+                    CommunityComment(from: doc)
+                }
+                let decodeFailureCount = mappedComments.filter { $0 == nil }.count
+                let comments = mappedComments
+                    .compactMap { $0 }
                     .sorted(by: { $0.createdAt < $1.createdAt })
+                print(
+                    "[CommunityAPI] observeComments post=\(postId) raw=\(snapshot.documents.count) decoded=\(comments.count) decodeFailures=\(decodeFailureCount)"
+                )
                 onError?(nil)
                 onChange(comments)
             }

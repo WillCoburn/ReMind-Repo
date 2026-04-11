@@ -457,6 +457,7 @@ private struct CommunityThreadView: View {
     @State private var newCommentText: String = ""
     @State private var sendError: String?
     @State private var commentsLoadError: String?
+    @State private var hasLoadedInitialCommentsSnapshot = false
     @State private var isSending = false
 
     var body: some View {
@@ -569,16 +570,26 @@ private struct CommunityThreadView: View {
     }
 
     private func startListeners() {
+        commentsLoadError = nil
+        hasLoadedInitialCommentsSnapshot = false
+
         listener = CommunityAPI.shared.observeComments(
             postId: post.id,
             onChange: { newComments in
                 Task { @MainActor in
+                    hasLoadedInitialCommentsSnapshot = true
                     allComments = newComments
                     comments = filteredComments(from: newComments)
+                    if post.commentCount > 0 && newComments.isEmpty {
+                        print(
+                            "[CommunityThreadView] post=\(post.id) has commentCount=\(post.commentCount) but listener returned 0 comments."
+                        )
+                    }
                 }
             },
             onError: { error in
                 Task { @MainActor in
+                    hasLoadedInitialCommentsSnapshot = true
                     commentsLoadError = error?.localizedDescription
                 }
             }
@@ -630,11 +641,11 @@ private struct CommunityThreadView: View {
     }
 
     private var emptyStateMessage: String {
+        if !hasLoadedInitialCommentsSnapshot {
+            return "Loading replies…"
+        }
         if commentsLoadError != nil {
             return "Unable to load replies right now. Pull to refresh."
-        }
-        if post.commentCount > 0 {
-            return "Replies are syncing. Pull down to refresh in a moment."
         }
         return "No replies yet. Start the discussion."
     }
