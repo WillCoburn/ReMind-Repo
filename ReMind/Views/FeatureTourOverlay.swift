@@ -282,7 +282,9 @@ private struct WelcomeTourIllustration: View {
 
 private struct ExportTourIllustration: View {
     @State private var bob = false
-    @State private var orbit = false
+    @State private var drift = false
+    @State private var noteVisible = false
+    @State private var reminderVisible = false
 
     var body: some View {
         ZStack {
@@ -290,66 +292,97 @@ private struct ExportTourIllustration: View {
                 .fill(Color.figmaBlue.opacity(0.10))
                 .frame(width: 230, height: 230)
 
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color.white, Color(red: 239/255, green: 247/255, blue: 1)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        colors: [Color.white, Color(red: 238/255, green: 246/255, blue: 1)],
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
                 )
-                .frame(width: 200, height: 190)
+                .frame(width: 230, height: 170)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
                         .stroke(Color.figmaBlue.opacity(0.25), lineWidth: 1)
                 )
                 .shadow(color: .black.opacity(0.08), radius: 14, x: 0, y: 8)
                 .offset(y: bob ? -6 : 6)
                 .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: bob)
 
-            VStack(spacing: 10) {
-                HStack(spacing: 8) {
+            // Water line
+            Capsule()
+                .fill(Color.figmaBlue.opacity(0.14))
+                .frame(width: 182, height: 8)
+                .offset(y: 18)
+
+            // Floating bottle
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(.white)
+                    .frame(width: 88, height: 42)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.figmaBlue.opacity(0.35), lineWidth: 1)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(Color.figmaBlue.opacity(0.20))
+                            .frame(width: 36, height: 5)
+                            .offset(y: -12)
+                    }
+
+                VStack(spacing: 2) {
                     Image(systemName: "quote.bubble.fill")
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(Color.figmaBlue)
-                    Text("A tiny win today")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.primary)
+                    Text("tiny win")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Color.figmaBlue.opacity(0.85))
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(.white)
-                .clipShape(Capsule())
-
-                Image(systemName: "arrow.down.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.figmaBlue.opacity(0.75))
-
-                HStack(spacing: 8) {
-                    Image(systemName: "message.fill")
-                        .foregroundStyle(Color.figmaBlue)
-                    Text("Sent back when needed")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.primary)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(.white)
-                .clipShape(Capsule())
             }
+            .rotationEffect(.degrees(drift ? 6 : -6))
+            .offset(x: drift ? 52 : -52, y: drift ? -8 : 8)
+            .animation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true), value: drift)
 
-            Circle()
-                .fill(Color.white)
-                .frame(width: 34, height: 34)
-                .overlay(Image(systemName: "clock.fill").foregroundStyle(Color.figmaBlue))
-                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
-                .offset(x: orbit ? 88 : 74, y: orbit ? -64 : -78)
-                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: orbit)
+            // Draft note (before it goes in bottle)
+            HStack(spacing: 6) {
+                Image(systemName: "square.and.pencil")
+                Text("A tiny win today")
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.figmaBlue)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.white)
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+            .offset(x: -34, y: -56)
+            .opacity(noteVisible ? 1 : 0)
+            .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: noteVisible)
+
+            // Return reminder bubble (later)
+            HStack(spacing: 6) {
+                Image(systemName: "message.fill")
+                Text("Sent back when needed")
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color.figmaBlue)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.white)
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+            .offset(x: 24, y: 62)
+            .opacity(reminderVisible ? 1 : 0.45)
+            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: reminderVisible)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 280)
         .onAppear {
             bob = true
-            orbit = true
+            drift = true
+            noteVisible = true
+            reminderVisible = true
         }
     }
 }
