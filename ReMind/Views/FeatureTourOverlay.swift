@@ -267,99 +267,115 @@ private struct FeatureTourPageView: View {
 }
 
 private struct WelcomeTourIllustration: View {
-    @State private var stemGrow = false
-    @State private var leafOpen = false
-    @State private var seedLift = false
-
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.figmaBlue.opacity(0.08))
-                .frame(width: 240, height: 240)
-                .scaleEffect(seedLift ? 1.01 : 0.96)
-                .animation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true), value: seedLift)
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { context in
+            let cycleDuration = 6.4
+            let elapsed = context.date.timeIntervalSinceReferenceDate
+            let phase = CGFloat(elapsed.truncatingRemainder(dividingBy: cycleDuration) / cycleDuration)
 
-            Ellipse()
-                .fill(Color.figmaBlue.opacity(0.14))
-                .frame(width: 138, height: 18)
-                .offset(y: 78)
+            let stemProgress = min(max((phase - 0.10) / 0.50, 0), 1)
+            let leftLeafProgress = min(max((phase - 0.34) / 0.28, 0), 1)
+            let rightLeafProgress = min(max((phase - 0.42) / 0.30, 0), 1)
+            let topLeafProgress = min(max((phase - 0.56) / 0.30, 0), 1)
+            let seedVisible = phase < 0.36
 
-            Ellipse()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 158/255, green: 115/255, blue: 76/255),
-                            Color(red: 122/255, green: 84/255, blue: 53/255)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+            ZStack {
+                Circle()
+                    .fill(Color.figmaBlue.opacity(0.08))
+                    .frame(width: 240, height: 240)
+
+                Ellipse()
+                    .fill(Color.figmaBlue.opacity(0.14))
+                    .frame(width: 138, height: 18)
+                    .offset(y: 78)
+
+                Ellipse()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 158/255, green: 115/255, blue: 76/255),
+                                Color(red: 122/255, green: 84/255, blue: 53/255)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                     )
-                )
-                .frame(width: 146, height: 66)
-                .offset(y: 44)
+                    .frame(width: 146, height: 66)
+                    .offset(y: 44)
 
-            Capsule()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 126/255, green: 201/255, blue: 109/255),
-                            Color(red: 86/255, green: 167/255, blue: 86/255)
-                        ],
-                        startPoint: .bottom,
-                        endPoint: .top
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 126/255, green: 201/255, blue: 109/255),
+                                Color(red: 86/255, green: 167/255, blue: 86/255)
+                            ],
+                            startPoint: .bottom,
+                            endPoint: .top
+                        )
                     )
-                )
-                .frame(width: 9, height: stemGrow ? 82 : 18)
-                .offset(y: stemGrow ? -8 : 22)
-                .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: stemGrow)
+                    .frame(width: 9, height: 8 + (82 * stemProgress))
+                    .offset(y: 28 - (76 * stemProgress))
 
-            Ellipse()
-                .fill(Color(red: 126/255, green: 88/255, blue: 58/255))
-                .frame(width: 17, height: 12)
-                .offset(y: seedLift ? 20 : 24)
-                .rotationEffect(.degrees(seedLift ? -8 : 0))
-                .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: seedLift)
-
-            LeafShape()
-                .fill(
-                    LinearGradient(
-                        colors: [Color(red: 160/255, green: 228/255, blue: 133/255), Color(red: 95/255, green: 184/255, blue: 101/255)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 48, height: 32)
-                .overlay {
-                    LeafShape()
-                        .stroke(Color.white.opacity(0.5), lineWidth: 1.1)
+                if seedVisible {
+                    Ellipse()
+                        .fill(Color(red: 126/255, green: 88/255, blue: 58/255))
+                        .frame(width: 17, height: 12)
+                        .offset(y: 24 - (16 * stemProgress))
+                        .rotationEffect(.degrees(-10 * stemProgress))
+                        .opacity(1 - (stemProgress * 1.15))
                 }
-                .rotationEffect(.degrees(leafOpen ? -22 : -8))
-                .offset(x: -20, y: -42)
-                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: leafOpen)
 
-            LeafShape()
-                .fill(
-                    LinearGradient(
-                        colors: [Color(red: 146/255, green: 220/255, blue: 128/255), Color(red: 90/255, green: 176/255, blue: 97/255)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                LeafShape()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 160/255, green: 228/255, blue: 133/255), Color(red: 95/255, green: 184/255, blue: 101/255)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-                .frame(width: 56, height: 34)
-                .overlay {
-                    LeafShape()
-                        .stroke(Color.white.opacity(0.5), lineWidth: 1.1)
-                }
-                .rotationEffect(.degrees(leafOpen ? 22 : 8))
-                .offset(x: 22, y: -43)
-                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: leafOpen)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 280)
-        .onAppear {
-            stemGrow = true
-            leafOpen = true
-            seedLift = true
+                    .frame(width: 50, height: 34)
+                    .overlay {
+                        LeafShape().stroke(Color.white.opacity(0.5), lineWidth: 1.1)
+                    }
+                    .rotationEffect(.degrees(-12 - (20 * leftLeafProgress)))
+                    .scaleEffect(x: 0.25 + (0.75 * leftLeafProgress), y: 0.15 + (0.85 * leftLeafProgress), anchor: .leading)
+                    .offset(x: -20, y: -32 - (16 * stemProgress))
+                    .opacity(leftLeafProgress)
+
+                LeafShape()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 146/255, green: 220/255, blue: 128/255), Color(red: 90/255, green: 176/255, blue: 97/255)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 56, height: 34)
+                    .overlay {
+                        LeafShape().stroke(Color.white.opacity(0.5), lineWidth: 1.1)
+                    }
+                    .rotationEffect(.degrees(12 + (22 * rightLeafProgress)))
+                    .scaleEffect(x: 0.25 + (0.75 * rightLeafProgress), y: 0.15 + (0.85 * rightLeafProgress), anchor: .trailing)
+                    .offset(x: 22, y: -36 - (20 * stemProgress))
+                    .opacity(rightLeafProgress)
+
+                LeafShape()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(red: 170/255, green: 233/255, blue: 142/255), Color(red: 98/255, green: 188/255, blue: 108/255)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 36, height: 26)
+                    .rotationEffect(.degrees(-90 + (95 * topLeafProgress)))
+                    .scaleEffect(0.2 + (0.8 * topLeafProgress), anchor: .bottom)
+                    .offset(x: 2, y: -70 - (18 * stemProgress))
+                    .opacity(topLeafProgress * 0.95)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 280)
         }
     }
 }
@@ -367,6 +383,7 @@ private struct WelcomeTourIllustration: View {
 private struct ExportTourIllustration: View {
     @State private var writingProgress: CGFloat = 0
     @State private var pulse = false
+    @State private var penWiggle = false
 
     var body: some View {
         ZStack {
@@ -401,33 +418,6 @@ private struct ExportTourIllustration: View {
                 }
                 .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 8)
 
-            Path { path in
-                path.move(to: CGPoint(x: -48, y: -6))
-                path.addCurve(
-                    to: CGPoint(x: 40, y: -6),
-                    control1: CGPoint(x: -25, y: -20),
-                    control2: CGPoint(x: 12, y: 9)
-                )
-            }
-            .trim(from: 0, to: writingProgress)
-            .stroke(Color.figmaBlue.opacity(0.42), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-
-            Path { path in
-                path.move(to: CGPoint(x: -44, y: 18))
-                path.addCurve(
-                    to: CGPoint(x: 20, y: 17),
-                    control1: CGPoint(x: -18, y: 3),
-                    control2: CGPoint(x: -2, y: 29)
-                )
-                path.addCurve(
-                    to: CGPoint(x: 42, y: 19),
-                    control1: CGPoint(x: 28, y: 11),
-                    control2: CGPoint(x: 35, y: 23)
-                )
-            }
-            .trim(from: 0, to: max(0, writingProgress - 0.16))
-            .stroke(Color.figmaBlue.opacity(0.30), style: StrokeStyle(lineWidth: 2.8, lineCap: .round, lineJoin: .round))
-
             JournalPen()
                 .fill(Color.figmaBlue.opacity(0.88))
                 .frame(width: 64, height: 15)
@@ -435,10 +425,10 @@ private struct ExportTourIllustration: View {
                     JournalPen()
                         .stroke(Color.white.opacity(0.72), lineWidth: 0.9)
                 }
-                .rotationEffect(.degrees(-26))
+                .rotationEffect(.degrees(penWiggle ? -31 : -22))
                 .offset(
-                    x: -30 + (64 * writingProgress),
-                    y: -2 + (22 * writingProgress)
+                    x: -44 + (88 * writingProgress),
+                    y: penWiggle ? 2 : -2
                 )
         }
         .frame(maxWidth: .infinity)
@@ -449,6 +439,7 @@ private struct ExportTourIllustration: View {
                 writingProgress = 1
             }
             pulse = true
+            penWiggle = true
         }
     }
 }
@@ -486,18 +477,7 @@ private struct ReminderTourIllustration: View {
                 .frame(width: 108, height: 188)
                 .overlay {
                     OceanBottleShape()
-                        .stroke(Color.figmaBlue.opacity(0.42), lineWidth: 2.1)
-                }
-                .overlay {
-                    OceanBottleShape()
-                        .trim(from: 0.06, to: 0.40)
-                        .stroke(Color.white.opacity(0.74), style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
-                        .blur(radius: 0.2)
-                }
-                .overlay {
-                    OceanBottleShape()
-                        .trim(from: 0.62, to: 0.87)
-                        .stroke(Color.white.opacity(0.45), style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+                        .stroke(Color.figmaBlue.opacity(0.62), lineWidth: 2.5)
                 }
                 .overlay(alignment: .top) {
                     VStack(spacing: 2) {
