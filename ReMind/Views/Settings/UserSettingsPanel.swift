@@ -87,7 +87,7 @@ struct UserSettingsForm: View {
 
           Text("Automatic Reminder Settings")
               .font(.subheadline)
-              .foregroundStyle(.figmaBlue)
+              .foregroundColor(Color.figmaBlue)
 
           RemindersPerWeekSection(remindersPerWeek: $remindersPerWeek, isProUser: appVM.isProUser)
               .onChange(of: remindersPerWeek) { _ in handleSettingChange() }
@@ -104,6 +104,10 @@ struct UserSettingsForm: View {
 
           Divider()
 
+          Text("Time Zone")
+              .font(.subheadline)
+              .foregroundColor(Color.figmaBlue)
+
           TimeZoneSection(
               tzIdentifier: $tzIdentifier,
               usTimeZones: SettingsHelpers.usTimeZones()
@@ -112,7 +116,7 @@ struct UserSettingsForm: View {
 
           Text("My Experience")
               .font(.subheadline)
-              .foregroundStyle(.figmaBlue)
+              .foregroundColor(Color.figmaBlue)
 
           SubscriptionSection(
               appVM: appVM,
@@ -127,6 +131,10 @@ struct UserSettingsForm: View {
 
           Divider()
 
+          Text("Background")
+              .font(.subheadline)
+              .foregroundColor(Color.figmaBlue)
+
           BackgroundPickerSection(
               photoItem: $photoItem,
               bgImageBase64: $bgImageBase64,
@@ -136,7 +144,7 @@ struct UserSettingsForm: View {
 
           Text("Account")
               .font(.subheadline)
-              .foregroundStyle(.figmaBlue)
+              .foregroundColor(Color.figmaBlue)
 
           FeedbackSupportSection(
               showMailSheet: $showMailSheet,
