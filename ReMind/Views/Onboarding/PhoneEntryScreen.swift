@@ -48,7 +48,7 @@ struct PhoneEntryScreen: View {
                         consentAndContinue
                     }
                     .frame(maxWidth: 460)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, OnboardingLayout.pageHorizontal)
                     .padding(.vertical, 32)
                     .frame(maxWidth: .infinity)
                 }
@@ -76,55 +76,59 @@ struct PhoneEntryScreen: View {
 
     private var consentAndContinue: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 10) {
-                    Button {
-                        hasConsented.toggle()
-                    } label: {
-                        Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(hasConsented ? Color.figmaBlue : Color.secondary)
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .top, spacing: 10) {
+                        Button {
+                            hasConsented.toggle()
+                        } label: {
+                            Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundStyle(hasConsented ? Color.figmaBlue : Color.secondary)
+                        }
+                        .buttonStyle(.plain)
+
+                        Text(consentMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .buttonStyle(.plain)
 
-                    Text(consentMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 4) {
+                        Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
+                            .underline()
+                        Text("·")
+                        Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
+                            .underline()
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(Color.figmaBlue)
+                    .tint(.figmaBlue)
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
+                .padding(.horizontal, 4)
 
-                HStack(spacing: 4) {
-                    Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
-                        .underline()
-                    Text("·")
-                    Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
-                        .underline()
-                }
-                .font(.footnote)
-                .foregroundStyle(Color.figmaBlue)
-                .tint(.figmaBlue)
-                .frame(maxWidth: .infinity, alignment: .center)
-            }
+                Button(action: onContinue) {
+                    ZStack {
+                        Text(isSending ? "Sending…" : "Continue")
+                            .font(.headline.weight(.semibold))
+                            .opacity(isSending ? 0 : 1)
 
-            Button(action: onContinue) {
-                ZStack {
-                    Text(isSending ? "Sending…" : "Continue")
-                        .font(.headline.weight(.semibold))
-                        .opacity(isSending ? 0 : 1)
-
-                    if isSending {
-                        ProgressView()
-                            .tint(.white)
+                        if isSending {
+                            ProgressView()
+                                .tint(.white)
+                        }
                     }
                 }
-            }
-            .buttonStyle(
-                OnboardingPrimaryButtonStyle(
-                    isEnabled: canContinue && !isSending,
-                    accentColor: .figmaBlue
+                .buttonStyle(
+                    OnboardingPrimaryButtonStyle(
+                        isEnabled: canContinue && !isSending,
+                        accentColor: .figmaBlue
+                    )
                 )
-            )
-            .disabled(!canContinue || isSending)
+                .disabled(!canContinue || isSending)
+                .padding(.horizontal, 4)
+            }
         }
     }
 }
