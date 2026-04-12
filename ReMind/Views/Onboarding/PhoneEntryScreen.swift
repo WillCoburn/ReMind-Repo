@@ -61,7 +61,10 @@ struct PhoneEntryScreen: View {
     }
 
     private var header: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 10) {
+            BottleAnimationView(width: 64, height: 108)
+                .frame(maxWidth: .infinity)
+
             Text("Welcome in!")
                 .font(.title2.weight(.semibold))
                 .multilineTextAlignment(.center)
