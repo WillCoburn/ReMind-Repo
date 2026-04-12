@@ -1,6 +1,3 @@
-// ============================
-// File: Views/Onboarding/PhoneEntrySection.swift
-// ============================
 import SwiftUI
 import UIKit
 
@@ -10,118 +7,71 @@ struct PhoneEntrySection: View {
     @Binding var errorText: String
     let isValidPhone: Bool
 
-    @State private var isKeyboardVisible = false
-
     private var borderColor: Color {
-        (isValidPhone || !showErrorBorder) ? Color.gray.opacity(0.3) : .red
+        (isValidPhone || !showErrorBorder) ? Color.gray.opacity(0.25) : .red
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Phone number")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
 
-            // ✅ ONLY animated element
-            if isKeyboardVisible {
-                HStack {
-                    Spacer()
-                    Image("FullLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 220, height: 110)
-                    Spacer()
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-                .animation(.easeOut(duration: 0.22), value: isKeyboardVisible)
-            }
-
-            // Phone field
-            HStack(spacing: 0) {
-
-                // Country code (matches old formatting)
-                HStack(spacing: 4) {
-                    Text("+1")
-                        .font(.body)
-                        .foregroundColor(.primary)
-                }
-                .frame(width: 28)          // 👈 KEY FIX (prevents overlap)
-                .padding(.horizontal, 6)
+            HStack(spacing: 10) {
+                Text("+1")
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 4)
 
                 Divider()
-                    .frame(width: 1, height: 24)
-                    .background(Color.gray.opacity(0.3))
-                    .padding(.trailing, 8)
+                    .frame(height: 24)
 
                 PhoneField(digits: $phoneDigits)
                     .frame(height: 44)
             }
-
-
-            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color(UIColor.systemGray6))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(borderColor, lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
+            .animation(.easeInOut(duration: 0.18), value: showErrorBorder)
             .onChange(of: phoneDigits) { newVal in
                 showErrorBorder = !(newVal.count == 10) && !newVal.isEmpty
                 if newVal.isEmpty { errorText = "" }
                 if newVal.count == 10 { hideKeyboard() }
             }
 
-            // Validation error
             if showErrorBorder && !isValidPhone && !phoneDigits.isEmpty {
                 Text("Please enter a valid 10-digit US number like (123)-456-7890.")
                     .font(.footnote)
                     .foregroundColor(.red)
             }
 
-            // ❌ Instant hide (no animation)
-            if !isKeyboardVisible {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "info.circle.fill")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "info.circle.fill")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
 
-                    Text("We’ll only use this to text your own entries back to you.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                }
-                .padding(10)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(UIColor.systemGray4))
-                )
+                Text("We only use this number for verification and your reminder texts.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color(UIColor.systemGray6))
+            )
         }
-        .onAppear { startKeyboardObservers() }
-        .onDisappear { stopKeyboardObservers() }
         .dynamicTypeSize(.medium)
-    }
-
-    // MARK: - Keyboard Observation
-    private func startKeyboardObservers() {
-        NotificationCenter.default.addObserver(
-            forName: UIResponder.keyboardWillShowNotification,
-            object: nil,
-            queue: .main
-        ) { _ in isKeyboardVisible = true }
-
-        NotificationCenter.default.addObserver(
-            forName: UIResponder.keyboardWillHideNotification,
-            object: nil,
-            queue: .main
-        ) { _ in isKeyboardVisible = false }
-    }
-
-    private func stopKeyboardObservers() {
-        NotificationCenter.default.removeObserver(self)
     }
 }
 
-// MARK: - Keyboard Dismiss Helper
 extension View {
     func hideKeyboard() {
         UIApplication.shared.sendAction(
