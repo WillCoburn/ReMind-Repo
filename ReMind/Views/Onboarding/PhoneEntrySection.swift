@@ -13,10 +13,6 @@ struct PhoneEntrySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Phone number")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-
             HStack(spacing: 10) {
                 Text("+1")
                     .font(.body.weight(.medium))
