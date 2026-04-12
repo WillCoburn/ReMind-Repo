@@ -27,6 +27,7 @@ struct CodeEntryScreen: View {
                         .contentShape(Rectangle())
                         Spacer()
                     }
+                    .padding(.horizontal, 4)
 
                     CodeEntrySection(
                         code: $code,
@@ -51,6 +52,7 @@ struct CodeEntryScreen: View {
                         .padding(.vertical, 12)
                         .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .transition(.opacity)
+                        .padding(.horizontal, 4)
                     }
 
                     Button(action: onVerify) {
@@ -72,9 +74,10 @@ struct CodeEntryScreen: View {
                         )
                     )
                     .disabled(code.count < 6 || isVerifying)
+                    .padding(.horizontal, 4)
                 }
                 .frame(maxWidth: 460)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, OnboardingLayout.pageHorizontal)
                 .padding(.vertical, 24)
                 .frame(maxWidth: .infinity)
             }
