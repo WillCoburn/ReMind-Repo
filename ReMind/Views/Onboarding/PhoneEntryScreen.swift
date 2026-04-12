@@ -72,7 +72,7 @@ struct PhoneEntryScreen: View {
     private var header: some View {
         VStack(spacing: 12) {
             FloatingMessagePill(text: "Welcome in!")
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: CGFloat.infinity)
 
             Text("Welcome in!")
                 .font(.title2.weight(.semibold))
