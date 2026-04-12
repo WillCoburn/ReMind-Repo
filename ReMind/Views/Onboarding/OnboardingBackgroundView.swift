@@ -5,60 +5,60 @@ struct OnboardingBackgroundView: View {
 
     var body: some View {
         ZStack {
-            Color.white
+            Color(red: 248/255, green: 251/255, blue: 1)
 
             Circle()
                 .fill(
                     RadialGradient(
                         colors: [
-                            Color.paletteTurquoise.opacity(0.22),
-                            Color.palettePewter.opacity(0.12),
+                            Color.white.opacity(0.85),
+                            Color.figmaBlue.opacity(0.12),
                             Color.clear
                         ],
                         center: .center,
-                        startRadius: 20,
+                        startRadius: 24,
+                        endRadius: 280
+                    )
+                )
+                .frame(width: 440, height: 440)
+                .blur(radius: 68)
+                .offset(x: animateBlobs ? -18 : 8, y: animateBlobs ? -298 : -286)
+
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color.figmaBlue.opacity(0.13),
+                            Color.cyan.opacity(0.08),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 36,
+                        endRadius: 300
+                    )
+                )
+                .frame(width: 480, height: 480)
+                .blur(radius: 84)
+                .offset(x: animateBlobs ? 176 : 146, y: animateBlobs ? 178 : 200)
+
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color.purple.opacity(0.10),
+                            Color.pink.opacity(0.08),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 28,
                         endRadius: 240
                     )
                 )
                 .frame(width: 360, height: 360)
-                .blur(radius: 54)
-                .offset(x: animateBlobs ? -122 : -92, y: animateBlobs ? -186 : -156)
-
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            Color.figmaBlue.opacity(0.18),
-                            Color.palettePewter.opacity(0.13),
-                            Color.clear
-                        ],
-                        center: .center,
-                        startRadius: 30,
-                        endRadius: 260
-                    )
-                )
-                .frame(width: 400, height: 400)
-                .blur(radius: 60)
-                .offset(x: animateBlobs ? 132 : 102, y: animateBlobs ? 272 : 242)
-
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            Color.pink.opacity(0.14),
-                            Color.palettePewter.opacity(0.08),
-                            Color.clear
-                        ],
-                        center: .center,
-                        startRadius: 25,
-                        endRadius: 210
-                    )
-                )
-                .frame(width: 300, height: 300)
-                .blur(radius: 52)
-                .offset(x: animateBlobs ? 54 : 20, y: animateBlobs ? -54 : -32)
+                .blur(radius: 78)
+                .offset(x: animateBlobs ? -162 : -124, y: animateBlobs ? 144 : 124)
         }
-        .animation(.easeInOut(duration: 12).repeatForever(autoreverses: true), value: animateBlobs)
+        .animation(.easeInOut(duration: 16).repeatForever(autoreverses: true), value: animateBlobs)
         .onAppear {
             animateBlobs = true
         }

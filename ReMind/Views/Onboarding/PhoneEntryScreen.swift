@@ -24,12 +24,21 @@ struct PhoneEntryScreen: View {
                     VStack(alignment: .center, spacing: 28) {
                         header
 
+                        Text("Please enter your phone number to get started.")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 8)
+
                         VStack(spacing: 10) {
                             PhoneEntrySection(
                                 phoneDigits: $phoneDigits,
                                 showErrorBorder: $showErrorBorder,
                                 errorText: $errorText,
-                                isValidPhone: isValidPhone
+                                hasConsented: $hasConsented,
+                                isValidPhone: isValidPhone,
+                                consentMessage: consentMessage
                             )
 
                             if !errorText.isEmpty {
@@ -61,8 +70,8 @@ struct PhoneEntryScreen: View {
     }
 
     private var header: some View {
-        VStack(spacing: 10) {
-            BottleAnimationView(width: 64, height: 108)
+        VStack(spacing: 12) {
+            FloatingMessagePill(text: "Welcome in!")
                 .frame(maxWidth: .infinity)
 
             Text("Welcome in!")
@@ -76,38 +85,7 @@ struct PhoneEntryScreen: View {
 
     private var consentAndContinue: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(alignment: .top, spacing: 10) {
-                        Button {
-                            hasConsented.toggle()
-                        } label: {
-                            Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundStyle(hasConsented ? Color.figmaBlue : Color.secondary)
-                        }
-                        .buttonStyle(.plain)
-
-                        Text(consentMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    HStack(spacing: 4) {
-                        Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
-                            .underline()
-                        Text("·")
-                        Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
-                            .underline()
-                    }
-                    .font(.footnote)
-                    .foregroundStyle(Color.figmaBlue)
-                    .tint(.figmaBlue)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                }
-                .padding(.horizontal, 4)
-
+            VStack(alignment: .leading, spacing: 12) {
                 Button(action: onContinue) {
                     ZStack {
                         Text(isSending ? "Sending…" : "Continue")
@@ -128,6 +106,18 @@ struct PhoneEntryScreen: View {
                 )
                 .disabled(!canContinue || isSending)
                 .padding(.horizontal, 4)
+
+                HStack(spacing: 4) {
+                    Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
+                        .underline()
+                    Text("·")
+                    Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
+                        .underline()
+                }
+                .font(.footnote)
+                .foregroundStyle(Color.figmaBlue)
+                .tint(.figmaBlue)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
         }
     }
