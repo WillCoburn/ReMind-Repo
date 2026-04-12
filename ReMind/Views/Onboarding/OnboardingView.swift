@@ -40,13 +40,17 @@ struct OnboardingView: View {
     }
     
     private var forwardTransition: AnyTransition {
-        .asymmetric(insertion: .move(edge: .trailing),
-                    removal: .move(edge: .leading))
+        .asymmetric(
+            insertion: .opacity.combined(with: .move(edge: .trailing)),
+            removal: .opacity.combined(with: .move(edge: .leading))
+        )
     }
 
     private var backwardTransition: AnyTransition {
-        .asymmetric(insertion: .move(edge: .leading),
-                    removal: .move(edge: .trailing))
+        .asymmetric(
+            insertion: .opacity.combined(with: .move(edge: .leading)),
+            removal: .opacity.combined(with: .move(edge: .trailing))
+        )
     }
 
     private let consentMessage = "By tapping 'Continue', you consent to receive reminder text messages from ReMind."
@@ -93,7 +97,7 @@ struct OnboardingView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { hideKeyboard() }
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: step)
+        .animation(.easeOut(duration: 0.35), value: step)
         .onChange(of: code) { _ in
             if step == .enterCode && !errorText.isEmpty {
                 errorText = ""
