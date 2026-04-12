@@ -20,6 +20,12 @@ struct BottleAnimationView: View {
                 OceanBottleShape()
                     .stroke(Color.figmaBlue.opacity(0.58), lineWidth: 1.8)
             }
+            .overlay {
+                BottleWaveLineShape()
+                    .stroke(Color.figmaBlue.opacity(0.34), style: StrokeStyle(lineWidth: 1.35, lineCap: .round, lineJoin: .round))
+                    .frame(width: size.width * 0.44, height: size.height * 0.06)
+                    .offset(y: size.height * 0.18)
+            }
             .overlay(alignment: .top) {
                 VStack(spacing: 1.5) {
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
@@ -74,7 +80,7 @@ struct BottleAnimationView: View {
                         OceanBottleShape()
                     }
             }
-            .rotationEffect(.degrees(bottleTilt ? 2.6 : -2.6))
+            .rotationEffect(.degrees(45 + (bottleTilt ? 2.1 : -2.1)))
             .offset(y: bottleBob ? -3 : 3)
             .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 5)
             .animation(.easeInOut(duration: 3.2).repeatForever(autoreverses: true), value: bottleTilt)
@@ -86,6 +92,19 @@ struct BottleAnimationView: View {
                 glintSweep = true
             }
             .accessibilityHidden(true)
+    }
+}
+
+private struct BottleWaveLineShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let midY = rect.midY
+        path.move(to: CGPoint(x: rect.minX, y: midY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: midY),
+            control: CGPoint(x: rect.midX, y: midY - rect.height * 0.6)
+        )
+        return path
     }
 }
 
