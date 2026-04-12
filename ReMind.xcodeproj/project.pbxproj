@@ -78,6 +78,7 @@
 		D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */; };
 		D2D07BCD2EBC17470078BAB0 /* CodeEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCC2EBC17420078BAB0 /* CodeEntrySection.swift */; };
 		D2D07BCF2EBC175C0078BAB0 /* PhoneField.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCE2EBC17570078BAB0 /* PhoneField.swift */; };
+		E1A0B1C22F33445500C0DE01 /* OnboardingBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C12F33445500C0DE01 /* OnboardingBackgroundView.swift */; };
 		D2D07BD32EBC18C30078BAB0 /* AppViewModel+RealTimeUserListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD22EBC18B80078BAB0 /* AppViewModel+RealTimeUserListener.swift */; };
 		D2D07BD52EBC18F60078BAB0 /* AppViewModel+InitialLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD42EBC18EE0078BAB0 /* AppViewModel+InitialLoad.swift */; };
 		D2D07BD72EBC19100078BAB0 /* AppViewModel+UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD62EBC190A0078BAB0 /* AppViewModel+UserProfile.swift */; };
@@ -194,6 +195,7 @@
 		D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentAndAgreeBottom.swift; sourceTree = "<group>"; };
 		D2D07BCC2EBC17420078BAB0 /* CodeEntrySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeEntrySection.swift; sourceTree = "<group>"; };
 		D2D07BCE2EBC17570078BAB0 /* PhoneField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneField.swift; sourceTree = "<group>"; };
+		E1A0B1C12F33445500C0DE01 /* OnboardingBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingBackgroundView.swift; sourceTree = "<group>"; };
 		D2D07BD22EBC18B80078BAB0 /* AppViewModel+RealTimeUserListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+RealTimeUserListener.swift"; sourceTree = "<group>"; };
 		D2D07BD42EBC18EE0078BAB0 /* AppViewModel+InitialLoad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+InitialLoad.swift"; sourceTree = "<group>"; };
 		D2D07BD62EBC190A0078BAB0 /* AppViewModel+UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+UserProfile.swift"; sourceTree = "<group>"; };
@@ -481,6 +483,7 @@
 				D2D07BCC2EBC17420078BAB0 /* CodeEntrySection.swift */,
 				D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */,
 				D2D07BC82EBC170D0078BAB0 /* PhoneEntrySection.swift */,
+				E1A0B1C12F33445500C0DE01 /* OnboardingBackgroundView.swift */,
 				D22EF4912E7B303E00810204 /* OnboardingView.swift */,
 			);
 			path = Onboarding;
@@ -755,6 +758,7 @@
 				D2ED48062EC6F8D20030CBA7 /* FunctionsErrorHandling.swift in Sources */,
 				D2ED48272EC8F9190030CBA7 /* MainView.swift in Sources */,
 				D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */,
+				E1A0B1C22F33445500C0DE01 /* OnboardingBackgroundView.swift in Sources */,
 				D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */,
 				D2ED48162EC8F33F0030CBA7 /* RemindersPerWeekSection.swift in Sources */,
 				D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */,

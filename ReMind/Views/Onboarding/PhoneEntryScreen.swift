@@ -15,68 +15,56 @@ struct PhoneEntryScreen: View {
     @State private var didAppear = false
 
     var body: some View {
-        ScrollView {
-            VStack {
-                VStack(alignment: .center, spacing: 24) {
-                    logo
-                    header
+        ZStack {
+            OnboardingBackgroundView()
+                .ignoresSafeArea()
 
-                    VStack(spacing: 10) {
-                        PhoneEntrySection(
-                            phoneDigits: $phoneDigits,
-                            showErrorBorder: $showErrorBorder,
-                            errorText: $errorText,
-                            isValidPhone: isValidPhone
-                        )
+            ScrollView {
+                VStack {
+                    VStack(alignment: .center, spacing: 28) {
+                        header
 
-                        if !errorText.isEmpty {
-                            Text(errorText)
-                                .font(.footnote)
-                                .foregroundColor(.red)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .transition(.opacity)
+                        VStack(spacing: 10) {
+                            PhoneEntrySection(
+                                phoneDigits: $phoneDigits,
+                                showErrorBorder: $showErrorBorder,
+                                errorText: $errorText,
+                                isValidPhone: isValidPhone
+                            )
+
+                            if !errorText.isEmpty {
+                                Text(errorText)
+                                    .font(.footnote)
+                                    .foregroundColor(.red)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .transition(.opacity)
+                            }
                         }
-                    }
-                    .onboardingCardStyle()
-                    .opacity(didAppear ? 1 : 0)
-                    .offset(y: didAppear ? 0 : 10)
-                    .animation(.easeOut(duration: 0.4).delay(0.15), value: didAppear)
+                        .onboardingCardStyle()
+                        .opacity(didAppear ? 1 : 0)
+                        .offset(y: didAppear ? 0 : 10)
+                        .animation(.easeOut(duration: 0.4).delay(0.15), value: didAppear)
 
-                    consentAndContinue
+                        consentAndContinue
+                    }
+                    .frame(maxWidth: 460)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 32)
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: 460)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 32)
-                .frame(maxWidth: .infinity)
             }
+            .scrollDismissesKeyboard(.interactively)
         }
-        .scrollDismissesKeyboard(.interactively)
         .onAppear {
             didAppear = true
         }
     }
 
-    private var logo: some View {
-        Image("FullLogo")
-            .resizable()
-            .scaledToFit()
-            .frame(width: 182, height: 90)
-            .opacity(didAppear ? 1 : 0)
-            .animation(.easeOut(duration: 0.35), value: didAppear)
-            .padding(.top, 8)
-    }
-
     private var header: some View {
-        VStack(spacing: 12) {
-            Text("Welcome to ReMind")
+        VStack(spacing: 2) {
+            Text("Welcome in!")
                 .font(.title2.weight(.semibold))
                 .multilineTextAlignment(.center)
-
-            Text("Enter your phone number to start receiving calm, helpful reminders.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 10)
         }
         .opacity(didAppear ? 1 : 0)
         .offset(y: didAppear ? 0 : 8)
@@ -85,6 +73,36 @@ struct PhoneEntryScreen: View {
 
     private var consentAndContinue: some View {
         VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 10) {
+                    Button {
+                        hasConsented.toggle()
+                    } label: {
+                        Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundStyle(hasConsented ? Color.figmaBlue : Color.secondary)
+                    }
+                    .buttonStyle(.plain)
+
+                    Text(consentMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                HStack(spacing: 4) {
+                    Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
+                        .underline()
+                    Text("·")
+                    Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
+                        .underline()
+                }
+                .font(.footnote)
+                .foregroundStyle(Color.figmaBlue)
+                .tint(.figmaBlue)
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+
             Button(action: onContinue) {
                 ZStack {
                     Text(isSending ? "Sending…" : "Continue")
@@ -104,34 +122,6 @@ struct PhoneEntryScreen: View {
                 )
             )
             .disabled(!canContinue || isSending)
-
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 10) {
-                    Button {
-                        hasConsented.toggle()
-                    } label: {
-                        Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(hasConsented ? Color.figmaBlue : Color.secondary)
-                    }
-                    .buttonStyle(.plain)
-
-                    Text(consentMessage)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                HStack(spacing: 4) {
-                    Link("Terms", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
-                        .underline()
-                    Text("·")
-                    Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
-                        .underline()
-                }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            }
         }
     }
 }
