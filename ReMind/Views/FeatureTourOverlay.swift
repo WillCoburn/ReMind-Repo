@@ -234,6 +234,124 @@ private struct FeatureTourPageView: View {
     }
 }
 
+struct FloatingBottleHero: View {
+    var scale: CGFloat = 1.0
+    var frameHeight: CGFloat = 280
+    var showBackdrop: Bool = true
+    var showWaves: Bool = true
+    var bobAmount: CGFloat = 8
+    var tiltDegrees: Double = 5
+
+    @State private var driftSlow = false
+    @State private var bottleBob = false
+    @State private var bottleTilt = false
+    @State private var noteLag = false
+    @State private var glintSweep = false
+
+    var body: some View {
+        ZStack {
+            if showBackdrop {
+                Circle()
+                    .fill(Color.figmaBlue.opacity(0.10))
+                    .frame(width: 240 * scale, height: 240 * scale)
+            }
+
+            if showWaves {
+                VStack(spacing: 8) {
+                    SineWaveLine(
+                        amplitude: 7 * scale,
+                        frequency: 1.35,
+                        color: Color(red: 78/255, green: 135/255, blue: 226/255).opacity(0.68),
+                        lineWidth: 5 * scale
+                    )
+                    .offset(x: driftSlow ? -30 * scale : 30 * scale)
+                    .animation(.linear(duration: 4.6).repeatForever(autoreverses: true), value: driftSlow)
+                }
+                .frame(width: 250 * scale)
+                .offset(y: 24 * scale)
+            }
+
+            OceanBottleShape()
+                .fill(Color(red: 196/255, green: 231/255, blue: 1).opacity(0.28))
+                .frame(width: 108 * scale, height: 188 * scale)
+                .overlay {
+                    OceanBottleShape()
+                        .stroke(Color.figmaBlue.opacity(0.62), lineWidth: 2.5 * scale)
+                }
+                .overlay(alignment: .top) {
+                    VStack(spacing: 2 * scale) {
+                        RoundedRectangle(cornerRadius: 4 * scale, style: .continuous)
+                            .fill(Color(red: 173/255, green: 123/255, blue: 76/255))
+                            .frame(width: 24 * scale, height: 15 * scale)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4 * scale, style: .continuous)
+                                    .stroke(Color(red: 120/255, green: 79/255, blue: 48/255).opacity(0.65), lineWidth: 1 * scale)
+                            )
+                        Capsule()
+                            .fill(Color(red: 235/255, green: 244/255, blue: 1).opacity(0.9))
+                            .frame(width: 21 * scale, height: 3 * scale)
+                    }
+                    .offset(y: 10 * scale)
+                }
+                .overlay(alignment: .bottom) {
+                    Ellipse()
+                        .stroke(Color.white.opacity(0.42), lineWidth: 1.5 * scale)
+                        .frame(width: 32 * scale, height: 8 * scale)
+                        .offset(y: -6 * scale)
+                }
+                .overlay {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8 * scale, style: .continuous)
+                            .fill(Color(red: 250/255, green: 244/255, blue: 228/255).opacity(0.98))
+                            .frame(width: 48 * scale, height: 28 * scale)
+                            .rotationEffect(.degrees(-16))
+                            .overlay {
+                                VStack(alignment: .leading, spacing: 3 * scale) {
+                                    Capsule().fill(Color.figmaBlue.opacity(0.35)).frame(width: 22 * scale, height: 2.5 * scale)
+                                    Capsule().fill(Color.figmaBlue.opacity(0.26)).frame(width: 15 * scale, height: 2.5 * scale)
+                                }
+                                .offset(x: -6 * scale, y: 1 * scale)
+                            }
+                    }
+                    .offset(x: noteLag ? -2 * scale : 2 * scale, y: noteLag ? 18 * scale : 14 * scale)
+                    .animation(.easeInOut(duration: 1.9).repeatForever(autoreverses: true).delay(0.18), value: noteLag)
+                }
+                .overlay {
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.0), Color.white.opacity(0.42), Color.white.opacity(0.0)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(width: 22 * scale, height: 210 * scale)
+                        .rotationEffect(.degrees(16))
+                        .offset(x: glintSweep ? 72 * scale : -72 * scale, y: -5 * scale)
+                        .opacity(0.55)
+                        .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: false), value: glintSweep)
+                        .mask {
+                            OceanBottleShape()
+                        }
+                }
+                .rotationEffect(.degrees(bottleTilt ? tiltDegrees : -tiltDegrees))
+                .offset(y: bottleBob ? -bobAmount : bobAmount)
+                .shadow(color: .black.opacity(0.08), radius: 14 * scale, x: 0, y: 7 * scale)
+                .animation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true), value: bottleTilt)
+                .animation(.easeInOut(duration: 1.9).repeatForever(autoreverses: true), value: bottleBob)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: frameHeight)
+        .onAppear {
+            driftSlow = true
+            bottleBob = true
+            bottleTilt = true
+            noteLag = true
+            glintSweep = true
+        }
+    }
+}
+
 private struct WelcomeTourIllustration: View {
     @State private var glowPulse = false
     @State private var seedDropped = false
@@ -616,104 +734,8 @@ private struct ExportTourIllustration: View {
 }
 
 private struct ReminderTourIllustration: View {
-    @State private var driftSlow = false
-    @State private var bottleBob = false
-    @State private var bottleTilt = false
-    @State private var noteLag = false
-    @State private var glintSweep = false
-
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.figmaBlue.opacity(0.10))
-                .frame(width: 240, height: 240)
-
-            VStack(spacing: 8) {
-                SineWaveLine(amplitude: 7, frequency: 1.35, color: Color(red: 78/255, green: 135/255, blue: 226/255).opacity(0.68), lineWidth: 5)
-                    .offset(x: driftSlow ? -30 : 30)
-                    .animation(.linear(duration: 4.6).repeatForever(autoreverses: true), value: driftSlow)
-            }
-            .frame(width: 250)
-            .offset(y: 24)
-
-            OceanBottleShape()
-                .fill(Color(red: 196/255, green: 231/255, blue: 1).opacity(0.28))
-                .frame(width: 108, height: 188)
-                .overlay {
-                    OceanBottleShape()
-                        .stroke(Color.figmaBlue.opacity(0.62), lineWidth: 2.5)
-                }
-                .overlay(alignment: .top) {
-                    VStack(spacing: 2) {
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(Color(red: 173/255, green: 123/255, blue: 76/255))
-                            .frame(width: 24, height: 15)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                    .stroke(Color(red: 120/255, green: 79/255, blue: 48/255).opacity(0.65), lineWidth: 1)
-                            )
-                        Capsule()
-                            .fill(Color(red: 235/255, green: 244/255, blue: 1).opacity(0.9))
-                            .frame(width: 21, height: 3)
-                    }
-                    .offset(y: 10)
-                }
-                .overlay(alignment: .bottom) {
-                    Ellipse()
-                        .stroke(Color.white.opacity(0.42), lineWidth: 1.5)
-                        .frame(width: 32, height: 8)
-                        .offset(y: -6)
-                }
-                .overlay {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color(red: 250/255, green: 244/255, blue: 228/255).opacity(0.98))
-                            .frame(width: 48, height: 28)
-                            .rotationEffect(.degrees(-16))
-                            .overlay {
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Capsule().fill(Color.figmaBlue.opacity(0.35)).frame(width: 22, height: 2.5)
-                                    Capsule().fill(Color.figmaBlue.opacity(0.26)).frame(width: 15, height: 2.5)
-                                }
-                                .offset(x: -6, y: 1)
-                            }
-                    }
-                    .offset(x: noteLag ? -2 : 2, y: noteLag ? 18 : 14)
-                    .animation(.easeInOut(duration: 1.9).repeatForever(autoreverses: true).delay(0.18), value: noteLag)
-                }
-                .overlay {
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.0), Color.white.opacity(0.42), Color.white.opacity(0.0)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .frame(width: 22, height: 210)
-                        .rotationEffect(.degrees(16))
-                        .offset(x: glintSweep ? 72 : -72, y: -5)
-                        .opacity(0.55)
-                        .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: false), value: glintSweep)
-                        .mask {
-                            OceanBottleShape()
-                        }
-                }
-                .rotationEffect(.degrees(bottleTilt ? 5 : -5))
-                .offset(y: bottleBob ? -8 : 8)
-                .shadow(color: .black.opacity(0.08), radius: 14, x: 0, y: 7)
-                .animation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true), value: bottleTilt)
-                .animation(.easeInOut(duration: 1.9).repeatForever(autoreverses: true), value: bottleBob)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 280)
-        .onAppear {
-            driftSlow = true
-            bottleBob = true
-            bottleTilt = true
-            noteLag = true
-            glintSweep = true
-        }
+        FloatingBottleHero()
     }
 }
 

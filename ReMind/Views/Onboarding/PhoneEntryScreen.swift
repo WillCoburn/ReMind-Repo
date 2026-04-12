@@ -19,41 +19,45 @@ struct PhoneEntryScreen: View {
             OnboardingBackgroundView()
                 .ignoresSafeArea()
 
-            ScrollView {
-                VStack {
-                    VStack(alignment: .center, spacing: 28) {
-                        header
+            GeometryReader { proxy in
+                ScrollView {
+                    VStack {
+                        VStack(alignment: .center, spacing: 28) {
+                            header
 
-                        VStack(spacing: 10) {
-                            PhoneEntrySection(
-                                phoneDigits: $phoneDigits,
-                                showErrorBorder: $showErrorBorder,
-                                errorText: $errorText,
-                                isValidPhone: isValidPhone
-                            )
+                            VStack(spacing: 10) {
+                                PhoneEntrySection(
+                                    phoneDigits: $phoneDigits,
+                                    showErrorBorder: $showErrorBorder,
+                                    errorText: $errorText,
+                                    isValidPhone: isValidPhone
+                                )
 
-                            if !errorText.isEmpty {
-                                Text(errorText)
-                                    .font(.footnote)
-                                    .foregroundColor(.red)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .transition(.opacity)
+                                if !errorText.isEmpty {
+                                    Text(errorText)
+                                        .font(.footnote)
+                                        .foregroundColor(.red)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .transition(.opacity)
+                                }
                             }
-                        }
-                        .onboardingCardStyle()
-                        .opacity(didAppear ? 1 : 0)
-                        .offset(y: didAppear ? 0 : 10)
-                        .animation(.easeOut(duration: 0.4).delay(0.15), value: didAppear)
+                            .onboardingCardStyle()
+                            .opacity(didAppear ? 1 : 0)
+                            .offset(y: didAppear ? 0 : 10)
+                            .animation(.easeOut(duration: 0.4).delay(0.15), value: didAppear)
 
-                        consentAndContinue
+                            consentAndContinue
+                        }
+                        .frame(maxWidth: 460)
+                        .padding(.horizontal, 24)
+                        .padding(.top, max(24, min(96, proxy.size.height * 0.16)))
+                        .padding(.bottom, 32)
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: 460)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 32)
-                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: proxy.size.height, alignment: .top)
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
-            .scrollDismissesKeyboard(.interactively)
         }
         .onAppear {
             didAppear = true
@@ -61,7 +65,16 @@ struct PhoneEntryScreen: View {
     }
 
     private var header: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 14) {
+            FloatingBottleHero(
+                scale: 0.56,
+                frameHeight: 122,
+                showBackdrop: false,
+                showWaves: false,
+                bobAmount: 3.5,
+                tiltDegrees: 3
+            )
+
             Text("Welcome in!")
                 .font(.title2.weight(.semibold))
                 .multilineTextAlignment(.center)
@@ -73,34 +86,20 @@ struct PhoneEntryScreen: View {
 
     private var consentAndContinue: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 10) {
-                    Button {
-                        hasConsented.toggle()
-                    } label: {
-                        Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(hasConsented ? Color.figmaBlue : Color.secondary)
-                    }
-                    .buttonStyle(.plain)
-
-                    Text(consentMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .top, spacing: 10) {
+                Button {
+                    hasConsented.toggle()
+                } label: {
+                    Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(hasConsented ? Color.figmaBlue : Color.secondary)
                 }
+                .buttonStyle(.plain)
 
-                HStack(spacing: 4) {
-                    Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
-                        .underline()
-                    Text("·")
-                    Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
-                        .underline()
-                }
-                .font(.footnote)
-                .foregroundStyle(Color.figmaBlue)
-                .tint(.figmaBlue)
-                .frame(maxWidth: .infinity, alignment: .center)
+                Text(consentMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Button(action: onContinue) {
@@ -122,6 +121,18 @@ struct PhoneEntryScreen: View {
                 )
             )
             .disabled(!canContinue || isSending)
+
+            HStack(spacing: 4) {
+                Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
+                    .underline()
+                Text("·")
+                Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
+                    .underline()
+            }
+            .font(.footnote)
+            .foregroundStyle(Color.figmaBlue)
+            .tint(.figmaBlue)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
     }
 }
