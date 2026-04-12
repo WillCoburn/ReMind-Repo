@@ -5,7 +5,9 @@ struct PhoneEntrySection: View {
     @Binding var phoneDigits: String
     @Binding var showErrorBorder: Bool
     @Binding var errorText: String
+    @Binding var hasConsented: Bool
     let isValidPhone: Bool
+    let consentMessage: String
 
     private var borderColor: Color {
         (isValidPhone || !showErrorBorder) ? Color.gray.opacity(0.25) : .red
@@ -47,6 +49,23 @@ struct PhoneEntrySection: View {
                     .font(.footnote)
                     .foregroundColor(.red)
             }
+
+            HStack(alignment: .top, spacing: 10) {
+                Button {
+                    hasConsented.toggle()
+                } label: {
+                    Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(hasConsented ? Color.figmaBlue : Color.secondary)
+                }
+                .buttonStyle(.plain)
+
+                Text(consentMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 2)
 
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "info.circle.fill")
