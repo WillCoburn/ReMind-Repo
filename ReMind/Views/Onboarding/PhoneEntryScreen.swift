@@ -19,41 +19,49 @@ struct PhoneEntryScreen: View {
             OnboardingBackgroundView()
                 .ignoresSafeArea()
 
-            ScrollView {
-                VStack {
-                    VStack(alignment: .center, spacing: 28) {
-                        header
+            GeometryReader { proxy in
+                ScrollView {
+                    VStack {
+                        Spacer(minLength: 20)
 
-                        VStack(spacing: 10) {
-                            PhoneEntrySection(
-                                phoneDigits: $phoneDigits,
-                                showErrorBorder: $showErrorBorder,
-                                errorText: $errorText,
-                                isValidPhone: isValidPhone
-                            )
+                        VStack(alignment: .center, spacing: 28) {
+                            header
 
-                            if !errorText.isEmpty {
-                                Text(errorText)
-                                    .font(.footnote)
-                                    .foregroundColor(.red)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .transition(.opacity)
+                            VStack(spacing: 10) {
+                                PhoneEntrySection(
+                                    phoneDigits: $phoneDigits,
+                                    showErrorBorder: $showErrorBorder,
+                                    errorText: $errorText,
+                                    isValidPhone: isValidPhone
+                                )
+
+                                if !errorText.isEmpty {
+                                    Text(errorText)
+                                        .font(.footnote)
+                                        .foregroundColor(.red)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .transition(.opacity)
+                                }
                             }
-                        }
-                        .onboardingCardStyle()
-                        .opacity(didAppear ? 1 : 0)
-                        .offset(y: didAppear ? 0 : 10)
-                        .animation(.easeOut(duration: 0.4).delay(0.15), value: didAppear)
+                            .onboardingCardStyle()
+                            .opacity(didAppear ? 1 : 0)
+                            .offset(y: didAppear ? 0 : 10)
+                            .animation(.easeOut(duration: 0.4).delay(0.15), value: didAppear)
 
-                        consentAndContinue
+                            consentAndContinue
+                        }
+                        .frame(maxWidth: 460)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 28)
+                        .frame(maxWidth: .infinity)
+
+                        Spacer(minLength: 20)
                     }
-                    .frame(maxWidth: 460)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 32)
                     .frame(maxWidth: .infinity)
+                    .frame(minHeight: proxy.size.height)
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
-            .scrollDismissesKeyboard(.interactively)
         }
         .onAppear {
             didAppear = true
@@ -76,34 +84,20 @@ struct PhoneEntryScreen: View {
 
     private var consentAndContinue: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 10) {
-                    Button {
-                        hasConsented.toggle()
-                    } label: {
-                        Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(hasConsented ? Color.figmaBlue : Color.secondary)
-                    }
-                    .buttonStyle(.plain)
-
-                    Text(consentMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .top, spacing: 10) {
+                Button {
+                    hasConsented.toggle()
+                } label: {
+                    Image(systemName: hasConsented ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(hasConsented ? Color.figmaBlue : Color.secondary)
                 }
+                .buttonStyle(.plain)
 
-                HStack(spacing: 4) {
-                    Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
-                        .underline()
-                    Text("·")
-                    Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
-                        .underline()
-                }
-                .font(.footnote)
-                .foregroundStyle(Color.figmaBlue)
-                .tint(.figmaBlue)
-                .frame(maxWidth: .infinity, alignment: .center)
+                Text(consentMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Button(action: onContinue) {
@@ -125,6 +119,18 @@ struct PhoneEntryScreen: View {
                 )
             )
             .disabled(!canContinue || isSending)
+
+            HStack(spacing: 4) {
+                Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
+                    .underline()
+                Text("·")
+                Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
+                    .underline()
+            }
+            .font(.footnote)
+            .foregroundStyle(Color.figmaBlue)
+            .tint(.figmaBlue)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
     }
 }
