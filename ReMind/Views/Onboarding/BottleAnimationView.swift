@@ -13,18 +13,33 @@ struct BottleAnimationView: View {
     }
 
     var body: some View {
+        ZStack {
+            horizontalWave
+                .offset(y: size.height * 0.14)
+
+            bottle
+                .rotationEffect(.degrees(-8 + (bottleTilt ? 1.1 : -1.1)))
+                .offset(y: bottleBob ? -3 : 3)
+                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 5)
+        }
+            .animation(.easeInOut(duration: 3.2).repeatForever(autoreverses: true), value: bottleTilt)
+            .animation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true), value: bottleBob)
+            .onAppear {
+                bottleBob = true
+                bottleTilt = true
+                noteDrift = true
+                glintSweep = true
+            }
+            .accessibilityHidden(true)
+    }
+
+    private var bottle: some View {
         OceanBottleShape()
             .fill(Color(red: 196/255, green: 231/255, blue: 1).opacity(0.28))
             .frame(width: size.width, height: size.height)
             .overlay {
                 OceanBottleShape()
                     .stroke(Color.figmaBlue.opacity(0.58), lineWidth: 1.8)
-            }
-            .overlay {
-                BottleWaveLineShape()
-                    .stroke(Color.figmaBlue.opacity(0.34), style: StrokeStyle(lineWidth: 1.35, lineCap: .round, lineJoin: .round))
-                    .frame(width: size.width * 0.44, height: size.height * 0.06)
-                    .offset(y: size.height * 0.18)
             }
             .overlay(alignment: .top) {
                 VStack(spacing: 1.5) {
@@ -80,30 +95,44 @@ struct BottleAnimationView: View {
                         OceanBottleShape()
                     }
             }
-            .rotationEffect(.degrees(45 + (bottleTilt ? 2.1 : -2.1)))
-            .offset(y: bottleBob ? -3 : 3)
-            .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 5)
-            .animation(.easeInOut(duration: 3.2).repeatForever(autoreverses: true), value: bottleTilt)
-            .animation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true), value: bottleBob)
-            .onAppear {
-                bottleBob = true
-                bottleTilt = true
-                noteDrift = true
-                glintSweep = true
-            }
-            .accessibilityHidden(true)
+    }
+
+    private var horizontalWave: some View {
+        BottleHorizonWaveShape()
+            .stroke(
+                LinearGradient(
+                    colors: [
+                        Color.figmaBlue.opacity(0.0),
+                        Color.figmaBlue.opacity(0.22),
+                        Color.figmaBlue.opacity(0.0)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+            )
+            .frame(width: size.width * 1.8, height: size.height * 0.13)
+            .blur(radius: 0.25)
     }
 }
 
-private struct BottleWaveLineShape: Shape {
+private struct BottleHorizonWaveShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        let midY = rect.midY
-        path.move(to: CGPoint(x: rect.minX, y: midY))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: midY),
-            control: CGPoint(x: rect.midX, y: midY - rect.height * 0.6)
+        let baselineY = rect.midY
+
+        path.move(to: CGPoint(x: rect.minX, y: baselineY))
+        path.addCurve(
+            to: CGPoint(x: rect.midX, y: baselineY),
+            control1: CGPoint(x: rect.width * 0.18, y: baselineY - rect.height * 0.4),
+            control2: CGPoint(x: rect.width * 0.34, y: baselineY + rect.height * 0.28)
         )
+        path.addCurve(
+            to: CGPoint(x: rect.maxX, y: baselineY),
+            control1: CGPoint(x: rect.width * 0.66, y: baselineY - rect.height * 0.28),
+            control2: CGPoint(x: rect.width * 0.82, y: baselineY + rect.height * 0.4)
+        )
+
         return path
     }
 }
