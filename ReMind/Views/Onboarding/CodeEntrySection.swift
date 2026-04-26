@@ -65,8 +65,11 @@ struct CodeEntrySection: View {
     }
 
     private var codeBoxes: some View {
-        ZStack {
-            HStack(spacing: 12) {
+        GeometryReader { proxy in
+            let metrics = codeBoxMetrics(for: proxy.size.width)
+
+            ZStack {
+                HStack(spacing: metrics.spacing) {
                 let digits = Array(code)
 
                 ForEach(0..<6, id: \.self) { index in
@@ -83,23 +86,34 @@ struct CodeEntrySection: View {
                             .opacity(index < digits.count ? 1 : 0.25)
                             .animation(.easeOut(duration: 0.18), value: code)
                     }
-                    .frame(width: 46, height: 56)
+                    .frame(width: metrics.width, height: metrics.height)
                     .shadow(color: .black.opacity(0.03), radius: 6, x: 0, y: 4)
                     .animation(.easeInOut(duration: 0.2), value: code)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .center)
+                .frame(maxWidth: .infinity, alignment: .center)
 
-            TextField("", text: sanitizedBinding)
-                .keyboardType(.numberPad)
-                .textContentType(.oneTimeCode)
-                .focused($isCodeFieldFocused)
-                .frame(width: 1, height: 1)
-                .opacity(0.01)
+                TextField("", text: sanitizedBinding)
+                    .keyboardType(.numberPad)
+                    .textContentType(.oneTimeCode)
+                    .focused($isCodeFieldFocused)
+                    .frame(width: 1, height: 1)
+                    .opacity(0.01)
+            }
         }
-        .padding(.vertical, 4)
+        .frame(height: 64)
         .contentShape(Rectangle())
         .onTapGesture { isCodeFieldFocused = true }
+    }
+
+    private func codeBoxMetrics(for availableWidth: CGFloat) -> (width: CGFloat, height: CGFloat, spacing: CGFloat) {
+        let minimumWidth: CGFloat = 34
+        let maximumWidth: CGFloat = 46
+        let minimumSpacing: CGFloat = 6
+        let maximumSpacing: CGFloat = 12
+        let spacing = min(maximumSpacing, max(minimumSpacing, (availableWidth - minimumWidth * 6) / 5))
+        let width = min(maximumWidth, max(minimumWidth, (availableWidth - spacing * 5) / 6))
+        return (width, max(48, width * 1.2), spacing)
     }
 
     private func borderColor(for index: Int) -> Color {

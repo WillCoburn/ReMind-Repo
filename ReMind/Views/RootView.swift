@@ -12,6 +12,7 @@ struct RootView: View {
     @State private var activePage: Page = .main
     @State private var showOnboardingFeatureTour: Bool = true
     @State private var hasDismissedOnboardingFeatureTour: Bool = false
+    @State private var authDebugHandle: AuthStateDidChangeListenerHandle?
 
 
     var body: some View {
@@ -42,6 +43,7 @@ struct RootView: View {
                         .zIndex(2)
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ZStack(alignment: .top) {
                     // Global background is just system color now.
@@ -61,13 +63,21 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.25), value: showOnboardingFeatureTour)
         .networkAware()
         .onAppear {
-            Auth.auth().addStateDidChangeListener { _, user in
-                print("🔐 auth changed uid:", user?.uid ?? "nil")
+            if authDebugHandle == nil {
+                authDebugHandle = Auth.auth().addStateDidChangeListener { _, user in
+                    print("🔐 auth changed uid:", user?.uid ?? "nil")
+                }
             }
 
             if appVM.shouldShowOnboarding && !hasDismissedOnboardingFeatureTour {
                 appVM.featureTourStep = .settings
                 showOnboardingFeatureTour = true
+            }
+        }
+        .onDisappear {
+            if let authDebugHandle {
+                Auth.auth().removeStateDidChangeListener(authDebugHandle)
+                self.authDebugHandle = nil
             }
         }
 

@@ -53,15 +53,8 @@ struct OnboardingView: View {
         )
     }
 
-    private let consentMessage = "By tapping 'Continue', you consent to receive reminder text messages from ReMind."
-
     var body: some View {
         ZStack {
-            Image("MainBackground")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-
             switch step {
             case .enterPhone:
                 PhoneEntryScreen(
@@ -71,7 +64,6 @@ struct OnboardingView: View {
                     hasConsented: $hasConsented,
                     isSending: isSending,
                     isValidPhone: isValidPhone,
-                    consentMessage: consentMessage,
                     canContinue: canContinueOnline,
                     onContinue: { Task { await sendCode() } }
                 )
@@ -95,6 +87,8 @@ struct OnboardingView: View {
                 .transition(isAdvancing ? forwardTransition : backwardTransition)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(OnboardingBackgroundView().ignoresSafeArea())
         .contentShape(Rectangle())
         .onTapGesture { hideKeyboard() }
         .animation(.easeOut(duration: 0.35), value: step)
