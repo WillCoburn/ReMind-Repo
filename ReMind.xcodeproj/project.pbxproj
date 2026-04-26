@@ -49,7 +49,6 @@
 		D25785312EE6212F007D13FA /* Deleting Account Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25785302EE62128007D13FA /* Deleting Account Sheet.swift */; };
 		D25C557E2EED16C300A5240E /* CodeEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */; };
 		D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */; };
-		E1A0B1C72F3344BB00C0DE01 /* FloatingMessagePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C62F3344AA00C0DE01 /* FloatingMessagePill.swift */; };
 		E1A0B1C42F33445500C0DE01 /* BottleAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C32F33445500C0DE01 /* BottleAnimationView.swift */; };
 		D25C55822EED206400A5240E /* KeyboardObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C55812EED206400A5240E /* KeyboardObserver.swift */; };
 		D25C55842EF4D8BA00A5240E /* Concurrency+Timeouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C55832EF4D8B300A5240E /* Concurrency+Timeouts.swift */; };
@@ -179,7 +178,6 @@
 		D25785302EE62128007D13FA /* Deleting Account Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Deleting Account Sheet.swift"; sourceTree = "<group>"; };
 		D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeEntryScreen.swift; sourceTree = "<group>"; };
 		D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEntryScreen.swift; sourceTree = "<group>"; };
-		E1A0B1C62F3344AA00C0DE01 /* FloatingMessagePill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingMessagePill.swift; sourceTree = "<group>"; };
 		E1A0B1C32F33445500C0DE01 /* BottleAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottleAnimationView.swift; sourceTree = "<group>"; };
 		D25C55812EED206400A5240E /* KeyboardObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardObserver.swift; sourceTree = "<group>"; };
 		D25C55832EF4D8B300A5240E /* Concurrency+Timeouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Concurrency+Timeouts.swift"; sourceTree = "<group>"; };
@@ -483,7 +481,6 @@
 			isa = PBXGroup;
 			children = (
 				D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */,
-				E1A0B1C62F3344AA00C0DE01 /* FloatingMessagePill.swift */,
 				E1A0B1C32F33445500C0DE01 /* BottleAnimationView.swift */,
 				D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */,
 				D25C55812EED206400A5240E /* KeyboardObserver.swift */,
@@ -728,7 +725,6 @@
 				D2D07BDF2EBC1A8D0078BAB0 /* AppViewModel+GodMode.swift in Sources */,
 				D2ED48102EC8F2F00030CBA7 /* SettingsHelpers.swift in Sources */,
 				D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */,
-				E1A0B1C72F3344BB00C0DE01 /* FloatingMessagePill.swift in Sources */,
 				E1A0B1C42F33445500C0DE01 /* BottleAnimationView.swift in Sources */,
 				D22EF49C2E7B312B00810204 /* RandomDeliveryWindow.swift in Sources */,
 				D2F7A0022F12345000ABCDEF /* SubscriptionSheet.swift in Sources */,
