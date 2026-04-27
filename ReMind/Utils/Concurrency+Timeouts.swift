@@ -20,8 +20,7 @@ func withTimeout<T>(seconds: TimeInterval, label: String, operation: @escaping @
 
         group.addTask {
             try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
-            let thread = Thread.isMainThread ? "main" : "background"
-            print("⏰ TIMEOUT: \(label) (on \(thread) thread)")
+            print("⏰ TIMEOUT: \(label)")
             throw TimeoutError.timeout(label: label)
         }
 
@@ -37,8 +36,7 @@ func withTimeout<T>(seconds: TimeInterval, label: String, operation: @escaping @
 
 func runOffMain<T>(label: String, _ operation: @escaping @Sendable () async throws -> T) async throws -> T {
     try await Task.detached(priority: .userInitiated) {
-        let thread = Thread.isMainThread ? "main" : "background"
-        print("🧵 \(label) executing on \(thread) thread")
+        print("🧵 \(label) executing")
         return try await operation()
     }.value
 }

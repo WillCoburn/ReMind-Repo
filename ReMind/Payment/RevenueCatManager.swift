@@ -241,7 +241,9 @@ final class RevenueCatManager: NSObject, ObservableObject {
                 withTimeInterval: interval,
                 repeats: false
             ) { [weak self] _ in
-                self?.recomputeAndPersistActive()
+                Task { @MainActor [weak self] in
+                    self?.recomputeAndPersistActive()
+                }
             }
         }
     }

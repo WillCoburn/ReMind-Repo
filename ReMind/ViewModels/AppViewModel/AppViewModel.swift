@@ -44,7 +44,7 @@ final class AppViewModel: ObservableObject {
 
     @Published var showFeatureTour: Bool = false
     @Published var featureTourStep: FeatureTourStep = .settings
-    @Published internal(set) var hasSeenFeatureTour: Bool = false
+    @Published var hasSeenFeatureTour: Bool = false
 
     // MARK: - Firebase deps
     let db = Firestore.firestore()

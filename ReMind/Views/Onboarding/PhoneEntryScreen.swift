@@ -1,8 +1,4 @@
-// ============================
-// File: Views/Onboarding/PhoneEntryScreen.swift
-// ============================
 import SwiftUI
-import UIKit
 
 struct PhoneEntryScreen: View {
     @Binding var phoneDigits: String
@@ -12,159 +8,193 @@ struct PhoneEntryScreen: View {
 
     let isSending: Bool
     let isValidPhone: Bool
-    let consentMessage: String
     let canContinue: Bool
     let onContinue: () -> Void
 
-    @State private var keyboardHeight: CGFloat = 0
-    @State private var bottomBarHeight: CGFloat = 0
-
-    private var isKeyboardVisible: Bool { keyboardHeight > 0 }
+    @State private var didAppear = false
+    @State private var logoIsFloating = false
+    @State private var waveIsDrifting = false
 
     var body: some View {
-        ZStack(alignment: .top) {
+        GeometryReader { proxy in
+            let horizontalPadding = OnboardingLayout.formHorizontal(for: proxy.size.width)
+            let contentWidth = OnboardingLayout.contentWidth(
+                in: proxy.size.width,
+                horizontalPadding: horizontalPadding
+            )
 
-            // ============================
-            // MAIN CONTENT
-            // ============================
-            VStack(spacing: 0) {
-                topContent
-                    .padding(.top, 36)
-                    .padding(.horizontal, 24)
+            ScrollView {
+                VStack(alignment: .center, spacing: 24) {
+                    header
 
-                // 🔑 This container now owns vertical positioning
-                VStack(alignment: .leading, spacing: 14) {
+                    VStack(spacing: 10) {
+                        PhoneEntrySection(
+                            phoneDigits: $phoneDigits,
+                            showErrorBorder: $showErrorBorder,
+                            errorText: $errorText,
+                            isValidPhone: isValidPhone
+                        )
 
-                    PhoneEntrySection(
-                        phoneDigits: $phoneDigits,
-                        showErrorBorder: $showErrorBorder,
-                        errorText: $errorText,
-                        isValidPhone: isValidPhone
-                    )
+                        if !errorText.isEmpty {
+                            Text(errorText)
+                                .font(.footnote)
+                                .foregroundColor(.red)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .transition(.opacity)
+                        }
+                    }
+                    .onboardingCardStyle()
+                    .opacity(didAppear ? 1 : 0)
+                    .offset(y: didAppear ? 0 : 10)
+                    .animation(.easeOut(duration: 0.4).delay(0.15), value: didAppear)
 
-                    if !errorText.isEmpty {
-                        Text(errorText)
-                            .font(.footnote)
-                            .foregroundColor(.red)
+                    consentAndContinue
+                }
+                .frame(width: contentWidth)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, horizontalPadding)
+                .padding(.vertical, 32)
+            }
+            .scrollDismissesKeyboard(.interactively)
+        }
+        .background(OnboardingBackgroundView().ignoresSafeArea())
+        .onAppear {
+            didAppear = true
+            hasConsented = true
+            logoIsFloating = true
+            waveIsDrifting = true
+        }
+    }
+
+    private var header: some View {
+        VStack(spacing: 10) {
+            animatedLogo
+                .padding(.bottom, 4)
+
+            Text("Welcome in!")
+                .font(.title2.weight(.semibold))
+                .multilineTextAlignment(.center)
+
+            Text("Please enter your phone number to get started.")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .opacity(didAppear ? 1 : 0)
+        .offset(y: didAppear ? 0 : 8)
+        .animation(.easeOut(duration: 0.4).delay(0.08), value: didAppear)
+    }
+
+    private var animatedLogo: some View {
+        ZStack {
+            logoImage
+                .offset(y: logoIsFloating ? -2 : 2)
+                .rotationEffect(.degrees(logoIsFloating ? 1.5 : -1.5))
+
+            logoImage
+                .offset(x: waveIsDrifting ? 5 : -5)
+                .mask(alignment: .bottom) {
+                    VStack {
+                        Spacer()
+                        Rectangle()
+                            .frame(height: 34)
+                            .padding(.horizontal, 8)
+                            .padding(.bottom, 16)
+                        }
+                }
+                .opacity(0.24)
+        }
+        .frame(width: 132, height: 132)
+        .animation(.easeInOut(duration: 3.4).repeatForever(autoreverses: true), value: logoIsFloating)
+        .animation(.easeInOut(duration: 3.8).repeatForever(autoreverses: true), value: waveIsDrifting)
+        .accessibilityHidden(true)
+    }
+
+    private var logoImage: some View {
+        Image("BottleLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 132, height: 132)
+    }
+
+    private var consentAndContinue: some View {
+        VStack(spacing: 12) {
+            Button(action: onContinue) {
+                ZStack {
+                    Text(isSending ? "Sending…" : "Continue")
+                        .font(.headline.weight(.semibold))
+                        .opacity(isSending ? 0 : 1)
+
+                    if isSending {
+                        ProgressView()
+                            .tint(.white)
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, isKeyboardVisible ? 0 : 24)
-
-                // Give vertical room for centering logic
-                .frame(
-                    maxHeight: .infinity,
-                    alignment: isKeyboardVisible
-                        ? .center        // ⬅️ KEY CHANGE: optical centering when keyboard is open
-                        : .top
+            }
+            .buttonStyle(
+                OnboardingPrimaryButtonStyle(
+                    isEnabled: canContinue && !isSending,
+                    accentColor: .figmaBlue
                 )
-                .offset(y: isKeyboardVisible ? -180 : 0)
+            )
+            .disabled(!canContinue || isSending)
+            .padding(.horizontal, 4)
 
+            Text("We'll only use your number for verification and reminders.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .fixedSize(horizontal: false, vertical: true)
 
-                // Reserve space so bottom bar never overlaps content
-                Spacer(minLength: bottomBarHeight + 24)
+            HStack(spacing: 4) {
+                Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
+                    .underline()
+                Text("·")
+                Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
+                    .underline()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
-            // ============================
-            // BOTTOM BAR (KEYBOARD-AWARE)
-            // ============================
-            VStack {
-                Spacer(minLength: 0)
-
-                ConsentAndAgreeBottom(
-                    hasConsented: $hasConsented,
-                    consentMessage: consentMessage,
-                    canContinue: canContinue,
-                    isSending: isSending,
-                    onAgreeAndContinue: onContinue
-                )
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
-                .readSize { size in
-                    bottomBarHeight = size.height + 16
-                }
-            }
-            .padding(.bottom, keyboardHeight)
+            .font(.footnote)
+            .foregroundStyle(Color.figmaBlue)
+            .tint(.figmaBlue)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea(.keyboard, edges: .all)
-
-        // ============================
-        // KEYBOARD TRACKING
-        // ============================
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { note in
-            keyboardHeight = Self.keyboardOverlapHeight(from: note)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            keyboardHeight = 0
-        }
-    }
-
-    // ============================
-    // HEADER (INSTANT HIDE)
-    // ============================
-    private var topContent: some View {
-        VStack(spacing: 10) {
-
-            if !isKeyboardVisible {
-                Image("FullLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 220, height: 110)
-            }
-
-            if !isKeyboardVisible {
-                Text("Enter your phone number to get started.")
-                    .font(.title2.weight(.semibold))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 2)
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    // ============================
-    // KEYBOARD OVERLAP CALC
-    // ============================
-    private static func keyboardOverlapHeight(from note: Notification) -> CGFloat {
-        guard
-            let info = note.userInfo,
-            let endFrame = info[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
-        else { return 0 }
-
-        let window = UIApplication.shared
-            .connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-            .first { $0.isKeyWindow }
-
-        guard let window else { return 0 }
-
-        let screenHeight = window.bounds.height
-        let safeBottom = window.safeAreaInsets.bottom
-        let covered = max(0, screenHeight - endFrame.minY)
-
-        return max(0, covered - safeBottom)
     }
 }
 
-// ============================
-// SIZE READER
-// ============================
-private struct SizePreferenceKey: PreferenceKey {
-    static var defaultValue: CGSize = .zero
-    static func reduce(value: inout CGSize, nextValue: () -> CGSize) { value = nextValue() }
+
+struct OnboardingPrimaryButtonStyle: ButtonStyle {
+    let isEnabled: Bool
+    let accentColor: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(maxWidth: .infinity, minHeight: 54)
+            .background(isEnabled ? accentColor : Color.gray.opacity(0.3))
+            .foregroundColor(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
+            .animation(.easeOut(duration: 0.2), value: isEnabled)
+    }
 }
 
-private extension View {
-    func readSize(_ onChange: @escaping (CGSize) -> Void) -> some View {
-        background(
-            GeometryReader { proxy in
-                Color.clear.preference(key: SizePreferenceKey.self, value: proxy.size)
-            }
-        )
-        .onPreferenceChange(SizePreferenceKey.self, perform: onChange)
+struct OnboardingCardBackground: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.white.opacity(0.88))
+                    .shadow(color: Color.black.opacity(0.05), radius: 14, x: 0, y: 8)
+            )
+    }
+}
+
+extension View {
+    func onboardingCardStyle() -> some View {
+        modifier(OnboardingCardBackground())
     }
 }

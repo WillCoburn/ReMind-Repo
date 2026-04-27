@@ -40,24 +40,21 @@ struct OnboardingView: View {
     }
     
     private var forwardTransition: AnyTransition {
-        .asymmetric(insertion: .move(edge: .trailing),
-                    removal: .move(edge: .leading))
+        .asymmetric(
+            insertion: .opacity.combined(with: .move(edge: .trailing)),
+            removal: .opacity.combined(with: .move(edge: .leading))
+        )
     }
 
     private var backwardTransition: AnyTransition {
-        .asymmetric(insertion: .move(edge: .leading),
-                    removal: .move(edge: .trailing))
+        .asymmetric(
+            insertion: .opacity.combined(with: .move(edge: .leading)),
+            removal: .opacity.combined(with: .move(edge: .trailing))
+        )
     }
-
-    private let consentMessage = "By tapping 'Continue', you consent to receive reminder text messages from ReMind."
 
     var body: some View {
         ZStack {
-            Image("MainBackground")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-
             switch step {
             case .enterPhone:
                 PhoneEntryScreen(
@@ -67,7 +64,6 @@ struct OnboardingView: View {
                     hasConsented: $hasConsented,
                     isSending: isSending,
                     isValidPhone: isValidPhone,
-                    consentMessage: consentMessage,
                     canContinue: canContinueOnline,
                     onContinue: { Task { await sendCode() } }
                 )
@@ -91,9 +87,11 @@ struct OnboardingView: View {
                 .transition(isAdvancing ? forwardTransition : backwardTransition)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(OnboardingBackgroundView().ignoresSafeArea())
         .contentShape(Rectangle())
         .onTapGesture { hideKeyboard() }
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: step)
+        .animation(.easeOut(duration: 0.35), value: step)
         .onChange(of: code) { _ in
             if step == .enterCode && !errorText.isEmpty {
                 errorText = ""

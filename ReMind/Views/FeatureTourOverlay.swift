@@ -55,67 +55,78 @@ struct FeatureTourOverlay: View {
 
     // MARK: - Body
     var body: some View {
-        ZStack {
-            // OPAQUE, LIGHT BLUE-TINTED BACKGROUND
-            Color(red: 244/255, green: 248/255, blue: 255/255)
-                .ignoresSafeArea()
+        GeometryReader { proxy in
+            let horizontalPadding = OnboardingLayout.pageHorizontal(for: proxy.size.width)
+            let topInset = proxy.safeAreaInsets.top
+            let bottomInset = proxy.safeAreaInsets.bottom
+            let overlayWidth = max(0, proxy.size.width - horizontalPadding * 2)
 
-            VStack(spacing: 24) {
+            ZStack {
+                // OPAQUE, LIGHT BLUE-TINTED BACKGROUND
+                Color(red: 244/255, green: 248/255, blue: 255/255)
+                    .ignoresSafeArea()
 
-                // Skip Button Row
-                HStack {
-                    Spacer()
-                    Button(action: onSkip) {
-                        Text("Skip")
-                            .font(.headline)
-                            .foregroundColor(.figmaBlue)
-                    }
-                }
-                .padding(.top, 8)
-
-                // MARK: - TabView
                 TabView(selection: $step) {
                     ForEach(pages) { page in
                         FeatureTourPageView(page: page)
+                            .padding(.horizontal, horizontalPadding)
+                            .padding(.top, topInset + 72)
+                            .padding(.bottom, bottomInset + (isOnLastPage ? 150 : 96))
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                            .clipped()
                             .tag(page.step)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))   // custom dots instead
                 .animation(.easeInOut(duration: 0.25), value: step)
 
-                // MARK: - Progress Dots
-                HStack(spacing: 8) {
-                    ForEach(0..<totalPages, id: \.self) { idx in
-                        Circle()
-                            .frame(width: 8, height: 8)
-                            .foregroundColor(
-                                idx == currentIndex
-                                ? Color.figmaBlue
-                                : Color.figmaBlue.opacity(0.3)
-                            )
-                    }
-                }
-                .padding(.bottom, 4)
-                .animation(.easeInOut(duration: 0.25), value: step)
-
-                // MARK: - Final Button
-                if isOnLastPage {
-                    Button(action: onComplete) {
-                        Text("Get started!")
+                VStack {
+                    Button(action: onSkip) {
+                        Text("Skip")
                             .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color.figmaBlue)
-                            .cornerRadius(14)
+                            .foregroundColor(.figmaBlue)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
                     }
-                    .padding(.horizontal, 8)
-                }
+                    .frame(width: overlayWidth, alignment: .trailing)
+                    .padding(.top, topInset + 12)
 
-                Spacer(minLength: 12)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+                VStack(spacing: 18) {
+                    Spacer()
+
+                    HStack(spacing: 8) {
+                        ForEach(0..<totalPages, id: \.self) { idx in
+                            Circle()
+                                .frame(width: 8, height: 8)
+                                .foregroundColor(
+                                    idx == currentIndex
+                                    ? Color.figmaBlue
+                                    : Color.figmaBlue.opacity(0.3)
+                                )
+                        }
+                    }
+                    .animation(.easeInOut(duration: 0.25), value: step)
+
+                    if isOnLastPage {
+                        Button(action: onComplete) {
+                            Text("Get started!")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.figmaBlue)
+                                .cornerRadius(14)
+                        }
+                        .frame(maxWidth: OnboardingLayout.maxContentWidth)
+                    }
+                }
+                .padding(.horizontal, horizontalPadding)
+                .padding(.bottom, bottomInset + 24)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
         }
         .preferredColorScheme(.light)
     }
@@ -160,7 +171,7 @@ private struct FeatureTourPageView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            Spacer()
+            Spacer(minLength: 0)
 
             if isTextAboveImage {
                 textBlock
@@ -170,9 +181,10 @@ private struct FeatureTourPageView: View {
                 textBlock
             }
 
-            Spacer()
+            Spacer(minLength: 0)
         }
-        .padding(.top, 16)
+        .frame(maxWidth: OnboardingLayout.maxContentWidth)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var textBlock: some View {
@@ -190,23 +202,28 @@ private struct FeatureTourPageView: View {
             }
         }
         .frame(
-            maxWidth: .infinity,
+            maxWidth: OnboardingLayout.maxTourTextWidth,
             alignment: Alignment(
                 horizontal: page.textAlignment,
                 vertical: .center
             )
         )
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var titleText: some View {
         Text(page.title)
             .font(.title2.weight(.semibold))
+            .lineLimit(nil)
+            .minimumScaleFactor(0.9)
     }
 
     private var messageText: some View {
         Text(page.message)
             .font(.body)
             .foregroundColor(.secondary)
+            .lineLimit(nil)
+            .minimumScaleFactor(0.9)
     }
 
     private var illustration: some View {

@@ -1,8 +1,4 @@
-// ============================
-// File: Views/Onboarding/CodeEntryScreen.swift
-// ============================
 import SwiftUI
-import UIKit
 
 struct CodeEntryScreen: View {
     @Binding var code: String
@@ -15,168 +11,157 @@ struct CodeEntryScreen: View {
     let onResend: () -> Void
     let onVerify: () -> Void
 
-    @State private var keyboardHeight: CGFloat = 0
-    @State private var bottomAreaHeight: CGFloat = 0
+    @State private var didAppear = false
+    @State private var messageIsArriving = false
 
-    // Space we must keep clear at the bottom:
-    // - the lifted bottomArea itself
-    // - the keyboard overlap
-    // - a little gap
-    private var reservedBottomSpace: CGFloat {
-        bottomAreaHeight + keyboardHeight + 24
+    var body: some View {
+        GeometryReader { proxy in
+            let horizontalPadding = OnboardingLayout.formHorizontal(for: proxy.size.width)
+            let contentWidth = OnboardingLayout.contentWidth(
+                in: proxy.size.width,
+                horizontalPadding: horizontalPadding
+            )
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    HStack {
+                        Button(action: onBack) {
+                            Image(systemName: "chevron.left")
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .padding(8)
+                        }
+                        .contentShape(Rectangle())
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+
+                    CodeMessageIllustration(
+                        messageIsArriving: messageIsArriving
+                    )
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .opacity(didAppear ? 1 : 0)
+                    .animation(.easeOut(duration: 0.4).delay(0.06), value: didAppear)
+
+                    CodeEntrySection(
+                        code: $code,
+                        phoneNumber: phoneNumber,
+                        onEditNumber: onBack,
+                        onResend: onResend,
+                        showTopBar: false
+                    )
+                    .opacity(didAppear ? 1 : 0)
+                    .offset(y: didAppear ? 0 : 10)
+                    .animation(.easeOut(duration: 0.4).delay(0.12), value: didAppear)
+
+                    if !errorText.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                            Text(errorText)
+                        }
+                        .font(.callout)
+                        .foregroundStyle(.red)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .transition(.opacity)
+                        .padding(.horizontal, 4)
+                    }
+
+                    Button(action: onVerify) {
+                        ZStack {
+                            Text(isVerifying ? "Verifying…" : "Verify Code")
+                                .font(.headline.weight(.semibold))
+                                .opacity(isVerifying ? 0 : 1)
+
+                            if isVerifying {
+                                ProgressView()
+                                    .tint(.white)
+                            }
+                        }
+                    }
+                    .buttonStyle(
+                        OnboardingPrimaryButtonStyle(
+                            isEnabled: code.count == 6 && !isVerifying,
+                            accentColor: .figmaBlue
+                        )
+                    )
+                    .disabled(code.count < 6 || isVerifying)
+                    .padding(.horizontal, 4)
+                }
+                .frame(width: contentWidth)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, horizontalPadding)
+                .padding(.vertical, 24)
+            }
+            .scrollDismissesKeyboard(.interactively)
+        }
+        .background(OnboardingBackgroundView().ignoresSafeArea())
+        .onAppear {
+            didAppear = true
+            messageIsArriving = true
+        }
     }
+}
+
+private struct CodeMessageIllustration: View {
+    let messageIsArriving: Bool
 
     var body: some View {
         ZStack {
-
-            // ✅ Center the code entry UI in the space ABOVE (keyboard + verify area)
-            VStack {
-                Spacer(minLength: 0)
-
-                CodeEntrySection(
-                    code: $code,
-                    phoneNumber: phoneNumber,
-                    onEditNumber: onBack,
-                    onResend: onResend,
-                    showTopBar: false   // ✅ back arrow is pinned separately now
-                )
-                .padding(.horizontal, 24)
-
-                Spacer(minLength: 0)
-            }
-            .padding(.bottom, reservedBottomSpace) // ✅ this is what raises/centers it
-            .animation(.spring(response: 0.35, dampingFraction: 0.9), value: reservedBottomSpace)
-
-            // ✅ Bottom area (error banner + verify button), lifted above keyboard
-            VStack {
-                Spacer(minLength: 0)
-
-                bottomArea
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 16)
-                    .readSize { size in
-                        bottomAreaHeight = size.height + 16
-                    }
-            }
-            .padding(.bottom, keyboardHeight)
-            .animation(.spring(response: 0.35, dampingFraction: 0.9), value: keyboardHeight)
-
-            // ✅ Back arrow pinned to top-left, never moves
-            topBarPinned
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-        // ✅ Critical: stop SwiftUI from also auto-insetting for keyboard
-        .ignoresSafeArea(.keyboard, edges: .all)
-
-        // ✅ Keyboard tracking (overlap height)
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { note in
-            keyboardHeight = Self.keyboardOverlapHeight(from: note)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            keyboardHeight = 0
-        }
-    }
-
-    private var topBarPinned: some View {
-        VStack {
-            HStack {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.left")
-                        .font(.title3.weight(.semibold))
-                        .foregroundColor(.primary)
-                        .padding(8)
-                        .contentShape(Rectangle())
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.figmaBlue, lineWidth: 5)
+                .frame(width: 76, height: 112)
+                .overlay(alignment: .top) {
+                    Capsule()
+                        .fill(Color.figmaBlue.opacity(0.35))
+                        .frame(width: 28, height: 4)
+                        .padding(.top, 10)
                 }
-                Spacer()
-            }
-            .padding(.leading, 16)
-            .padding(.top, 16)
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var bottomArea: some View {
-        VStack(spacing: 12) {
-            if !errorText.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .foregroundColor(.red)
-                    Text(errorText)
-                        .font(.callout)
-                        .foregroundColor(.red)
+                .overlay(alignment: .bottom) {
+                    Circle()
+                        .stroke(Color.figmaBlue.opacity(0.35), lineWidth: 2)
+                        .frame(width: 10, height: 10)
+                        .padding(.bottom, 9)
                 }
-                .padding(12)
-                .frame(maxWidth: .infinity)
-                .background(Color.red.opacity(0.12))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.red.opacity(0.35), lineWidth: 1)
-                )
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
 
-            Button(action: onVerify) {
-                ZStack {
-                    Text(isVerifying ? "Verifying…" : "Verify Code")
-                        .font(.headline.weight(.semibold))
-                        .foregroundColor(.white)
-                        .opacity(isVerifying ? 0 : 1)
-
-                    if isVerifying {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+            MessageBubbleTail()
+                .fill(Color.figmaBlue.opacity(0.12))
+                .frame(width: 58, height: 38)
+                .overlay {
+                    MessageBubbleTail()
+                        .stroke(Color.figmaBlue, lineWidth: 3)
+                    HStack(spacing: 4) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            Circle()
+                                .fill(Color.figmaBlue)
+                                .frame(width: 4, height: 4)
+                        }
                     }
                 }
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .background(code.count == 6 ? Color.figmaBlue : Color.gray.opacity(0.35))
-                .cornerRadius(14)
-            }
-            .disabled(code.count < 6 || isVerifying)
+                .offset(x: messageIsArriving ? 34 : 26, y: messageIsArriving ? -22 : -28)
+                .opacity(0.95)
         }
-    }
-
-    // MARK: - Keyboard overlap calculation
-    private static func keyboardOverlapHeight(from note: Notification) -> CGFloat {
-        guard
-            let info = note.userInfo,
-            let endFrame = info[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
-        else { return 0 }
-
-        let window = UIApplication.shared
-            .connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-            .first { $0.isKeyWindow }
-
-        guard let window else { return 0 }
-
-        let screenHeight = window.bounds.height
-        let safeBottom = window.safeAreaInsets.bottom
-
-        let keyboardTopY = endFrame.minY
-        let covered = max(0, screenHeight - keyboardTopY)
-
-        return max(0, covered - safeBottom)
+        .frame(width: 132, height: 132)
+        .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: messageIsArriving)
+        .accessibilityHidden(true)
     }
 }
 
-// MARK: - Measure child size
-private struct SizePreferenceKey: PreferenceKey {
-    static var defaultValue: CGSize = .zero
-    static func reduce(value: inout CGSize, nextValue: () -> CGSize) { value = nextValue() }
-}
-
-private extension View {
-    func readSize(_ onChange: @escaping (CGSize) -> Void) -> some View {
-        background(
-            GeometryReader { proxy in
-                Color.clear.preference(key: SizePreferenceKey.self, value: proxy.size)
-            }
+private struct MessageBubbleTail: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let bubbleRect = CGRect(
+            x: rect.minX,
+            y: rect.minY,
+            width: rect.width,
+            height: rect.height * 0.82
         )
-        .onPreferenceChange(SizePreferenceKey.self, perform: onChange)
+        path.addRoundedRect(in: bubbleRect, cornerSize: CGSize(width: 14, height: 14))
+        path.move(to: CGPoint(x: rect.minX + rect.width * 0.28, y: bubbleRect.maxY - 2))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.18, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.44, y: bubbleRect.maxY - 2))
+        path.closeSubpath()
+        return path
     }
 }

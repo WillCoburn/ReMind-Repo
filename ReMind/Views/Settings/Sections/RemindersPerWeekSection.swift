@@ -94,7 +94,7 @@ struct RemindersPerWeekSection: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    Text("Upgrade to access 4–20 reminders/week")
+                    Text("Upgrade to access 4-20 reminders/week")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
