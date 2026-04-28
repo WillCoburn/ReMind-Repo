@@ -19,97 +19,88 @@ struct ExportSheet: View {
 
     var body: some View {
         let _ = revenueCat.entitlementActive
-        NavigationView {
-            ZStack {
-                // Base → white, then soft blue overlay
-                Color.white
-                Color.blue.opacity(0.08)
+        ZStack {
+            Color.white
+                .ignoresSafeArea()
+            Color.blue.opacity(0.08)
+                .ignoresSafeArea()
 
-                VStack {
-                    Spacer()
+            VStack {
+                Spacer()
 
-                    // --- Centered icon + message block ---
-                    VStack(spacing: 24) {
-                        if isExporting {
-                            ProgressView("Generating PDF…")
-                                .progressViewStyle(.circular)
-                        } else {
-                            Image("pdficon")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 240, height: 240)   // Larger icon
-                        }
+                VStack(spacing: 24) {
+                    if isExporting {
+                        ProgressView("Generating PDF…")
+                            .progressViewStyle(.circular)
+                    } else {
+                        Image("pdficon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 240, height: 240)
+                    }
 
-                        if let error {
-                            Text(error)
-                                .font(.subheadline)
-                                .foregroundColor(.red)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 32)
-                        } else {
-                            Text("Compile your entries into a PDF and receive a text with the link.")
-                                .font(.subheadline)
-                                .foregroundColor(Color.black.opacity(0.65))   // More visible gray
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 32)
-                        }
+                    if let error {
+                        Text(error)
+                            .font(.subheadline)
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                    } else {
+                        Text("Compile your entries into a PDF and receive a text with the link.")
+                            .font(.subheadline)
+                            .foregroundColor(Color.black.opacity(0.65))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                    }
 
-                        if let link {
-                            VStack(spacing: 10) {
-                                Button("Copy link") {
-                                    UIPasteboard.general.string = link.absoluteString
-                                }
-                                .buttonStyle(.bordered)
-
-                                Link("Open link", destination: link)
-                                    .buttonStyle(.bordered)
+                    if let link {
+                        VStack(spacing: 10) {
+                            Button("Copy link") {
+                                UIPasteboard.general.string = link.absoluteString
                             }
-                            .padding(.top, 4)
+                            .buttonStyle(.bordered)
+
+                            Link("Open link", destination: link)
+                                .buttonStyle(.bordered)
                         }
+                        .padding(.top, 4)
                     }
+                }
 
-                    Spacer()
+                Spacer()
 
-                    // --- Bottom buttons ---
-                    VStack(spacing: 12) {
-                        Button {
-                            print("🧭 Export button tapped")
-                            Task { await runExport() }
-                        } label: {
-                            Text("Export")
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .font(.headline)
-                        }
-                        .foregroundColor(.white)
-                        .background(isExporting ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .disabled(isExporting)
-
-                        Button(action: { dismiss() }) {
-                            Text("Cancel")
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .font(.headline)
-                        }
-                        .foregroundColor(.white)
-                        .background(Color(.systemGray4))
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                VStack(spacing: 12) {
+                    Button {
+                        print("🧭 Export button tapped")
+                        Task { await runExport() }
+                    } label: {
+                        Text("Export")
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .font(.headline)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
+                    .foregroundColor(.white)
+                    .background(isExporting ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .disabled(isExporting)
+
+                    Button(action: { dismiss() }) {
+                        Text("Cancel")
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .font(.headline)
+                    }
+                    .foregroundColor(.white)
+                    .background(Color(.systemGray4))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
             }
-            .ignoresSafeArea()
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("Export")
-                        .font(.headline)
-                        .foregroundColor(.black)
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
         }
+        .navigationTitle("Export")
+        .navigationBarTitleDisplayMode(.inline)
+        .tint(.figmaBlue)
         .toast(isPresented: $showToast) {
             HStack {
                 Image(systemName: "checkmark.circle.fill")

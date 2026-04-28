@@ -5,21 +5,18 @@ import SwiftUI
 
 struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
-    @EnvironmentObject private var net: NetworkMonitor   // 👈 network state
+    @EnvironmentObject private var net: NetworkMonitor
     @ObservedObject private var revenueCat: RevenueCatManager = .shared
-
-    // User-selected background image (Base64)
-    @AppStorage("bgImageBase64") private var bgImageBase64: String = ""
 
     @State private var input: String = ""
     @State private var showExportSheet = false
     @State private var showSendNowSheet = false
+    @State private var showInspirationSheet = false
+    @State private var showHelpSheet = false
     @State private var showSuccessMessage = false
     @State private var pulseEditor = false
     @State private var isSubmitting = false
     @FocusState private var isEntryFieldFocused: Bool
-
-    @State private var actionButtonHeight: CGFloat = 0
 
     // Alerts
     @State private var showAlert = false
@@ -35,48 +32,59 @@ struct MainView: View {
 
         let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected
-        ZStack {
-            ZStack(alignment: .bottom) {
-                backgroundLayer
+        let isComposing = isEntryFieldFocused
+        GeometryReader { proxy in
+            let safeTop = max(proxy.safeAreaInsets.top, 16)
+            let safeBottom = max(proxy.safeAreaInsets.bottom, 16)
+            let viewportWidth = max(proxy.size.width, 1)
+            let topContentWidth = constrainedTopContentWidth(for: viewportWidth)
+            let entryInputHeight = entryInputHeight(for: proxy.size.height, isFocused: isComposing)
 
+            ScrollViewReader { scrollProxy in
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        Image("FullLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 300, height: 120)
-                            .padding(.top, 40)
+                    VStack(spacing: isComposing ? 14 : 18) {
+                        VStack(spacing: isComposing ? 12 : 18) {
+                            logoHeader
+                                .scaleEffect(isComposing ? 0.78 : 1)
+                                .opacity(isComposing ? 0.72 : 1)
+                                .frame(height: isComposing ? 48 : 78)
+                                .padding(.top, safeTop + (isComposing ? 4 : 12))
+                                .id(HomeScrollTarget.top)
 
-                        ZStack {
-                             if showSuccessMessage {
-                                 Text("Saved")
-                                     .font(.system(size: 16, weight: .semibold))
-                                     .foregroundColor(.green)
-                                     .transition(.opacity.combined(with: .move(edge: .top)))
-                                     .animation(.easeInOut(duration: 0.3), value: showSuccessMessage)
-                             }
-                         }
-                         .frame(height: 24)
+                            recentReminderSection(isComposing: isComposing)
 
-                        EntryComposer(
-                            text: $input,
-                            isSubmitting: $isSubmitting,
-                            isDisabled: buttonDisabled,
-                            pulseEditor: pulseEditor,
-                            isEntryFieldFocused: _isEntryFieldFocused,
-                            onSubmit: { await sendEntry() }
-                        )
+                            EntryComposer(
+                                text: $input,
+                                isSubmitting: $isSubmitting,
+                                isDisabled: buttonDisabled,
+                                pulseEditor: pulseEditor,
+                                inputHeight: entryInputHeight,
+                                isEntryFieldFocused: _isEntryFieldFocused,
+                                onSubmit: { await sendEntry() }
+                            )
+                            .id(HomeScrollTarget.entryComposer)
 
-                        HintBadge(count: count, goal: goal)
+                            saveStatusView
 
-                        Spacer(minLength: 0)
+                            HintBadge(count: count, goal: goal)
+                                .padding(.top, isComposing ? 0 : 2)
+                                .opacity(isComposing ? 0.45 : 1)
+                                .scaleEffect(isComposing ? 0.98 : 1, anchor: .top)
+                                .allowsHitTesting(!isComposing)
+                        }
+                        .frame(width: topContentWidth, alignment: .top)
+
+                        actionIconRow(count: count)
+                            .frame(width: viewportWidth)
+                            .opacity(isComposing ? 0.32 : 1)
+                            .scaleEffect(isComposing ? 0.96 : 1)
+                            .offset(y: isComposing ? 28 : 0)
+                            .padding(.top, isComposing ? 0 : 4)
                     }
-                    .padding(.horizontal, 24)
-
-                    // ✅ When bottom bar is visible, leave a little room so content isn't hidden behind it.
-                    // ✅ When keyboard is open, bar is gone, so we don't need the extra padding.
-                    .padding(.bottom, isEntryFieldFocused ? 24 : 180)
+                    .frame(width: viewportWidth, alignment: .top)
+                    .padding(.bottom, safeBottom + (isComposing ? 56 : 24))
                 }
+                .scrollDismissesKeyboard(.interactively)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .contentShape(Rectangle())
                 .simultaneousGesture(
@@ -87,16 +95,21 @@ struct MainView: View {
                     },
                     including: .gesture
                 )
-
-                // ✅ INSTANT hide/show of bottom bar when keyboard opens/closes
-                if !isEntryFieldFocused {
-                    bottomActionBar(count: count)
-                        .transition(.identity) // no animation, no fade
-                        .animation(nil, value: isEntryFieldFocused)
+                .onChange(of: isEntryFieldFocused) { focused in
+                    withAnimation(.easeInOut(duration: 0.24)) {
+                        scrollProxy.scrollTo(
+                            focused ? HomeScrollTarget.entryComposer : HomeScrollTarget.top,
+                            anchor: .top
+                        )
+                    }
                 }
+                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: isEntryFieldFocused)
             }
-            .ignoresSafeArea()
-            .ignoresSafeArea(.keyboard, edges: .bottom)
+        }
+        .background {
+            OnboardingBackgroundView()
+                .ignoresSafeArea()
+        }
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
@@ -110,8 +123,34 @@ struct MainView: View {
                     .accessibilityLabel("Dismiss keyboard")
                 }
             }
-            .sheet(isPresented: $showExportSheet) { ExportSheet() }
-            .sheet(isPresented: $showSendNowSheet) { SendNowSheet() }
+            .sheet(isPresented: $showSendNowSheet) {
+                NavigationStack {
+                    SendNowSheet()
+                }
+            }
+            .sheet(isPresented: $showExportSheet) {
+                NavigationStack {
+                    ExportSheet()
+                }
+            }
+            .sheet(isPresented: $showInspirationSheet) {
+                NavigationStack {
+                    HomePlaceholderScreen(
+                        title: "Inspiration Bank",
+                        systemImage: "lightbulb.fill",
+                        message: "Inspiration Bank coming soon"
+                    )
+                }
+            }
+            .sheet(isPresented: $showHelpSheet) {
+                NavigationStack {
+                    HomePlaceholderScreen(
+                        title: "Help",
+                        systemImage: "questionmark.circle.fill",
+                        message: "Help guide coming soon"
+                    )
+                }
+            }
             .alert(alertTitle, isPresented: $showAlert) {
                 Button("OK", role: .cancel) { }
             } message: { Text(alertMessage) }
@@ -120,126 +159,165 @@ struct MainView: View {
             }
             .tint(.figmaBlue)
             .toolbar(.hidden, for: .navigationBar)
-        }
     }
 
-    // MARK: - Background just for MainView
-    @ViewBuilder
-    private var backgroundLayer: some View {
+    private var logoHeader: some View {
+        Image("FullLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: 220)
+            .frame(height: 78)
+            .accessibilityLabel("ReMind")
+    }
 
-        // Use the full screen bounds so the background doesn't resize
-        // when the keyboard appears.
-        let screen = UIScreen.main.bounds
-
-        GeometryReader { _ in
-            if let uiImage = decodeBase64ToImage(bgImageBase64) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: max(screen.width, 1), height: max(screen.height, 1))
-                    .clipped()
-                    .ignoresSafeArea()
-            } else {
-                Image("MainBackground")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: max(screen.width, 1), height: max(screen.height, 1))
-                    .clipped()
-                    .ignoresSafeArea()
+    private var saveStatusView: some View {
+        ZStack {
+            if showSuccessMessage {
+                Text("Saved")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.green)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .frame(height: 18)
+        .animation(.easeInOut(duration: 0.3), value: showSuccessMessage)
     }
 
-    private func bottomActionBar(count: Int) -> some View {
-        let canExport = net.isConnected && count >= goal
-        let canSendNow = net.isConnected && count >= goal
+    @ViewBuilder
+    private func recentReminderSection(isComposing: Bool) -> some View {
+        if isComposing {
+            recentReminderCard
+                .opacity(0.38)
+                .scaleEffect(0.97, anchor: .top)
+                .frame(maxHeight: 72, alignment: .top)
+                .clipped()
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        } else {
+            recentReminderCard
+        }
+    }
 
-        return VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                bottomActionButton(
-                    title: "Send One",
-                    systemImage: "envelope",
-                    isEnabled: canSendNow,
-                    sharedHeight: actionButtonHeight,
+    private var recentReminderCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Most recent reminder")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.black.opacity(0.72))
+
+            if let reminder = mostRecentReceivedReminder {
+                HStack(alignment: .bottom, spacing: 0) {
+                    ReceivedMessageBubble(text: reminder.text)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            } else {
+                HStack(spacing: 10) {
+                    Image(systemName: "message")
+                        .font(.subheadline.weight(.semibold))
+                    Text("No received reminders yet")
+                        .font(.subheadline)
+                }
+                .foregroundStyle(Color.black.opacity(0.38))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.white.opacity(0.56))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.82), lineWidth: 1)
+                )
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.white.opacity(0.62))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.white.opacity(0.72), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.04), radius: 16, x: 0, y: 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var mostRecentReceivedReminder: Entry? {
+        appVM.entries.first { $0.sent }
+    }
+
+    private func actionIconRow(count: Int) -> some View {
+        let canUseGuardedActions = net.isConnected && count >= goal
+
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 18) {
+                actionIconButton(
+                    title: "Send One Now",
+                    systemImage: "bolt.fill",
+                    isEnabled: canUseGuardedActions,
                     action: handleSendNowTap
                 )
-                bottomActionButton(
+
+                actionIconButton(
                     title: "Full PDF",
-                    systemImage: "doc.richtext",
-                    isEnabled: canExport,
-                    sharedHeight: actionButtonHeight,
+                    systemImage: "doc.fill",
+                    isEnabled: canUseGuardedActions,
                     action: handleExportTap
                 )
+
+                actionIconButton(
+                    title: "Inspiration Bank",
+                    systemImage: "lightbulb.fill",
+                    isEnabled: true,
+                    action: { showInspirationSheet = true }
+                )
+
+                actionIconButton(
+                    title: "Help",
+                    systemImage: "questionmark.circle.fill",
+                    isEnabled: true,
+                    action: { showHelpSheet = true }
+                )
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
-            .padding(.bottom, 20)
-            .onPreferenceChange(ActionButtonHeightKey.self) { height in
-                actionButtonHeight = height
-            }
+            .padding(.horizontal, HomeLayout.horizontalPadding)
+            .padding(.vertical, 8)
         }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .contain)
     }
 
-    private func bottomActionButton(
+    private func actionIconButton(
         title: String,
         systemImage: String,
         isEnabled: Bool,
-        sharedHeight: CGFloat,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 8) {
-                Spacer()
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(Color.figmaBlue)
+                        .frame(width: 64, height: 64)
+                        .shadow(color: Color.figmaBlue.opacity(0.24), radius: 12, x: 0, y: 7)
+
+                    Image(systemName: systemImage)
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
 
                 Text(title)
-                    .font(.headline)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.black.opacity(0.68))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
-
-                Spacer()
-
-                Image(systemName: systemImage)
-                    .font(.headline)
             }
-            .foregroundColor(.figmaBlue)
-            .padding(.vertical, 14)
-            .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: sharedHeight > 0 ? sharedHeight : nil)
-            .background(
-                ZStack {
-                    Color.white
-                    Color.blue.opacity(0.05)
-                }
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.figmaBlue, lineWidth: 1)
-            )
-            .cornerRadius(12)
+            .frame(width: 86, height: 104, alignment: .top)
             .opacity(isEnabled ? 1 : 0.45)
-            .background(
-                GeometryReader { proxy in
-                    Color.clear
-                        .preference(key: ActionButtonHeightKey.self,
-                                    value: proxy.size.height)
-                }
-            )
         }
         .disabled(!isEnabled)
-    }
-
-    private struct ActionButtonHeightKey: PreferenceKey {
-        static var defaultValue: CGFloat = 0
-        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-            value = max(value, nextValue())
-        }
-    }
-
-    private func decodeBase64ToImage(_ base64: String) -> UIImage? {
-        guard !base64.isEmpty, let data = Data(base64Encoded: base64) else { return nil }
-        return UIImage(data: data)
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
 
     // MARK: - Actions
@@ -322,5 +400,103 @@ struct MainView: View {
         alertTitle = "No Internet Connection"
         alertMessage = "Please reconnect to the internet to use this feature."
         showAlert = true
+    }
+
+    private func constrainedTopContentWidth(for viewportWidth: CGFloat) -> CGFloat {
+        max(viewportWidth - HomeLayout.horizontalPadding * 2, 1)
+    }
+
+    private func entryInputHeight(for availableHeight: CGFloat, isFocused: Bool) -> CGFloat {
+        guard isFocused else { return HomeLayout.collapsedEntryInputHeight }
+        return min(max(availableHeight * 0.36, 210), 290)
+    }
+}
+
+private enum HomeLayout {
+    static let horizontalPadding: CGFloat = 24
+    static let collapsedEntryInputHeight: CGFloat = 154
+}
+
+private enum HomeScrollTarget: Hashable {
+    case top
+    case entryComposer
+}
+
+private struct ReceivedMessageBubble: View {
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 0) {
+            ZStack(alignment: .bottomLeading) {
+                Text(text)
+                    .font(.body)
+                    .foregroundStyle(Color.black.opacity(0.82))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 13)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.white.opacity(0.92))
+                    )
+                    .padding(.leading, 8)
+
+                ReceivedBubbleTail()
+                    .fill(Color.white.opacity(0.92))
+                    .frame(width: 18, height: 16)
+                    .offset(x: 0, y: 4)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
+
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+private struct ReceivedBubbleTail: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * 0.2))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.minX, y: rect.maxY),
+            control: CGPoint(x: rect.minX + rect.width * 0.1, y: rect.maxY - 2)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: rect.maxY - 3),
+            control: CGPoint(x: rect.maxX - 2, y: rect.maxY)
+        )
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct HomePlaceholderScreen: View {
+    let title: String
+    let systemImage: String
+    let message: String
+
+    var body: some View {
+        ZStack {
+            OnboardingBackgroundView()
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 42, weight: .semibold))
+                    .foregroundStyle(Color.figmaBlue)
+
+                Text(message)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Color.black.opacity(0.75))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(24)
+        }
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+        .tint(.figmaBlue)
     }
 }

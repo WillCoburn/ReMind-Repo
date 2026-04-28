@@ -22,7 +22,13 @@ struct RootView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if appVM.shouldShowOnboarding {
                 ZStack {
-                    OnboardingView()
+                    OnboardingView(
+                        onReturnToFeatureTour: {
+                            appVM.featureTourStep = .phoneNumber
+                            hasDismissedOnboardingFeatureTour = false
+                            showOnboardingFeatureTour = true
+                        }
+                    )
 
                     if showOnboardingFeatureTour {
                         FeatureTourOverlay(

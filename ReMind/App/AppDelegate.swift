@@ -33,6 +33,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
+        Auth.auth().setAPNSToken(deviceToken, type: .unknown)
         print("✅ Successfully registered for remote notifications. Token length: \(deviceToken.count) bytes")
     }
 

@@ -9,6 +9,7 @@ struct PhoneEntryScreen: View {
     let isSending: Bool
     let isValidPhone: Bool
     let canContinue: Bool
+    let onBack: () -> Void
     let onContinue: () -> Void
 
     @State private var didAppear = false
@@ -24,7 +25,21 @@ struct PhoneEntryScreen: View {
             )
 
             ScrollView {
-                VStack(alignment: .center, spacing: 24) {
+                VStack(alignment: .center, spacing: 22) {
+                    HStack {
+                        Button(action: onBack) {
+                            Image(systemName: "chevron.left")
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .padding(8)
+                        }
+                        .buttonStyle(.plain)
+                        .contentShape(Rectangle())
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+
                     header
 
                     VStack(spacing: 10) {
@@ -75,7 +90,7 @@ struct PhoneEntryScreen: View {
                 .font(.title2.weight(.semibold))
                 .multilineTextAlignment(.center)
 
-            Text("Please enter your phone number to get started.")
+            Text("Please enter your phone number to start sending yourself reminders.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -143,11 +158,19 @@ struct PhoneEntryScreen: View {
             .padding(.horizontal, 4)
 
             Text("We'll only use your number for verification and reminders.")
-                .font(.footnote)
+                .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: 320)
+                .frame(maxWidth: .infinity, alignment: .center)
                 .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.figmaBlue.opacity(0.07))
+            )
 
             HStack(spacing: 4) {
                 Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)

@@ -16,93 +16,84 @@ struct SendNowSheet: View {
 
     var body: some View {
         let _ = revenueCat.entitlementActive
-        NavigationView {
-            ZStack {
-                // Base → white, then soft blue overlay (matches ExportSheet)
-                Color.white
-                Color.blue.opacity(0.08)
+        ZStack {
+            Color.white
+                .ignoresSafeArea()
+            Color.blue.opacity(0.08)
+                .ignoresSafeArea()
 
-                VStack {
-                    Spacer()
+            VStack {
+                Spacer()
 
-                    // --- Centered icon + message block (mirrors ExportSheet layout) ---
-                    VStack(spacing: 24) {
-                        if isSending {
-                            ProgressView("Sending reminder…")
-                                .progressViewStyle(.circular)
-                        } else {
-                            Image("bellicon")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 215, height: 215)
-                        }
-
-                        VStack(spacing: 6) {
-                            Text("Need a reminder right now?")
-                                .font(.subheadline) // same size as ExportSheet message
-                                .foregroundColor(Color.black.opacity(0.65)) // same color as ExportSheet
-
-                            if let errorMessage {
-                                Text(errorMessage)
-                                    .font(.subheadline)
-                                    .foregroundColor(.red)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 32)
-                            }
-                        }
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
+                VStack(spacing: 24) {
+                    if isSending {
+                        ProgressView("Sending reminder…")
+                            .progressViewStyle(.circular)
+                    } else {
+                        Image("bellicon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 215, height: 215)
                     }
 
-                    Spacer()
+                    VStack(spacing: 6) {
+                        Text("Need a reminder right now?")
+                            .font(.subheadline)
+                            .foregroundColor(Color.black.opacity(0.65))
 
-                    // --- Bottom buttons (styled like ExportSheet) ---
-                    VStack(spacing: 12) {
-                        Button {
-                            Task { await sendNow() }
-                        } label: {
-                            Group {
-                                if isSending {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .tint(.white)
-                                } else {
-                                    Text("Text me!")
-                                        .font(.headline)
-                                }
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.subheadline)
+                                .foregroundColor(.red)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                        }
+                    }
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                }
+
+                Spacer()
+
+                VStack(spacing: 12) {
+                    Button {
+                        Task { await sendNow() }
+                    } label: {
+                        Group {
+                            if isSending {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(.white)
+                            } else {
+                                Text("Text me!")
+                                    .font(.headline)
                             }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                    }
+                    .foregroundColor(.white)
+                    .background((isSending || appVM.hasUsedFreeInstantSendThisWeek) ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .disabled(isSending)
+
+                    Button(action: { dismiss() }) {
+                        Text("Cancel")
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
-                        }
-                        .foregroundColor(.white)
-                        .background((isSending || appVM.hasUsedFreeInstantSendThisWeek) ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .disabled(isSending)
-
-                        Button(action: { dismiss() }) {
-                            Text("Cancel")
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .font(.headline)
-                        }
-                        .foregroundColor(.white)
-                        .background(Color(.systemGray4))
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .font(.headline)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
+                    .foregroundColor(.white)
+                    .background(Color(.systemGray4))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
             }
-            .ignoresSafeArea()
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("Send One Now")
-                        .font(.headline)
-                        .foregroundColor(.black)
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
         }
+        .navigationTitle("Send One Now")
+        .navigationBarTitleDisplayMode(.inline)
+        .tint(.figmaBlue)
         .alert("Weekly Instant Send Used", isPresented: $showWeeklyLimitAlert) {
             Button("OK", role: .cancel) {}
         } message: {

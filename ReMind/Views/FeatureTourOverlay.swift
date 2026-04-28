@@ -89,7 +89,7 @@ struct FeatureTourOverlay: View {
                             .padding(.vertical, 8)
                     }
                     .frame(width: overlayWidth, alignment: .trailing)
-                    .padding(.top, topInset + 12)
+                    .padding(.top, topInset + 6)
 
                     Spacer()
                 }

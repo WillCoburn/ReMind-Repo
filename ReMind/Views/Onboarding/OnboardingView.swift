@@ -9,6 +9,8 @@ struct OnboardingView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var net: NetworkMonitor
 
+    let onReturnToFeatureTour: () -> Void
+
     enum Step { case enterPhone, enterCode }
     @State private var step: Step = .enterPhone
 
@@ -65,6 +67,7 @@ struct OnboardingView: View {
                     isSending: isSending,
                     isValidPhone: isValidPhone,
                     canContinue: canContinueOnline,
+                    onBack: onReturnToFeatureTour,
                     onContinue: { Task { await sendCode() } }
                 )
                 .transition(isAdvancing ? forwardTransition : backwardTransition)
@@ -77,9 +80,11 @@ struct OnboardingView: View {
                     isVerifying: isVerifying,
                     onBack: {
                         isAdvancing = false
-                        step = .enterPhone
                         errorText = ""
                         code = ""
+                        withAnimation(.easeOut(duration: 0.35)) {
+                            step = .enterPhone
+                        }
                     },
                     onResend: { Task { await sendCode() } },
                     onVerify: { Task { await verifyCode() } }
@@ -120,7 +125,9 @@ struct OnboardingView: View {
             let verID = try await PhoneAuthProvider.provider().verifyPhoneNumber(e164, uiDelegate: nil)
             self.verificationID = verID
             self.isAdvancing = true
-            self.step = .enterCode
+            withAnimation(.easeOut(duration: 0.35)) {
+                self.step = .enterCode
+            }
 
         } catch {
             if let nsError = error as NSError?,
@@ -184,7 +191,7 @@ struct OnboardingView: View {
 
 struct OnboardingView_Previews: PreviewProvider {
     static var previews: some View {
-        OnboardingView()
+        OnboardingView(onReturnToFeatureTour: {})
             .environmentObject(AppViewModel())
             .environmentObject(NetworkMonitor.shared)
             .environment(\.dynamicTypeSize, .accessibility5)
