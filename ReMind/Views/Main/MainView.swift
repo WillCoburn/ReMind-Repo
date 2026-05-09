@@ -7,6 +7,7 @@ struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var net: NetworkMonitor
     @ObservedObject private var revenueCat: RevenueCatManager = .shared
+    var isPageActive: Bool = true
 
     @State private var input: String = ""
     @State private var showExportSheet = false
@@ -47,7 +48,7 @@ struct MainView: View {
                             logoHeader
                                 .scaleEffect(isComposing ? 0.78 : 1)
                                 .opacity(isComposing ? 0.72 : 1)
-                                .frame(height: isComposing ? 48 : 78)
+                                .frame(height: isComposing ? 66 : 90)
                                 .padding(.top, safeTop + (isComposing ? 4 : 12))
                                 .id(HomeScrollTarget.top)
 
@@ -74,7 +75,7 @@ struct MainView: View {
                         }
                         .frame(width: topContentWidth, alignment: .top)
 
-                        actionIconRow(count: count)
+                        actionIconRow(count: count, viewportWidth: viewportWidth)
                             .frame(width: viewportWidth)
                             .opacity(isComposing ? 0.32 : 1)
                             .scaleEffect(isComposing ? 0.96 : 1)
@@ -162,11 +163,22 @@ struct MainView: View {
     }
 
     private var logoHeader: some View {
-        Image("FullLogo")
-            .resizable()
-            .scaledToFit()
-            .frame(maxWidth: 220)
-            .frame(height: 78)
+        VStack(spacing: 0) {
+            Image("FullLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 84, height: 84)
+                .frame(height: 58)
+                .clipped()
+
+            Image("AppTitle")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 230, height: 154)
+                .frame(height: 30)
+                .clipped()
+        }
+            .frame(maxWidth: .infinity)
             .accessibilityLabel("ReMind")
     }
 
@@ -247,43 +259,65 @@ struct MainView: View {
         appVM.entries.first { $0.sent }
     }
 
-    private func actionIconRow(count: Int) -> some View {
+    private func actionIconRow(count: Int, viewportWidth: CGFloat) -> some View {
         let canUseGuardedActions = net.isConnected && count >= goal
+        let sidePadding = actionRowSidePadding(for: viewportWidth)
 
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 18) {
-                actionIconButton(
-                    title: "Send One Now",
-                    systemImage: "bolt.fill",
-                    isEnabled: canUseGuardedActions,
-                    action: handleSendNowTap
-                )
+        return ScrollViewReader { actionScrollProxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    HStack(spacing: HomeLayout.actionIconSpacing) {
+                        actionIconButton(
+                            title: "Send One Now",
+                            systemImage: "bolt.fill",
+                            isEnabled: canUseGuardedActions,
+                            action: handleSendNowTap
+                        )
 
-                actionIconButton(
-                    title: "Full PDF",
-                    systemImage: "doc.fill",
-                    isEnabled: canUseGuardedActions,
-                    action: handleExportTap
-                )
+                        actionIconButton(
+                            title: "Full PDF",
+                            systemImage: "doc.fill",
+                            isEnabled: canUseGuardedActions,
+                            action: handleExportTap
+                        )
+                    }
 
-                actionIconButton(
-                    title: "Inspiration Bank",
-                    systemImage: "lightbulb.fill",
-                    isEnabled: true,
-                    action: { showInspirationSheet = true }
-                )
+                    Color.clear
+                        .frame(width: HomeLayout.actionIconSpacing, height: 1)
+                        .id(HomeActionScrollTarget.center)
 
-                actionIconButton(
-                    title: "Help",
-                    systemImage: "questionmark.circle.fill",
-                    isEnabled: true,
-                    action: { showHelpSheet = true }
-                )
+                    HStack(spacing: HomeLayout.actionIconSpacing) {
+                        actionIconButton(
+                            title: "Inspiration Bank",
+                            systemImage: "lightbulb.fill",
+                            isEnabled: true,
+                            action: { showInspirationSheet = true }
+                        )
+
+                        actionIconButton(
+                            title: "Help",
+                            systemImage: "questionmark.circle.fill",
+                            isEnabled: true,
+                            action: { showHelpSheet = true }
+                        )
+                    }
+                }
+                .padding(.horizontal, sidePadding)
+                .padding(.vertical, 8)
             }
-            .padding(.horizontal, HomeLayout.horizontalPadding)
-            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .onAppear {
+                centerActionRow(using: actionScrollProxy, animated: false)
+            }
+            .onChange(of: isPageActive) { active in
+                guard active else { return }
+                centerActionRow(using: actionScrollProxy, animated: false)
+            }
+            .onChange(of: viewportWidth) { _ in
+                guard isPageActive else { return }
+                centerActionRow(using: actionScrollProxy, animated: false)
+            }
         }
-        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .contain)
     }
 
@@ -312,12 +346,26 @@ struct MainView: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
             }
-            .frame(width: 86, height: 104, alignment: .top)
+            .frame(width: HomeLayout.actionIconButtonWidth, height: 104, alignment: .top)
             .opacity(isEnabled ? 1 : 0.45)
         }
         .disabled(!isEnabled)
         .buttonStyle(.plain)
         .accessibilityLabel(title)
+    }
+
+    private func centerActionRow(using scrollProxy: ScrollViewProxy, animated: Bool) {
+        DispatchQueue.main.async {
+            let scrollAction = {
+                scrollProxy.scrollTo(HomeActionScrollTarget.center, anchor: .center)
+            }
+
+            if animated {
+                withAnimation(.easeOut(duration: 0.18), scrollAction)
+            } else {
+                scrollAction()
+            }
+        }
     }
 
     // MARK: - Actions
@@ -406,6 +454,13 @@ struct MainView: View {
         max(viewportWidth - HomeLayout.horizontalPadding * 2, 1)
     }
 
+    private func actionRowSidePadding(for viewportWidth: CGFloat) -> CGFloat {
+        let buttonGroupWidth = HomeLayout.actionIconButtonWidth * 4
+            + HomeLayout.actionIconSpacing * 3
+        let centeredPadding = (viewportWidth - buttonGroupWidth) / 2
+        return max(HomeLayout.horizontalPadding, centeredPadding)
+    }
+
     private func entryInputHeight(for availableHeight: CGFloat, isFocused: Bool) -> CGFloat {
         guard isFocused else { return HomeLayout.collapsedEntryInputHeight }
         return min(max(availableHeight * 0.36, 210), 290)
@@ -415,6 +470,8 @@ struct MainView: View {
 private enum HomeLayout {
     static let horizontalPadding: CGFloat = 24
     static let collapsedEntryInputHeight: CGFloat = 154
+    static let actionIconButtonWidth: CGFloat = 86
+    static let actionIconSpacing: CGFloat = 18
 }
 
 private enum HomeScrollTarget: Hashable {
@@ -422,49 +479,78 @@ private enum HomeScrollTarget: Hashable {
     case entryComposer
 }
 
+private enum HomeActionScrollTarget: Hashable {
+    case center
+}
+
 private struct ReceivedMessageBubble: View {
     let text: String
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            ZStack(alignment: .bottomLeading) {
-                Text(text)
-                    .font(.body)
-                    .foregroundStyle(Color.black.opacity(0.82))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 13)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(Color.white.opacity(0.92))
-                    )
-                    .padding(.leading, 8)
-
-                ReceivedBubbleTail()
+        Text(text)
+            .font(.body)
+            .foregroundStyle(Color.black.opacity(0.82))
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.leading, 24)
+            .padding(.trailing, 16)
+            .padding(.vertical, 13)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                ReceivedBubbleShape()
                     .fill(Color.white.opacity(0.92))
-                    .frame(width: 18, height: 16)
-                    .offset(x: 0, y: 4)
+                    .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
+            }
+            .overlay {
+                ReceivedBubbleShape()
+                    .stroke(Color.white.opacity(0.72), lineWidth: 1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
-
-            Spacer(minLength: 0)
-        }
     }
 }
 
-private struct ReceivedBubbleTail: Shape {
+private struct ReceivedBubbleShape: Shape {
     func path(in rect: CGRect) -> Path {
+        let tailWidth = min(10, rect.width * 0.12)
+        let tailHeight = min(16, rect.height * 0.38)
+        let bubbleMinX = rect.minX + tailWidth
+        let bubbleMaxX = rect.maxX
+        let bubbleMinY = rect.minY
+        let bubbleMaxY = rect.maxY
+        let radius = min(18, rect.height / 2, (rect.width - tailWidth) / 2)
+
         var path = Path()
-        path.move(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * 0.2))
+
+        path.move(to: CGPoint(x: bubbleMinX + radius, y: bubbleMinY))
+        path.addLine(to: CGPoint(x: bubbleMaxX - radius, y: bubbleMinY))
         path.addQuadCurve(
-            to: CGPoint(x: rect.minX, y: rect.maxY),
-            control: CGPoint(x: rect.minX + rect.width * 0.1, y: rect.maxY - 2)
+            to: CGPoint(x: bubbleMaxX, y: bubbleMinY + radius),
+            control: CGPoint(x: bubbleMaxX, y: bubbleMinY)
         )
+        path.addLine(to: CGPoint(x: bubbleMaxX, y: bubbleMaxY - radius))
         path.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: rect.maxY - 3),
-            control: CGPoint(x: rect.maxX - 2, y: rect.maxY)
+            to: CGPoint(x: bubbleMaxX - radius, y: bubbleMaxY),
+            control: CGPoint(x: bubbleMaxX, y: bubbleMaxY)
+        )
+        path.addLine(to: CGPoint(x: bubbleMinX + radius, y: bubbleMaxY))
+        path.addCurve(
+            to: CGPoint(x: bubbleMinX + 5, y: bubbleMaxY - 2),
+            control1: CGPoint(x: bubbleMinX + 13, y: bubbleMaxY),
+            control2: CGPoint(x: bubbleMinX + 8, y: bubbleMaxY - 1)
+        )
+        path.addCurve(
+            to: CGPoint(x: rect.minX, y: bubbleMaxY - 1),
+            control1: CGPoint(x: bubbleMinX + 2, y: bubbleMaxY),
+            control2: CGPoint(x: rect.minX + 2, y: bubbleMaxY)
+        )
+        path.addCurve(
+            to: CGPoint(x: bubbleMinX + 4, y: bubbleMaxY - tailHeight),
+            control1: CGPoint(x: rect.minX + 7, y: bubbleMaxY - 2),
+            control2: CGPoint(x: bubbleMinX + 4, y: bubbleMaxY - tailHeight * 0.45)
+        )
+        path.addLine(to: CGPoint(x: bubbleMinX, y: bubbleMinY + radius))
+        path.addQuadCurve(
+            to: CGPoint(x: bubbleMinX + radius, y: bubbleMinY),
+            control: CGPoint(x: bubbleMinX, y: bubbleMinY)
         )
         path.closeSubpath()
         return path

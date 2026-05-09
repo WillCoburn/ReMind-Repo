@@ -141,7 +141,7 @@ struct RootView: View {
 
     @ViewBuilder
     private var mainPage: some View {
-        MainView()
+        MainView(isPageActive: activePage == .main)
 
     }
 

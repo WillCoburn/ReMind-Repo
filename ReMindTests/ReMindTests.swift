@@ -18,7 +18,7 @@ final class ReMindTests: XCTestCase {
 
     func testFirstEntrySetsStreakToOne() {
         let entry = Entry(id: "1", text: "", createdAt: Date(), sent: false)
-        XCTAssertEqual(StreakCalculator.compute(entries: [entry], calendar: calendar), 1)
+        XCTAssertEqual(StreakCalculator.compute(entries: [entry], calendar: calendar).count, 1)
     }
 
     func testMultipleEntriesSameDayDoNotDoubleCount() {
@@ -31,7 +31,7 @@ final class ReMindTests: XCTestCase {
             Entry(id: "2", text: "", createdAt: evening, sent: false)
         ]
 
-        XCTAssertEqual(StreakCalculator.compute(entries: entries, calendar: calendar), 1)
+        XCTAssertEqual(StreakCalculator.compute(entries: entries, calendar: calendar).count, 1)
     }
 
     func testConsecutiveDaysAcrossMidnightCountTowardsStreak() {
@@ -44,7 +44,7 @@ final class ReMindTests: XCTestCase {
             Entry(id: "2", text: "", createdAt: justBeforeMidnight, sent: false)
         ]
 
-        XCTAssertEqual(StreakCalculator.compute(entries: entries, calendar: calendar), 2)
+        XCTAssertEqual(StreakCalculator.compute(entries: entries, calendar: calendar).count, 2)
     }
 
     func testMissingDayBreaksStreak() {
@@ -56,6 +56,6 @@ final class ReMindTests: XCTestCase {
             Entry(id: "2", text: "", createdAt: twoDaysAgo, sent: false)
         ]
 
-        XCTAssertEqual(StreakCalculator.compute(entries: entries, calendar: calendar), 1)
+        XCTAssertEqual(StreakCalculator.compute(entries: entries, calendar: calendar).count, 1)
     }
 }

@@ -14,7 +14,7 @@ struct HomePagerView: View {
                 .tag(0)
 
             // CENTER: your existing MainView (user's own entries)
-            MainView()
+            MainView(isPageActive: selection == 1)
                 .tag(1)
 
             // RIGHT: placeholder for future features
