@@ -9,6 +9,8 @@ struct CommunityPostRow: View {
     var onReport: (() -> Void)? = nil
     var onOpenThread: (() -> Void)? = nil
     var onBlock: (() -> Void)? = nil
+    var showsActions: Bool = true
+    var showsThreadAction: Bool = true
 
     @State private var showBlockConfirm = false
 
@@ -23,48 +25,54 @@ struct CommunityPostRow: View {
             HStack(spacing: 12) {
 
                 // LIKE
-                Button {
-                    onLike?()
-                } label: {
-                    Label(
-                        "\(post.likeCount)",
-                        systemImage: isLiked ? "heart.fill" : "heart"
-                    )
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
-                    .foregroundColor(.figmaBlue)
+                if showsActions {
+                    Button {
+                        onLike?()
+                    } label: {
+                        Label(
+                            "\(post.likeCount)",
+                            systemImage: isLiked ? "heart.fill" : "heart"
+                        )
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .foregroundColor(.figmaBlue)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
 
                 // REPORT
-                Button {
-                    onReport?()
-                } label: {
-                    Label(
-                        "\(post.reportCount)",
-                        systemImage: isReported ? "flag.fill" : "flag"
-                    )
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
-                    .foregroundColor(.figmaBlue)
+                if showsActions {
+                    Button {
+                        onReport?()
+                    } label: {
+                        Label(
+                            "\(post.reportCount)",
+                            systemImage: isReported ? "flag.fill" : "flag"
+                        )
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .foregroundColor(.figmaBlue)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
 
-                Button {
-                    onOpenThread?()
-                } label: {
-                    Label(
-                        "\(post.commentCount)",
-                        systemImage: "text.bubble"
-                    )
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
-                    .foregroundColor(.figmaBlue)
+                if showsThreadAction {
+                    Button {
+                        onOpenThread?()
+                    } label: {
+                        Label(
+                            "\(post.commentCount)",
+                            systemImage: "text.bubble"
+                        )
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .foregroundColor(.figmaBlue)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
 
                 Spacer()
                 
@@ -83,12 +91,12 @@ struct CommunityPostRow: View {
                 .stroke(Color.figmaBlue, lineWidth: 1)
         )
         .overlay(alignment: .topTrailing) {
-            if !post.authorId.isEmpty {
+            if !post.authorId.isEmpty, onBlock != nil {
                 Menu {
                     Button(role: .destructive) {
                         showBlockConfirm = true
                     } label: {
-                        Label("Block user", systemImage: "hand.raised.fill")
+                        Label("Block User", systemImage: "hand.raised.fill")
                     }
                 } label: {
                     Image(systemName: "ellipsis")

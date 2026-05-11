@@ -12,6 +12,7 @@ final class AppViewModel: ObservableObject {
     // MARK: - User & entries
     @Published var user: UserProfile?
     @Published var entries: [Entry] = []
+    @Published private(set) var latestSentReminder: LastReminder?
     @Published var isLoading = false
     @Published var hasLoadedInitialProfile = false
     enum EntitlementSource { case unknown, cached, revenueCat }
@@ -87,6 +88,23 @@ final class AppViewModel: ObservableObject {
         let weekKey = Self.instantWeekKey(now: Date(), tzIdentifier: tzIdentifier)
         let sends = usage.instantWeekKey == weekKey ? usage.instantSendsThisWeek : 0
         return sends >= 1
+    }
+
+    var latestReminderForDisplay: LastReminder? {
+        let sentEntryReminders = entries.compactMap { entry -> LastReminder? in
+            guard entry.sent else { return nil }
+            return LastReminder(
+                text: entry.text,
+                sentAt: entry.sentAt ?? entry.createdAt,
+                entryId: entry.id,
+                deliveredVia: nil
+            )
+        }
+
+        return ([latestSentReminder].compactMap { $0 } + sentEntryReminders)
+            .max { lhs, rhs in
+                (lhs.sentAt ?? .distantPast) < (rhs.sentAt ?? .distantPast)
+            }
     }
 
     static func instantWeekKey(now: Date, tzIdentifier: String) -> String {
@@ -268,6 +286,28 @@ final class AppViewModel: ObservableObject {
             self?.revenueCat.refreshEntitlementState()
         }
     }
+
+    func parseLastReminder(from data: [String: Any]) -> LastReminder? {
+        let raw = data["lastReminder"] as? [String: Any]
+        let text = ((raw?["text"] as? String) ?? (data["lastReminderText"] as? String) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return nil }
+
+        let nestedSentAt = (raw?["sentAt"] as? Timestamp)?.dateValue()
+        let flatSentAt = (data["lastReminderSentAt"] as? Timestamp)?.dateValue()
+
+        return LastReminder(
+            text: text,
+            sentAt: nestedSentAt ?? flatSentAt,
+            entryId: (raw?["entryId"] as? String) ?? (data["lastReminderEntryId"] as? String),
+            deliveredVia: raw?["deliveredVia"] as? String
+        )
+    }
+
+    func applyLatestSentReminder(_ reminder: LastReminder?) {
+        latestSentReminder = reminder
+    }
+
     private func waitForProfileSeedIfNeeded() async {
         guard isSeedingUserProfile else { return }
         let maxAttempts = 20

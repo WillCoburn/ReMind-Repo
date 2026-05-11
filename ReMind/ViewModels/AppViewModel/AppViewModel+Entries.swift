@@ -101,6 +101,49 @@ extension AppViewModel {
         }
     }
 
+    func refreshLatestSentReminder() async {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            applyLatestSentReminder(nil)
+            return
+        }
+
+        do {
+            let userSnap = try await db.collection("users").document(uid).getDocument()
+            let userReminder = parseLastReminder(from: userSnap.data() ?? [:])
+            if var profile = user, profile.uid == uid {
+                profile.lastReminder = userReminder
+                user = profile
+            }
+
+            if let userReminder {
+                applyLatestSentReminder(userReminder)
+                return
+            }
+
+            let sentAtSnap = try await db.collection("users")
+                .document(uid)
+                .collection("entries")
+                .order(by: "sentAt", descending: true)
+                .limit(to: 1)
+                .getDocuments()
+
+            if let entry = sentAtSnap.documents.compactMap(mapEntry).first, entry.sent {
+                applyLatestSentReminder(
+                    LastReminder(
+                        text: entry.text,
+                        sentAt: entry.sentAt ?? entry.createdAt,
+                        entryId: entry.id,
+                        deliveredVia: nil
+                    )
+                )
+            } else {
+                applyLatestSentReminder(nil)
+            }
+        } catch {
+            print("⚠️ refreshLatestSentReminder error:", error.localizedDescription)
+        }
+    }
+
 
 
     func refreshAll() async {
@@ -126,12 +169,14 @@ extension AppViewModel {
         let data = doc.data()
         guard let text = data["text"] as? String else { return nil }
         let ts = (data["createdAt"] as? Timestamp)?.dateValue()
+        let sentAt = (data["sentAt"] as? Timestamp)?.dateValue()
         let sent = data["sent"] as? Bool ?? false
 
         return Entry(
             id: doc.documentID,
             text: text,
             createdAt: ts,
+            sentAt: sentAt,
             sent: sent
         )
     }

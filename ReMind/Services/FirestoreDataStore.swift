@@ -86,12 +86,14 @@ public final class FirestoreDataStore: DataStore, @unchecked Sendable {
             let data = doc.data()
             let text = data["text"] as? String ?? ""
             let ts = data["createdAt"] as? Timestamp
+            let sentAt = data["sentAt"] as? Timestamp
             let sent = data["sent"] as? Bool ?? false
 
             return Entry(
                 id: doc.documentID,
                 text: text,
                 createdAt: ts?.dateValue(),
+                sentAt: sentAt?.dateValue(),
                 sent: sent
             )
         }
@@ -100,6 +102,9 @@ public final class FirestoreDataStore: DataStore, @unchecked Sendable {
     // Sets "sent" to true after a message is sent
     public func markDelivered(id: String) async throws {
         let uid = try requireUID()
-        try await entriesCol(uid).document(id).updateData(["sent": true])
+        try await entriesCol(uid).document(id).updateData([
+            "sent": true,
+            "sentAt": FieldValue.serverTimestamp()
+        ])
     }
 }

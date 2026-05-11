@@ -30,6 +30,7 @@ extension AppViewModel {
                         ?? (usage?["instantSendsThisWeek"] as? NSNumber)?.intValue
                         ?? 0
                 )
+                let lastReminder = self.parseLastReminder(from: data)
 
                 // Build updated profile
                 let updatedProfile = UserProfile(
@@ -41,10 +42,12 @@ extension AppViewModel {
                     active: active,
                     plan: plan,
                     receivedCount: receivedCount,
-                    usage: instantUsage
+                    usage: instantUsage,
+                    lastReminder: lastReminder
                 )
 
                 self.user = updatedProfile
+                self.applyLatestSentReminder(lastReminder)
                 self.smsOptOut = data["smsOptOut"] as? Bool ?? false
 
                 let hasSeenTour = data["hasSeenFeatureTour"] as? Bool ?? false

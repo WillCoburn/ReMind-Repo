@@ -810,7 +810,7 @@ private struct PhoneNumberTourIllustration: View {
     }
 }
 
-private struct CommunityTourIllustration: View {
+struct CommunityTourIllustration: View {
     @State private var ripple = false
     @State private var pulse = false
 

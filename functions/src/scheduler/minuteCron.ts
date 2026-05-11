@@ -11,6 +11,7 @@ import {
   MIN_ENTRIES_FOR_SCHEDULING,
   pickEntry,
   incrementReceivedCount,
+  recordLastReminder,
   applyOptOut,
   isTwilioStopError,
   TWILIO_SID,
@@ -149,11 +150,24 @@ export const minuteCron = onSchedule(
          const isActive = doc.get("active") === true;
          const isOptedOut = doc.get("smsOptOut") === true;
 
-         if (!isActive || isOptedOut) {
+        if (!isActive || isOptedOut) {
           await db.doc(`users/${uid}`).set(
             { active: true, smsOptOut: false },
             { merge: true }
           );
+        }
+
+        try {
+          await recordLastReminder(uid, body, {
+            entryRef: picked.ref,
+            deliveredVia: "auto",
+            messageSid: res?.sid,
+          });
+        } catch (lastReminderErr: any) {
+          logger.warn("[minuteCron] failed to record lastReminder", {
+            uid,
+            message: lastReminderErr?.message,
+          });
         }
 
         try {

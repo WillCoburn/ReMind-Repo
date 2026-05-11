@@ -261,6 +261,33 @@ async function incrementReceivedCount(uid: string) {
     .set({ receivedCount: admin.firestore.FieldValue.increment(1) }, { merge: true });
 }
 
+async function recordLastReminder(
+  uid: string,
+  body: string,
+  opts: {
+    entryRef?: FirebaseFirestore.DocumentReference | null;
+    deliveredVia: "auto" | "manual";
+    messageSid?: string;
+  }
+) {
+  const text = body.trim();
+  if (!text) return;
+
+  await db.doc(`users/${uid}`).set(
+    {
+      lastReminder: {
+        text,
+        entryId: opts.entryRef?.id ?? null,
+        deliveredVia: opts.deliveredVia,
+        messageSid: opts.messageSid ?? null,
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      lastReminderSentAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
 
 
 // ---- Trial / entitlement helpers ----
@@ -304,6 +331,7 @@ export {
   scheduleNext,
   pickEntry,
   incrementReceivedCount,
+  recordLastReminder,
   // user helpers
   findUserByPhone,
   applyOptOut,

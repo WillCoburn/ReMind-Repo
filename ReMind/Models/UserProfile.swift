@@ -19,6 +19,25 @@ public struct InstantUsage: Codable, Sendable, Equatable {
     }
 }
 
+public struct LastReminder: Codable, Sendable, Equatable {
+    public var text: String
+    public var sentAt: Date?
+    public var entryId: String?
+    public var deliveredVia: String?
+
+    public init(
+        text: String,
+        sentAt: Date? = nil,
+        entryId: String? = nil,
+        deliveredVia: String? = nil
+    ) {
+        self.text = text
+        self.sentAt = sentAt
+        self.entryId = entryId
+        self.deliveredVia = deliveredVia
+    }
+}
+
 
 
 public struct UserProfile: Codable, Sendable, Equatable {
@@ -34,6 +53,7 @@ public struct UserProfile: Codable, Sendable, Equatable {
     public var plan: UserPlan?
     public var receivedCount: Int?  // Total ReMinds delivered (auto/manual/PDF)
     public var usage: InstantUsage?
+    public var lastReminder: LastReminder?
 
     public init(
         uid: String,
@@ -44,7 +64,8 @@ public struct UserProfile: Codable, Sendable, Equatable {
         active: Bool? = nil,
         plan: UserPlan? = nil,
         receivedCount: Int? = nil,
-        usage: InstantUsage? = nil
+        usage: InstantUsage? = nil,
+        lastReminder: LastReminder? = nil
     ) {
         self.uid = uid
         self.phoneE164 = phoneE164
@@ -55,5 +76,6 @@ public struct UserProfile: Codable, Sendable, Equatable {
         self.plan = plan
         self.receivedCount = receivedCount
         self.usage = usage
+        self.lastReminder = lastReminder
     }
 }

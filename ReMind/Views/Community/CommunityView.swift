@@ -137,23 +137,26 @@ struct CommunityView: View {
 
 
             } else if posts.isEmpty {
-                ScrollView {
-                    VStack(spacing: 12) {
-                        header
-                        if appVM.isGodModeUser {
-                            GodModeBanner()
-                                .padding(.horizontal)
+                GeometryReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            header
+                            if appVM.isGodModeUser {
+                                GodModeBanner()
+                                    .padding(.horizontal)
+                                    .padding(.bottom, 16)
+                            }
+
+                            Spacer(minLength: 12)
+
+                            emptyCommunityState
+                                .padding(.horizontal, 28)
+
+                            Spacer(minLength: 84)
                         }
-                        Text("No posts yet")
-                            .font(.headline)
-                            .foregroundColor(.palettePewter)
-                        Text("Be the first to share a reminder with the community.")
-                            .font(.subheadline)
-                            .foregroundColor(.palettePewter.opacity(0.8))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: proxy.size.height)
                     }
-                    .frame(maxWidth: .infinity)
                 }
 
             } else {
@@ -219,6 +222,27 @@ struct CommunityView: View {
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.top, 36)
             .padding(.bottom, 40)
+    }
+
+    private var emptyCommunityState: some View {
+        VStack(spacing: 16) {
+            CommunityTourIllustration()
+                .frame(maxWidth: 360)
+                .accessibilityHidden(true)
+
+            VStack(spacing: 6) {
+                Text("No posts yet")
+                    .font(.title3.weight(.semibold))
+                    .foregroundColor(.black.opacity(0.78))
+
+                Text("Be the first to share something with the community")
+                    .font(.subheadline)
+                    .foregroundColor(.palettePewter.opacity(0.82))
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: 380)
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Firestore Feed Listener
@@ -490,8 +514,14 @@ private struct CommunityThreadView: View {
             VStack(spacing: 12) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
-                        CommunityPostRow(post: post, isLiked: false, isReported: false)
-                            .allowsHitTesting(false)
+                        CommunityPostRow(
+                            post: post,
+                            isLiked: false,
+                            isReported: false,
+                            onBlock: blockAction(for: post.authorId),
+                            showsActions: false,
+                            showsThreadAction: false
+                        )
 
                         if comments.isEmpty {
                             Text(emptyStateMessage)
@@ -500,54 +530,18 @@ private struct CommunityThreadView: View {
                                 .padding(.vertical, 8)
                         } else {
                             ForEach(comments) { comment in
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(comment.text)
-                                        .foregroundColor(.black)
-                                    HStack(spacing: 12) {
-                                        Button {
-                                            handleCommentLike(comment)
-                                        } label: {
-                                            Label(
-                                                "\(comment.likeCount)",
-                                                systemImage: isCommentLiked(comment.id) ? "heart.fill" : "heart"
-                                            )
-                                            .font(.subheadline.weight(.semibold))
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 6)
-                                            .foregroundColor(.figmaBlue)
+                                CommunityCommentRow(
+                                    comment: comment,
+                                    isLiked: isCommentLiked(comment.id),
+                                    isReported: isCommentReported(comment.id),
+                                    canBlock: canBlock(authorId: comment.authorId),
+                                    onLike: { handleCommentLike(comment) },
+                                    onReport: { pendingCommentReport = comment },
+                                    onBlock: {
+                                        Task {
+                                            await blockAuthor(comment.authorId)
                                         }
-                                        .buttonStyle(.plain)
-
-                                        Button {
-                                            pendingCommentReport = comment
-                                        } label: {
-                                            Label(
-                                                "\(comment.reportCount)",
-                                                systemImage: isCommentReported(comment.id) ? "flag.fill" : "flag"
-                                            )
-                                            .font(.subheadline.weight(.semibold))
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 6)
-                                            .foregroundColor(.figmaBlue)
-                                        }
-                                        .buttonStyle(.plain)
-
-                                        Spacer()
-
-                                        Label(timeAgoString(from: comment.createdAt), systemImage: "clock")
-                                            .font(.caption)
-                                            .foregroundColor(.gray.opacity(0.9))
                                     }
-                                }
-                                .padding(12)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(Color.paletteIvory.opacity(0.9))
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(Color.figmaBlue.opacity(0.5), lineWidth: 1)
                                 )
                             }
                         }
@@ -758,6 +752,41 @@ private struct CommunityThreadView: View {
         }
     }
 
+    private func canBlock(authorId: String) -> Bool {
+        guard !authorId.isEmpty else { return false }
+        return authorId != currentUserId
+    }
+
+    private func blockAction(for authorId: String) -> (() -> Void)? {
+        guard canBlock(authorId: authorId) else { return nil }
+        return {
+            Task {
+                await blockAuthor(authorId)
+            }
+        }
+    }
+
+    private func blockAuthor(_ authorId: String) async {
+        guard canBlock(authorId: authorId) else { return }
+        let previousBlocked = blockedAuthorIds
+        let previousComments = comments
+
+        await MainActor.run {
+            blockedAuthorIds.insert(authorId)
+            comments = filteredComments(from: allComments)
+        }
+
+        do {
+            try await blockService.block(authorId: authorId)
+        } catch {
+            await MainActor.run {
+                blockedAuthorIds = previousBlocked
+                comments = previousComments
+                sendError = "Couldn’t block user. Check connection and try again."
+            }
+        }
+    }
+
     private func isCommentLiked(_ commentId: String) -> Bool {
         guard !appVM.isGodModeUser else { return false }
         return likedCommentIds.contains(commentId)
@@ -831,6 +860,105 @@ private struct CommunityThreadView: View {
             return "Unable to load replies right now. Pull to refresh."
         }
         return "No replies yet. Start the discussion."
+    }
+}
+
+private struct CommunityCommentRow: View {
+    let comment: CommunityComment
+    let isLiked: Bool
+    let isReported: Bool
+    let canBlock: Bool
+    let onLike: () -> Void
+    let onReport: () -> Void
+    let onBlock: () -> Void
+
+    @State private var showBlockConfirm = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(comment.text)
+                .foregroundColor(.black)
+
+            HStack(spacing: 12) {
+                Button(action: onLike) {
+                    Label(
+                        "\(comment.likeCount)",
+                        systemImage: isLiked ? "heart.fill" : "heart"
+                    )
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .foregroundColor(.figmaBlue)
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onReport) {
+                    Label(
+                        "\(comment.reportCount)",
+                        systemImage: isReported ? "flag.fill" : "flag"
+                    )
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .foregroundColor(.figmaBlue)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                Label(timeAgoString(from: comment.createdAt), systemImage: "clock")
+                    .font(.caption)
+                    .foregroundColor(.gray.opacity(0.9))
+            }
+        }
+        .padding(12)
+        .padding(.trailing, canBlock ? 30 : 0)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.paletteIvory.opacity(0.9))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.figmaBlue.opacity(0.5), lineWidth: 1)
+        )
+        .overlay(alignment: .topTrailing) {
+            if canBlock {
+                Menu {
+                    Button(role: .destructive) {
+                        showBlockConfirm = true
+                    } label: {
+                        Label("Block User", systemImage: "hand.raised.fill")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .foregroundColor(.gray.opacity(0.7))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .padding(.top, 6)
+                .padding(.trailing, 6)
+            }
+        }
+        .alert(
+            "Block user?",
+            isPresented: $showBlockConfirm,
+            actions: {
+                Button("Cancel", role: .cancel) {}
+                Button("Block", role: .destructive, action: onBlock)
+            },
+            message: {
+                Text("You won’t see any more posts or replies from this user.")
+            }
+        )
+    }
+
+    private func timeAgoString(from date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        if interval < 60 { return "Just now" }
+        if interval < 3600 { return "\(Int(interval / 60))m ago" }
+        if interval < 86_400 { return "\(Int(interval / 3600))h ago" }
+        return "\(Int(interval / 86_400))d ago"
     }
 }
 

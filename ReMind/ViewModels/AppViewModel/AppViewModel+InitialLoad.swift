@@ -14,6 +14,7 @@ extension AppViewModel {
             detachEntriesListener()
             self.user = nil
             self.entries = []
+            self.applyLatestSentReminder(nil)
             self.smsOptOut = false
             self.isGodModeUser = false
             self.hasSeenFeatureTour = false
@@ -24,6 +25,7 @@ extension AppViewModel {
         }
 
         hasLoadedInitialProfile = false
+        applyLatestSentReminder(nil)
         defer { hasLoadedInitialProfile = true }
 
         
@@ -65,6 +67,7 @@ extension AppViewModel {
                     ?? (usageRaw?["instantSendsThisWeek"] as? NSNumber)?.intValue
                     ?? 0
             )
+            let lastReminder = parseLastReminder(from: snap.data() ?? [:])
 
             // Build model
             let profile = UserProfile(
@@ -76,10 +79,12 @@ extension AppViewModel {
                 active: active,
                 plan: plan,
                 receivedCount: receivedCount,
-                usage: instantUsage
+                usage: instantUsage,
+                lastReminder: lastReminder
             )
 
             self.user = profile
+            applyLatestSentReminder(lastReminder)
 
             let cachedActive = (profile.plan == .pro)
                 || ((snap.get("rc.entitlementActive") as? Bool) == true)
@@ -121,6 +126,7 @@ extension AppViewModel {
         refreshRevenueCatEntitlement()
 
         await refreshAll()
+        await refreshLatestSentReminder()
     }
 
     // MARK: - User settings

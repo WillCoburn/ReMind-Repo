@@ -49,8 +49,6 @@
 		D25785312EE6212F007D13FA /* Deleting Account Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25785302EE62128007D13FA /* Deleting Account Sheet.swift */; };
 		D25C557E2EED16C300A5240E /* CodeEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */; };
 		D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */; };
-		E1A0B1C42F33445500C0DE01 /* BottleAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C32F33445500C0DE01 /* BottleAnimationView.swift */; };
-		E1A0B1C62F3344AA00C0DE01 /* FloatingMessagePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C72F3344AA00C0DE01 /* FloatingMessagePill.swift */; };
 		D25C55822EED206400A5240E /* KeyboardObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C55812EED206400A5240E /* KeyboardObserver.swift */; };
 		D25C55842EF4D8BA00A5240E /* Concurrency+Timeouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C55832EF4D8B300A5240E /* Concurrency+Timeouts.swift */; };
 		D25C55862EF4DB9A00A5240E /* FirebaseBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C55852EF4DB9500A5240E /* FirebaseBootstrap.swift */; };
@@ -80,8 +78,6 @@
 		D2D07BCB2EBC17340078BAB0 /* ConsentAndAgreeBottom.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */; };
 		D2D07BCD2EBC17470078BAB0 /* CodeEntrySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCC2EBC17420078BAB0 /* CodeEntrySection.swift */; };
 		D2D07BCF2EBC175C0078BAB0 /* PhoneField.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BCE2EBC17570078BAB0 /* PhoneField.swift */; };
-		E1A0B1C52F33449900C0DE01 /* OnboardingLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C42F33449900C0DE01 /* OnboardingLayout.swift */; };
-		E1A0B1C22F33445500C0DE01 /* OnboardingBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C12F33445500C0DE01 /* OnboardingBackgroundView.swift */; };
 		D2D07BD32EBC18C30078BAB0 /* AppViewModel+RealTimeUserListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD22EBC18B80078BAB0 /* AppViewModel+RealTimeUserListener.swift */; };
 		D2D07BD52EBC18F60078BAB0 /* AppViewModel+InitialLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD42EBC18EE0078BAB0 /* AppViewModel+InitialLoad.swift */; };
 		D2D07BD72EBC19100078BAB0 /* AppViewModel+UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2D07BD62EBC190A0078BAB0 /* AppViewModel+UserProfile.swift */; };
@@ -114,6 +110,10 @@
 		D2ED482D2EC8F94D0030CBA7 /* TrialBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */; };
 		D2ED48322EC8FB020030CBA7 /* ReMindBackgrounds.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */; };
 		D2F7A0022F12345000ABCDEF /* SubscriptionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7A0012F12345000ABCDEF /* SubscriptionSheet.swift */; };
+		E1A0B1C22F33445500C0DE01 /* OnboardingBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C12F33445500C0DE01 /* OnboardingBackgroundView.swift */; };
+		E1A0B1C42F33445500C0DE01 /* BottleAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C32F33445500C0DE01 /* BottleAnimationView.swift */; };
+		E1A0B1C52F33449900C0DE01 /* OnboardingLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C42F33449900C0DE01 /* OnboardingLayout.swift */; };
+		E1A0B1C62F3344AA00C0DE01 /* FloatingMessagePill.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C72F3344AA00C0DE01 /* FloatingMessagePill.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -179,8 +179,6 @@
 		D25785302EE62128007D13FA /* Deleting Account Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Deleting Account Sheet.swift"; sourceTree = "<group>"; };
 		D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeEntryScreen.swift; sourceTree = "<group>"; };
 		D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEntryScreen.swift; sourceTree = "<group>"; };
-		E1A0B1C32F33445500C0DE01 /* BottleAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottleAnimationView.swift; sourceTree = "<group>"; };
-		E1A0B1C72F3344AA00C0DE01 /* FloatingMessagePill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingMessagePill.swift; sourceTree = "<group>"; };
 		D25C55812EED206400A5240E /* KeyboardObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardObserver.swift; sourceTree = "<group>"; };
 		D25C55832EF4D8B300A5240E /* Concurrency+Timeouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Concurrency+Timeouts.swift"; sourceTree = "<group>"; };
 		D25C55852EF4DB9500A5240E /* FirebaseBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseBootstrap.swift; sourceTree = "<group>"; };
@@ -200,8 +198,6 @@
 		D2D07BCA2EBC17270078BAB0 /* ConsentAndAgreeBottom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentAndAgreeBottom.swift; sourceTree = "<group>"; };
 		D2D07BCC2EBC17420078BAB0 /* CodeEntrySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeEntrySection.swift; sourceTree = "<group>"; };
 		D2D07BCE2EBC17570078BAB0 /* PhoneField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneField.swift; sourceTree = "<group>"; };
-		E1A0B1C42F33449900C0DE01 /* OnboardingLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLayout.swift; sourceTree = "<group>"; };
-		E1A0B1C12F33445500C0DE01 /* OnboardingBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingBackgroundView.swift; sourceTree = "<group>"; };
 		D2D07BD22EBC18B80078BAB0 /* AppViewModel+RealTimeUserListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+RealTimeUserListener.swift"; sourceTree = "<group>"; };
 		D2D07BD42EBC18EE0078BAB0 /* AppViewModel+InitialLoad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+InitialLoad.swift"; sourceTree = "<group>"; };
 		D2D07BD62EBC190A0078BAB0 /* AppViewModel+UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppViewModel+UserProfile.swift"; sourceTree = "<group>"; };
@@ -233,6 +229,10 @@
 		D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindBackgrounds.swift; sourceTree = "<group>"; };
 		D2F7A0012F12345000ABCDEF /* SubscriptionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSheet.swift; sourceTree = "<group>"; };
 		D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionReminderBanner.swift; sourceTree = "<group>"; };
+		E1A0B1C12F33445500C0DE01 /* OnboardingBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingBackgroundView.swift; sourceTree = "<group>"; };
+		E1A0B1C32F33445500C0DE01 /* BottleAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottleAnimationView.swift; sourceTree = "<group>"; };
+		E1A0B1C42F33449900C0DE01 /* OnboardingLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLayout.swift; sourceTree = "<group>"; };
+		E1A0B1C72F3344AA00C0DE01 /* FloatingMessagePill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingMessagePill.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -768,9 +768,9 @@
 				D21FF4C72ECED6350054E7F8 /* MoodPlaceholderView.swift in Sources */,
 				D2ED48062EC6F8D20030CBA7 /* FunctionsErrorHandling.swift in Sources */,
 				D2ED48272EC8F9190030CBA7 /* MainView.swift in Sources */,
-					D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */,
-					E1A0B1C52F33449900C0DE01 /* OnboardingLayout.swift in Sources */,
-					E1A0B1C22F33445500C0DE01 /* OnboardingBackgroundView.swift in Sources */,
+				D2D07BC92EBC17170078BAB0 /* PhoneEntrySection.swift in Sources */,
+				E1A0B1C52F33449900C0DE01 /* OnboardingLayout.swift in Sources */,
+				E1A0B1C22F33445500C0DE01 /* OnboardingBackgroundView.swift in Sources */,
 				D22EF49A2E7B30E700810204 /* ExportSheet.swift in Sources */,
 				D2ED48162EC8F33F0030CBA7 /* RemindersPerWeekSection.swift in Sources */,
 				D22EF49E2E7B314100810204 /* Design+Utils.swift in Sources */,
@@ -969,7 +969,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReMind/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Re[Mind]";
+				INFOPLIST_KEY_CFBundleDisplayName = BrainMail;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -1013,7 +1013,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ReMind/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Re[Mind]";
+				INFOPLIST_KEY_CFBundleDisplayName = BrainMail;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;

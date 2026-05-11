@@ -10,6 +10,7 @@ import {
   isTwilioStopError,
   pickEntry,
   incrementReceivedCount,
+  recordLastReminder,
   TWILIO_SID,
   TWILIO_AUTH,
   TWILIO_FROM,
@@ -100,6 +101,19 @@ export const sendOneNow = onCall(
       const params = buildMsgParams({ to, body, from, msid });
       const res = await sendSMS(client, params);
       logger.info("[sendOneNow] sent", { messageSid: res.sid });
+
+      try {
+        await recordLastReminder(uid, body, {
+          entryRef: picked.ref,
+          deliveredVia: "manual",
+          messageSid: res.sid,
+        });
+      } catch (lastReminderErr: any) {
+        logger.warn("[sendOneNow] failed to record lastReminder", {
+          uid,
+          message: lastReminderErr?.message,
+        });
+      }
 
       // Mark matching unsent entry as sent (best-effort)
       try {
