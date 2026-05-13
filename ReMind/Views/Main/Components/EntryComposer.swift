@@ -2,6 +2,7 @@
 // File: Views/Main/Components/EntryComposer.swift
 // ============================================
 import SwiftUI
+import UIKit
 
 struct EntryComposer: View {
     @Binding var text: String
@@ -14,6 +15,7 @@ struct EntryComposer: View {
     @FocusState var isEntryFieldFocused: Bool
 
     var onSubmit: () async -> Void
+    var onCancel: () -> Void = {}
 
     var body: some View {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -24,6 +26,8 @@ struct EntryComposer: View {
             Text("New reminder")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(isExpanded ? Color.figmaBlue : Color.black.opacity(0.72))
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
 
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -35,14 +39,14 @@ struct EntryComposer: View {
                     .padding(.leading, 14)
                     .padding(.trailing, 14)
                     .padding(.bottom, 58)
-                    .frame(minHeight: inputHeight, alignment: .topLeading)
+                    .frame(height: inputHeight, alignment: .topLeading)
                     .background(Color.clear)
                     .scrollContentBackground(.hidden)
                     .foregroundColor(Color.black.opacity(0.84))
                     .font(.system(size: 17))
-                    .scrollDisabled(true)
+                    .textInputAutocapitalization(.sentences)
 
-                if !hasText && !isEntryFieldFocused {
+                if !hasText {
                     Text("Hey future me, remember…")
                         .foregroundColor(Color.black.opacity(0.34))
                         .padding(.horizontal, 18)
@@ -51,13 +55,22 @@ struct EntryComposer: View {
                         .allowsHitTesting(false)
                 }
 
-                saveButton()
+                bottomControls(hasText: hasText, isExpanded: isExpanded)
                     .padding(10)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             }
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke(Color.figmaBlue.opacity(isExpanded ? 0.34 : 0.08), lineWidth: isExpanded ? 1.5 : 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .onTapGesture {
+                isEntryFieldFocused = true
+            }
+            .simultaneousGesture(
+                TapGesture(count: 2).onEnded {
+                    handleDoubleTap()
+                }
             )
         }
         .padding(16)
@@ -77,11 +90,40 @@ struct EntryComposer: View {
         .animation(.easeInOut(duration: 0.2), value: hasText)
         .accessibilityElement(children: .contain)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .dynamicTypeSize(.xSmall ... .xxLarge)
     }
 
     private var accessibilityHint: String {
         if isDisabled { return "Type something to enable." }
         return "Saves your entry."
+    }
+
+    private func bottomControls(hasText: Bool, isExpanded: Bool) -> some View {
+        HStack(spacing: 10) {
+            if isExpanded || hasText {
+                Button {
+                    onCancel()
+                } label: {
+                    Label("Cancel", systemImage: "xmark")
+                        .labelStyle(.titleAndIcon)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.black.opacity(0.58))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.82)
+                        .padding(.horizontal, 13)
+                        .frame(height: 34)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(Color.white.opacity(0.68))
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Cancel reminder")
+            }
+
+            Spacer(minLength: 8)
+            saveButton()
+        }
     }
 
     private func saveButton() -> some View {
@@ -102,6 +144,8 @@ struct EntryComposer: View {
             .foregroundStyle(isDisabled ? Color.figmaBlue.opacity(0.55) : .white)
             .padding(.horizontal, 16)
             .frame(height: 34)
+            .lineLimit(1)
+            .minimumScaleFactor(0.82)
             .background(
                 Capsule(style: .continuous)
                     .fill(isDisabled ? Color.figmaBlue.opacity(0.14) : Color.figmaBlue)
@@ -117,5 +161,16 @@ struct EntryComposer: View {
         .buttonStyle(.plain)
         .accessibilityLabel("Save reminder")
         .accessibilityHint(accessibilityHint)
+    }
+
+    private func handleDoubleTap() {
+        isEntryFieldFocused = true
+        guard text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let clipboardText = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !clipboardText.isEmpty
+        else {
+            return
+        }
+        text = clipboardText
     }
 }

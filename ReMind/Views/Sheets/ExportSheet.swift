@@ -50,18 +50,21 @@ struct ExportSheet: View {
                             .font(.title3.weight(.semibold))
                             .foregroundColor(Color.black.opacity(0.78))
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
 
                         if let error {
                             Text(error)
                                 .font(.subheadline)
                                 .foregroundColor(.red)
                                 .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
                         } else {
                             Text("Compile your entries into a clean PDF and receive a text with the link.")
                                 .font(.subheadline)
                                 .foregroundColor(Color.black.opacity(0.58))
                                 .multilineTextAlignment(.center)
                                 .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
 
                         if let link {
@@ -130,6 +133,7 @@ struct ExportSheet: View {
         .navigationBarTitleDisplayMode(.inline)
         .tint(.figmaBlue)
         .onAppear { restartIllustration() }
+        .dynamicTypeSize(.xSmall ... .xxLarge)
         .toast(isPresented: $showToast) {
             HStack {
                 Image(systemName: "checkmark.circle.fill")

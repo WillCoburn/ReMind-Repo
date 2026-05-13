@@ -44,10 +44,7 @@ struct RightPanelPlaceholderView: View {
                         .padding(.bottom, 20)   // ↑ space before the tiles
 
                     // MARK: - Top stat tiles
-                    LazyVGrid(
-                        columns: Array(repeating: .init(.flexible(), spacing: 12), count: 3),
-                        spacing: 12
-                    ) {
+                    LazyVGrid(columns: statsColumns, spacing: 12) {
                         savedTile
                         streakTile
                         receivedTile
@@ -143,7 +140,15 @@ struct RightPanelPlaceholderView: View {
             }
         }
         // Hide the nav bar so the custom layout can use the full vertical space.
-                .toolbar(.hidden, for: .navigationBar)
+        .toolbar(.hidden, for: .navigationBar)
+        .dynamicTypeSize(.xSmall ... .xxLarge)
+    }
+
+    private var statsColumns: [GridItem] {
+        Array(
+            repeating: GridItem(.flexible(minimum: 0), spacing: 12, alignment: .top),
+            count: 3
+        )
     }
 
     // MARK: - Settings list
@@ -151,47 +156,74 @@ struct RightPanelPlaceholderView: View {
     private var settingsList: some View {
         VStack(spacing: 12) {
             if !appVM.isProUser {
-                HStack(spacing: 12) {
-                    Text("Free users limited to 3 random reminders a week")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundColor(.black.opacity(0.8))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Button("Why?") {
-                        showFreeLimitsWhy = true
-                    }
-                    .font(.footnote.weight(.semibold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .background(Color.white.opacity(0.7))
-                    .foregroundColor(.black.opacity(0.8))
-                    .clipShape(Capsule())
-
-                    Button("Upgrade") {
-                        RevenueCatManager.shared.forceIdentify {
-                            showPaywall = true
-                        }
-                    }
-                    .font(.footnote.weight(.semibold))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.figmaBlue)
-                    .foregroundColor(.white)
-                    .clipShape(Capsule())
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.yellow.opacity(0.20))
-                )
+                freeLimitsBanner
             }
 
             automaticSettingsSection
             experienceSection
             accountSection
         }
+    }
+
+    private var freeLimitsBanner: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                freeLimitsText
+                Spacer(minLength: 8)
+                freeLimitsButtons
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                freeLimitsText
+                freeLimitsButtons
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.yellow.opacity(0.20))
+        )
+    }
+
+    private var freeLimitsText: some View {
+        Text("Free users limited to 3 random reminders a week")
+            .font(.footnote.weight(.semibold))
+            .foregroundColor(.black.opacity(0.8))
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var freeLimitsButtons: some View {
+        HStack(spacing: 8) {
+            Button("Why?") {
+                showFreeLimitsWhy = true
+            }
+            .font(.footnote.weight(.semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(Color.white.opacity(0.7))
+            .foregroundColor(.black.opacity(0.8))
+            .clipShape(Capsule())
+
+            Button("Upgrade") {
+                RevenueCatManager.shared.forceIdentify {
+                    showPaywall = true
+                }
+            }
+            .font(.footnote.weight(.semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color.figmaBlue)
+            .foregroundColor(.white)
+            .clipShape(Capsule())
+        }
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     private func settingsSectionHeader(_ title: String) -> some View {
@@ -407,25 +439,36 @@ private extension RightPanelPlaceholderView {
             Image(systemName: systemImage)
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.figmaBlue)
+                .frame(height: 24)
 
             Text(title)
                 .font(.subheadline)
                 .foregroundColor(.black)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.78)
+                .frame(maxWidth: .infinity, minHeight: 34, alignment: .center)
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(value)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.figmaBlue)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
 
                 if let suffix = suffix {
                     Text(suffix)
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(.black)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
                 }
             }
+            .frame(height: 34, alignment: .center)
 
         }
-        .frame(maxWidth: .infinity, minHeight: 110)
+        .frame(maxWidth: .infinity, minHeight: 128, maxHeight: 128)
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -435,6 +478,7 @@ private extension RightPanelPlaceholderView {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
         )
+        .dynamicTypeSize(.xSmall ... .xLarge)
     }
 }
 
@@ -449,26 +493,13 @@ struct SettingsRow: View {
 
     var body: some View {
         Button(action: action) {
-            HStack {
-                Text(title)
-                    // 👇 force black so it’s visible on white even in Dark Mode
-                    .foregroundColor(isDestructive ? .red : .black)
-
-                Spacer()
-
-                if let value = value {
-                    Text(value)
-                        .foregroundColor(isDestructive ? .red : .figmaBlue)
-                        .lineLimit(1)
-                }
-
-                if showsChevron {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(Color(white: 0.45))
-                }
+            ViewThatFits(in: .horizontal) {
+                horizontalContent
+                verticalContent
             }
             .padding(.vertical, 14)
             .padding(.horizontal, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.white)
             .overlay(
                 Rectangle()
@@ -476,6 +507,56 @@ struct SettingsRow: View {
                     .foregroundColor(Color.gray.opacity(0.25)),
                 alignment: .bottom
             )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var horizontalContent: some View {
+        HStack(alignment: .center, spacing: 12) {
+            titleText
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            trailingContent
+                .fixedSize(horizontal: true, vertical: false)
+        }
+    }
+
+    private var verticalContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            titleText
+
+            trailingContent
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var titleText: some View {
+        Text(title)
+            .foregroundColor(isDestructive ? .red : .black)
+            .multilineTextAlignment(.leading)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var trailingContent: some View {
+        HStack(spacing: 8) {
+            if let value = value {
+                Text(value)
+                    .foregroundColor(isDestructive ? .red : .figmaBlue)
+                    .multilineTextAlignment(.trailing)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.78)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .foregroundColor(Color(white: 0.45))
+                    .font(.footnote.weight(.semibold))
+                    .frame(width: 14)
+            }
         }
     }
 }

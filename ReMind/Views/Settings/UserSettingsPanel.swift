@@ -79,6 +79,7 @@ struct UserSettingsForm: View {
                   .padding(.horizontal, 12)
                   .padding(.vertical, 10)
                   .frame(maxWidth: .infinity, alignment: .leading)
+                  .fixedSize(horizontal: false, vertical: true)
                   .background(
                       RoundedRectangle(cornerRadius: 10)
                           .fill(Color.yellow.opacity(0.16))

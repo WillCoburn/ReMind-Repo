@@ -26,13 +26,17 @@ struct RemindersPerWeekSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Automated ReMinders Per Week")
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Text("\(SettingsHelpers.remindersDisplay(remindersPerWeek)) / week")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    remindersTitle
+                    Spacer(minLength: 12)
+                    remindersValue
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    remindersTitle
+                    remindersValue
+                }
             }
 
             if isProUser {
@@ -106,5 +110,19 @@ struct RemindersPerWeekSection: View {
                 remindersPerWeek = min(max(remindersPerWeek, minReminders), freeMaxReminders)
             }
         }
+    }
+
+    private var remindersTitle: some View {
+        Text("Automated ReMinders Per Week")
+            .font(.subheadline.weight(.semibold))
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var remindersValue: some View {
+        Text("\(SettingsHelpers.remindersDisplay(remindersPerWeek)) / week")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.82)
     }
 }

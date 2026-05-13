@@ -102,7 +102,7 @@ struct OnboardingView: View {
                 errorText = ""
             }
         }
-        .dynamicTypeSize(.medium)
+        .dynamicTypeSize(.xSmall ... .xxLarge)
         .preferredColorScheme(.light)
     }
 

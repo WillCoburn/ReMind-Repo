@@ -21,13 +21,17 @@ struct SendWindowSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Automated Send Window")
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Text("\(hourLabel(startHour)) – \(hourLabel(endHour))")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    sendWindowTitle
+                    Spacer(minLength: 12)
+                    sendWindowValue
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    sendWindowTitle
+                    sendWindowValue
+                }
             }
 
             VStack(spacing: 12) {
@@ -40,5 +44,19 @@ struct SendWindowSection: View {
             }
 
         }
+    }
+
+    private var sendWindowTitle: some View {
+        Text("Automated Send Window")
+            .font(.subheadline.weight(.semibold))
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var sendWindowValue: some View {
+        Text("\(hourLabel(startHour)) – \(hourLabel(endHour))")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.82)
     }
 }

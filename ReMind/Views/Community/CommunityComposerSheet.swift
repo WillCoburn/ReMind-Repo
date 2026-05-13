@@ -51,6 +51,7 @@ struct CommunityComposerSheet: View {
                         Text("Community posts expire automatically after 7 days.\nAnything rude or offensive will result in a ban.")
                             .font(.caption)
                             .foregroundColor(.gray)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(12)
                     .background(
@@ -120,6 +121,7 @@ struct CommunityComposerSheet: View {
                     Text(errorMessage ?? "")
                 }
             )
+            .dynamicTypeSize(.xSmall ... .xxLarge)
         }
     }
 

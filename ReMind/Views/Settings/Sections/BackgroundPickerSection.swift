@@ -14,39 +14,15 @@ struct BackgroundPickerSection: View {
             Text("Background")
                 .font(.subheadline.weight(.semibold))
 
-            HStack(spacing: 12) {
-                if let preview = SettingsHelpers.previewImage(fromBase64: bgImageBase64) {
-                    Image(uiImage: preview)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 72, height: 72)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12)
-                            .stroke(.secondary.opacity(0.3), lineWidth: 1))
-                } else {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.secondary.opacity(0.08))
-                        Image(systemName: "photo")
-                            .imageScale(.large)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(width: 72, height: 72)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    preview
+                    pickerButtons
                 }
 
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label("Choose Photo", systemImage: "photo.on.rectangle")
-                }
-                .onChange(of: photoItem) { newItem in
-                    Task { await importPhoto(newItem) }
-                }
-
-                if !bgImageBase64.isEmpty {
-                    Button(role: .destructive) {
-                        bgImageBase64 = ""
-                    } label: {
-                        Label("Remove", systemImage: "trash")
-                    }
+                VStack(alignment: .leading, spacing: 12) {
+                    preview
+                    pickerButtons
                 }
             }
 
@@ -56,6 +32,52 @@ struct BackgroundPickerSection: View {
                     .foregroundStyle(.red)
             }
 
+        }
+    }
+
+    private var preview: some View {
+        Group {
+            if let preview = SettingsHelpers.previewImage(fromBase64: bgImageBase64) {
+                Image(uiImage: preview)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 72, height: 72)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12)
+                        .stroke(.secondary.opacity(0.3), lineWidth: 1))
+            } else {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.secondary.opacity(0.08))
+                    Image(systemName: "photo")
+                        .imageScale(.large)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(width: 72, height: 72)
+            }
+        }
+    }
+
+    private var pickerButtons: some View {
+        HStack(spacing: 10) {
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                Label("Choose Photo", systemImage: "photo.on.rectangle")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+            .onChange(of: photoItem) { newItem in
+                Task { await importPhoto(newItem) }
+            }
+
+            if !bgImageBase64.isEmpty {
+                Button(role: .destructive) {
+                    bgImageBase64 = ""
+                } label: {
+                    Label("Remove", systemImage: "trash")
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.82)
+                }
+            }
         }
     }
 

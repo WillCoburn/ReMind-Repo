@@ -172,18 +172,37 @@ struct PhoneEntryScreen: View {
                     .fill(Color.figmaBlue.opacity(0.07))
             )
 
-            HStack(spacing: 4) {
-                Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
-                    .underline()
-                Text("·")
-                Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
-                    .underline()
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 4) {
+                    termsLink
+                    Text("·")
+                    privacyLink
+                }
+
+                VStack(spacing: 4) {
+                    termsLink
+                    privacyLink
+                }
             }
             .font(.footnote)
             .foregroundStyle(Color.figmaBlue)
             .tint(.figmaBlue)
             .frame(maxWidth: .infinity, alignment: .center)
         }
+    }
+
+    private var termsLink: some View {
+        Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
+            .underline()
+            .lineLimit(1)
+            .minimumScaleFactor(0.82)
+    }
+
+    private var privacyLink: some View {
+        Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
+            .underline()
+            .lineLimit(1)
+            .minimumScaleFactor(0.82)
     }
 }
 

@@ -86,12 +86,14 @@ struct SubscriptionSection: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 8)
+                .fixedSize(horizontal: false, vertical: true)
 
             if let msg = restoreMessage {
                 Text(msg)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(.top, 4)

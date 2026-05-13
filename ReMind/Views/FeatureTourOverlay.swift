@@ -129,6 +129,7 @@ struct FeatureTourOverlay: View {
             }
         }
         .preferredColorScheme(.light)
+        .dynamicTypeSize(.xSmall ... .xxLarge)
     }
 }
 
@@ -170,20 +171,28 @@ private struct FeatureTourPageView: View {
     }
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer(minLength: 0)
+        GeometryReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    Spacer(minLength: 0)
 
-            if isTextAboveImage {
-                textBlock
-                illustration
-            } else {
-                illustration
-                textBlock
+                    if isTextAboveImage {
+                        textBlock
+                        illustration
+                    } else {
+                        illustration
+                        textBlock
+                    }
+
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: OnboardingLayout.maxContentWidth)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: proxy.size.height)
+                .padding(.vertical, 8)
             }
-
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: OnboardingLayout.maxContentWidth)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 

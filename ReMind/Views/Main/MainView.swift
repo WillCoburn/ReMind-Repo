@@ -45,17 +45,23 @@ struct MainView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: isComposing ? 14 : 18) {
                         VStack(spacing: isComposing ? 12 : 18) {
-                            logoHeader
-                                .scaleEffect(isComposing ? 0.78 : 1)
-                                .opacity(isComposing ? 0.72 : 1)
-                                .frame(height: isComposing ? 66 : 90)
-                                .padding(.top, safeTop + (isComposing ? 4 : 12))
-                                .id(HomeScrollTarget.top)
+                            VStack(spacing: isComposing ? 12 : 18) {
+                                logoHeader
+                                    .scaleEffect(isComposing ? 0.86 : 1)
+                                    .opacity(isComposing ? 0.82 : 1)
+                                    .frame(height: isComposing ? 72 : 90)
+                                    .padding(.top, safeTop + (isComposing ? 6 : 12))
+                                    .id(HomeScrollTarget.top)
 
-                            recentReminderSection(
-                                isComposing: isComposing,
-                                maxBubbleWidth: recentReminderBubbleMaxWidth(for: topContentWidth)
-                            )
+                                recentReminderSection(
+                                    isComposing: isComposing,
+                                    maxBubbleWidth: recentReminderBubbleMaxWidth(for: topContentWidth)
+                                )
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                dismissEntryKeyboard()
+                            }
 
                             EntryComposer(
                                 text: $input,
@@ -64,7 +70,8 @@ struct MainView: View {
                                 pulseEditor: pulseEditor,
                                 inputHeight: entryInputHeight,
                                 isEntryFieldFocused: _isEntryFieldFocused,
-                                onSubmit: { await sendEntry() }
+                                onSubmit: { await sendEntry() },
+                                onCancel: cancelEntryComposer
                             )
                             .id(HomeScrollTarget.entryComposer)
 
@@ -72,39 +79,40 @@ struct MainView: View {
 
                             HintBadge(count: count, goal: goal)
                                 .padding(.top, isComposing ? 0 : 2)
-                                .opacity(isComposing ? 0.45 : 1)
+                                .opacity(isComposing ? 0.72 : 1)
                                 .scaleEffect(isComposing ? 0.98 : 1, anchor: .top)
                                 .allowsHitTesting(!isComposing)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    dismissEntryKeyboard()
+                                }
                         }
                         .frame(width: topContentWidth, alignment: .top)
 
                         actionIconRow(count: count, viewportWidth: viewportWidth)
                             .frame(width: viewportWidth)
-                            .opacity(isComposing ? 0.32 : 1)
-                            .scaleEffect(isComposing ? 0.96 : 1)
-                            .offset(y: isComposing ? 28 : 0)
+                            .opacity(isComposing ? 0.72 : 1)
+                            .scaleEffect(isComposing ? 0.98 : 1)
                             .padding(.top, isComposing ? 0 : 4)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                dismissEntryKeyboard()
+                            }
                     }
                     .frame(width: viewportWidth, alignment: .top)
-                    .padding(.bottom, safeBottom + (isComposing ? 56 : 24))
+                    .padding(.bottom, safeBottom + (isComposing ? 42 : 24))
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .contentShape(Rectangle())
-                .simultaneousGesture(
-                    TapGesture().onEnded {
-                        guard isEntryFieldFocused else { return }
-                        isEntryFieldFocused = false
-                        hideKeyboard()
-                    },
-                    including: .gesture
-                )
                 .onChange(of: isEntryFieldFocused) { focused in
-                    withAnimation(.easeInOut(duration: 0.24)) {
-                        scrollProxy.scrollTo(
-                            focused ? HomeScrollTarget.entryComposer : HomeScrollTarget.top,
-                            anchor: .top
-                        )
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+                        withAnimation(.easeInOut(duration: 0.24)) {
+                            scrollProxy.scrollTo(
+                                focused ? HomeScrollTarget.entryComposer : HomeScrollTarget.top,
+                                anchor: focused ? .center : .top
+                            )
+                        }
                     }
                 }
                 .animation(.spring(response: 0.36, dampingFraction: 0.88), value: isEntryFieldFocused)
@@ -159,18 +167,19 @@ struct MainView: View {
                 refreshMainViewData()
             }
             .onChange(of: isPageActive) { active in
-                guard active else { return }
+                guard active else {
+                    dismissEntryKeyboard()
+                    return
+                }
                 refreshMainViewData()
             }
             .onChange(of: showSendNowSheet) { showing in
                 guard !showing, isPageActive else { return }
                 refreshMainViewData()
             }
-            .onChange(of: net.isConnected) { value in
-                print("🔄 net.isConnected (MainView) ->", value)
-            }
             .tint(.figmaBlue)
             .toolbar(.hidden, for: .navigationBar)
+            .dynamicTypeSize(.xSmall ... .xxLarge)
     }
 
     private var logoHeader: some View {
@@ -391,13 +400,9 @@ struct MainView: View {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
-        print("🧪 sendEntry → calling submit")
-        
         await appVM.submit(text: text)
-        print("🧪 sendEntry → submit returned")
         input = ""
-        isEntryFieldFocused = false
-        hideKeyboard()
+        dismissEntryKeyboard()
 
         withAnimation(.easeInOut(duration: 0.5)) { pulseEditor = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -463,6 +468,17 @@ struct MainView: View {
         }
     }
 
+    private func dismissEntryKeyboard() {
+        guard isEntryFieldFocused else { return }
+        isEntryFieldFocused = false
+        hideKeyboard()
+    }
+
+    private func cancelEntryComposer() {
+        input = ""
+        dismissEntryKeyboard()
+    }
+
     private func constrainedTopContentWidth(for viewportWidth: CGFloat) -> CGFloat {
         max(viewportWidth - HomeLayout.horizontalPadding * 2, 1)
     }
@@ -489,13 +505,13 @@ struct MainView: View {
 
     private func entryInputHeight(for availableHeight: CGFloat, isFocused: Bool) -> CGFloat {
         guard isFocused else { return HomeLayout.collapsedEntryInputHeight }
-        return min(max(availableHeight * 0.36, 210), 290)
+        return min(max(availableHeight * 0.17, 124), 154)
     }
 }
 
 private enum HomeLayout {
     static let horizontalPadding: CGFloat = 24
-    static let collapsedEntryInputHeight: CGFloat = 154
+    static let collapsedEntryInputHeight: CGFloat = 112
     static let actionIconCircleSize: CGFloat = 64
     static let actionIconButtonWidth: CGFloat = 68
     static let actionIconSpacing: CGFloat = 18
@@ -515,41 +531,55 @@ private enum HomeActionScrollTarget: Hashable {
 private struct ReceivedMessageBubble: View {
     let text: String
     let maxBubbleWidth: CGFloat
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Text(text)
             .font(.body)
-            .foregroundStyle(Color.black.opacity(0.82))
+            .foregroundStyle(textColor)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.leading, 24)
+            .padding(.leading, 25)
             .padding(.trailing, 18)
-            .padding(.vertical, 12)
+            .padding(.vertical, 13)
             .frame(maxWidth: maxBubbleWidth, alignment: .leading)
             .background {
-                ReceivedBubbleShape()
-                    .fill(Color.white.opacity(0.92))
-                    .shadow(color: Color.black.opacity(0.06), radius: 11, x: 0, y: 5)
+                IncomingSMSBubbleShape()
+                    .fill(bubbleFill)
+                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.18 : 0.07), radius: 12, x: 0, y: 6)
             }
             .overlay {
-                ReceivedBubbleShape()
-                    .stroke(Color.white.opacity(0.72), lineWidth: 1)
+                IncomingSMSBubbleShape()
+                    .stroke(Color.white.opacity(colorScheme == .dark ? 0.16 : 0.76), lineWidth: 1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
     }
+
+    private var bubbleFill: Color {
+        colorScheme == .dark
+        ? Color(UIColor.secondarySystemBackground).opacity(0.94)
+        : Color.white.opacity(0.94)
+    }
+
+    private var textColor: Color {
+        colorScheme == .dark
+        ? Color.white.opacity(0.90)
+        : Color.black.opacity(0.82)
+    }
 }
 
-private struct ReceivedBubbleShape: Shape {
+private struct IncomingSMSBubbleShape: Shape {
     func path(in rect: CGRect) -> Path {
-        let tailWidth = min(max(rect.width * 0.05, 10), 14)
-        let tailHeight = min(max(rect.height * 0.27, 14), 22)
+        let tailWidth = min(max(rect.width * 0.07, 12), 17)
+        let tailHeight = min(max(rect.height * 0.30, 16), 24)
         let bubbleMinX = rect.minX + tailWidth
-        let bubbleMaxX = rect.maxX
-        let bubbleMinY = rect.minY
-        let bubbleMaxY = rect.maxY
-        let corner = min(22, rect.height * 0.48, (rect.width - tailWidth) / 2)
-        let lowerCorner = min(corner, 20)
-        let tailTip = CGPoint(x: rect.minX + 0.7, y: bubbleMaxY - 3.2)
-        let tailRejoin = CGPoint(x: bubbleMinX + 5.2, y: bubbleMaxY - tailHeight)
+        let bubbleMaxX = rect.maxX - 0.5
+        let bubbleMinY = rect.minY + 0.5
+        let bubbleMaxY = rect.maxY - 0.5
+        let corner = min(23, rect.height * 0.47, (rect.width - tailWidth) / 2)
+        let lowerCorner = min(corner, 21)
+        let tailTip = CGPoint(x: rect.minX + 0.8, y: bubbleMaxY - 2.8)
+        let tailCurl = CGPoint(x: bubbleMinX + 6.3, y: bubbleMaxY - 1.2)
+        let tailRejoin = CGPoint(x: bubbleMinX + 5.4, y: bubbleMaxY - tailHeight)
 
         var path = Path()
 
@@ -566,25 +596,25 @@ private struct ReceivedBubbleShape: Shape {
             control1: CGPoint(x: bubbleMaxX, y: bubbleMaxY - lowerCorner * 0.28),
             control2: CGPoint(x: bubbleMaxX - lowerCorner * 0.28, y: bubbleMaxY)
         )
-        path.addLine(to: CGPoint(x: bubbleMinX + lowerCorner + 7, y: bubbleMaxY))
+        path.addLine(to: CGPoint(x: bubbleMinX + lowerCorner + 9, y: bubbleMaxY))
         path.addCurve(
-            to: CGPoint(x: bubbleMinX + 7.4, y: bubbleMaxY - 1.4),
-            control1: CGPoint(x: bubbleMinX + 20, y: bubbleMaxY),
-            control2: CGPoint(x: bubbleMinX + 12.2, y: bubbleMaxY + 0.2)
+            to: tailCurl,
+            control1: CGPoint(x: bubbleMinX + 23, y: bubbleMaxY + 0.2),
+            control2: CGPoint(x: bubbleMinX + 13.8, y: bubbleMaxY + 1.0)
         )
         path.addCurve(
             to: tailTip,
-            control1: CGPoint(x: bubbleMinX + 4.8, y: bubbleMaxY + 0.4),
-            control2: CGPoint(x: rect.minX + 2.7, y: bubbleMaxY - 0.2)
+            control1: CGPoint(x: bubbleMinX + 3.9, y: bubbleMaxY + 0.1),
+            control2: CGPoint(x: rect.minX + 2.3, y: bubbleMaxY + 0.1)
         )
         path.addCurve(
             to: tailRejoin,
-            control1: CGPoint(x: rect.minX + 5.8, y: bubbleMaxY - 5.3),
-            control2: CGPoint(x: bubbleMinX + 3.5, y: bubbleMaxY - tailHeight * 0.55)
+            control1: CGPoint(x: rect.minX + 5.2, y: bubbleMaxY - 7.6),
+            control2: CGPoint(x: bubbleMinX + 2.9, y: bubbleMaxY - tailHeight * 0.58)
         )
         path.addCurve(
             to: CGPoint(x: bubbleMinX, y: bubbleMaxY - lowerCorner),
-            control1: CGPoint(x: bubbleMinX + 1.3, y: bubbleMaxY - tailHeight - 4.4),
+            control1: CGPoint(x: bubbleMinX + 1.0, y: bubbleMaxY - tailHeight - 5.2),
             control2: CGPoint(x: bubbleMinX, y: bubbleMaxY - lowerCorner + 6)
         )
         path.addLine(to: CGPoint(x: bubbleMinX, y: bubbleMinY + corner))
@@ -639,6 +669,7 @@ private struct HelpGuideSheet: View {
 
             GeometryReader { proxy in
                 let horizontalPadding = min(max(proxy.size.width * 0.055, 18), 28)
+                let contentWidth = max(1, min(520, proxy.size.width - horizontalPadding * 2))
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 18) {
@@ -652,6 +683,7 @@ private struct HelpGuideSheet: View {
                                 .font(.title2.weight(.semibold))
                                 .foregroundStyle(Color.black.opacity(0.82))
                                 .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
 
                             Text("I wanted this page to feel less like a manual and more like a quick note from the person who made the thing.")
                                 .font(.subheadline)
@@ -718,17 +750,19 @@ private struct HelpGuideSheet: View {
                             }
                         }
                     }
-                    .frame(maxWidth: 520)
-                    .frame(maxWidth: .infinity)
+                    .frame(width: contentWidth)
                     .padding(.horizontal, horizontalPadding)
+                    .frame(maxWidth: .infinity)
                     .padding(.bottom, max(proxy.safeAreaInsets.bottom + 28, 36))
                 }
+                .frame(width: proxy.size.width)
             }
         }
         .navigationTitle("Help")
         .navigationBarTitleDisplayMode(.inline)
         .tint(.figmaBlue)
         .onAppear { restartHeroAnimation() }
+        .dynamicTypeSize(.xSmall ... .accessibility4)
     }
 
     private var pricingText: String {
@@ -778,7 +812,8 @@ private struct HelpHeroIllustration: View {
                 .opacity(0.84)
                 .animation(.easeInOut(duration: 3.2).repeatForever(autoreverses: true), value: animate)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: 240)
+        .clipped()
     }
 }
 
@@ -839,7 +874,9 @@ private struct HelpSectionCard<Content: View>: View {
                 Text(title)
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(Color.black.opacity(0.80))
+                    .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             content
@@ -871,6 +908,7 @@ private struct HelpBodyText: View {
             .foregroundStyle(Color.black.opacity(0.62))
             .lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -891,6 +929,8 @@ private struct HelpBullet: View {
                 .foregroundStyle(Color.black.opacity(0.64))
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

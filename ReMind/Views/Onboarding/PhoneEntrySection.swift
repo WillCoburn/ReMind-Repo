@@ -48,7 +48,7 @@ struct PhoneEntrySection: View {
                     .foregroundColor(.red)
             }
         }
-        .dynamicTypeSize(.medium)
+        .dynamicTypeSize(.xSmall ... .xxLarge)
     }
 }
 

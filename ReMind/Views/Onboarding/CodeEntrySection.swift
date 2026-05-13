@@ -41,12 +41,9 @@ struct CodeEntrySection: View {
         }
         .padding(.top, showTopBar ? 4 : 0)
         .onAppear {
-            otpDebugLog("CodeEntrySection appeared; requesting focus")
             isCodeFieldFocused = true
         }
-        .onChange(of: code) { newValue in
-            otpDebugLog("SwiftUI code binding changed; count=\(newValue.count)")
-        }
+        .dynamicTypeSize(.xSmall ... .xxLarge)
     }
 
     private var topBar: some View {
@@ -63,32 +60,32 @@ struct CodeEntrySection: View {
 
     private var codeBoxes: some View {
         GeometryReader { proxy in
-            let _ = otpDebugLog("rendering code boxes; count=\(code.count), availableWidth=\(Int(proxy.size.width))")
             let metrics = codeBoxMetrics(for: proxy.size.width)
+            let digits = Array(code)
 
             ZStack {
                 HStack(spacing: metrics.spacing) {
-                let digits = Array(code)
+                    ForEach(0..<6, id: \.self) { index in
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.white)
 
-                ForEach(0..<6, id: \.self) { index in
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color.white)
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(borderColor(for: index), lineWidth: index == code.count && code.count < 6 ? 2 : 1)
 
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(borderColor(for: index), lineWidth: index == code.count && code.count < 6 ? 2 : 1)
-
-                        Text(index < digits.count ? String(digits[index]) : "")
-                            .font(.title3.weight(.semibold))
-                            .scaleEffect(index < digits.count ? 1 : 0.94)
-                            .opacity(index < digits.count ? 1 : 0.25)
-                            .animation(.easeOut(duration: 0.18), value: code)
+                            Text(index < digits.count ? String(digits[index]) : "")
+                                .font(.title3.weight(.semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.68)
+                                .scaleEffect(index < digits.count ? 1 : 0.94)
+                                .opacity(index < digits.count ? 1 : 0.25)
+                                .animation(.easeOut(duration: 0.18), value: code)
+                        }
+                        .frame(width: metrics.width, height: metrics.height)
+                        .shadow(color: .black.opacity(0.03), radius: 6, x: 0, y: 4)
+                        .animation(.easeInOut(duration: 0.2), value: code)
                     }
-                    .frame(width: metrics.width, height: metrics.height)
-                    .shadow(color: .black.opacity(0.03), radius: 6, x: 0, y: 4)
-                    .animation(.easeInOut(duration: 0.2), value: code)
                 }
-            }
                 .frame(maxWidth: .infinity, alignment: .center)
 
                 OneTimeCodeTextField(
@@ -101,12 +98,10 @@ struct CodeEntrySection: View {
         .frame(height: 64)
         .contentShape(Rectangle())
         .onTapGesture {
-            otpDebugLog("OTP row tapped; requesting focus")
             isCodeFieldFocused = true
         }
         .onAppear {
             DispatchQueue.main.async {
-                otpDebugLog("OTP row async focus request")
                 isCodeFieldFocused = true
             }
         }
@@ -129,33 +124,29 @@ struct CodeEntrySection: View {
     }
 }
 
-private func otpDebugLog(_ message: String) {
-    #if DEBUG
-    print("🔢 [OTP] \(message)")
-    #endif
-}
-
 private struct OneTimeCodeTextField: UIViewRepresentable {
     @Binding var code: String
     @Binding var isFirstResponder: Bool
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(code: $code)
+        Coordinator(code: $code, isFirstResponder: $isFirstResponder)
     }
 
     func makeUIView(context: Context) -> UITextField {
         let textField = UITextField()
         textField.delegate = context.coordinator
+        textField.font = UIFont.monospacedDigitSystemFont(ofSize: 22, weight: .semibold)
         textField.keyboardType = .numberPad
         textField.textContentType = .oneTimeCode
         textField.textAlignment = .center
         textField.autocorrectionType = .no
+        textField.autocapitalizationType = .none
         textField.spellCheckingType = .no
         textField.smartInsertDeleteType = .no
         textField.textColor = .clear
         textField.tintColor = .clear
         textField.backgroundColor = .clear
-        otpDebugLog("created UIKit one-time-code field")
+        textField.accessibilityLabel = "Verification code"
         textField.addTarget(
             context.coordinator,
             action: #selector(Coordinator.textDidChange(_:)),
@@ -166,40 +157,38 @@ private struct OneTimeCodeTextField: UIViewRepresentable {
 
     func updateUIView(_ textField: UITextField, context: Context) {
         if textField.text != code {
-            otpDebugLog("syncing UIKit field from binding; bindingCount=\(code.count), fieldCount=\(textField.text?.count ?? 0)")
             textField.text = code
         }
 
         if isFirstResponder && !textField.isFirstResponder {
             DispatchQueue.main.async {
-                let didFocus = textField.becomeFirstResponder()
-                otpDebugLog("becomeFirstResponder requested; success=\(didFocus)")
+                textField.becomeFirstResponder()
             }
         }
     }
 
     final class Coordinator: NSObject, UITextFieldDelegate {
         @Binding private var code: String
+        @Binding private var isFirstResponder: Bool
 
-        init(code: Binding<String>) {
+        init(code: Binding<String>, isFirstResponder: Binding<Bool>) {
             _code = code
+            _isFirstResponder = isFirstResponder
         }
 
         @objc func textDidChange(_ textField: UITextField) {
-            otpDebugLog("editingChanged; fieldCount=\((textField.text ?? "").count)")
             updateCode(from: textField.text ?? "", in: textField)
         }
 
         func textFieldDidBeginEditing(_ textField: UITextField) {
-            otpDebugLog("textFieldDidBeginEditing; isFirstResponder=\(textField.isFirstResponder)")
+            isFirstResponder = true
         }
 
         func textFieldDidEndEditing(_ textField: UITextField) {
-            otpDebugLog("textFieldDidEndEditing")
+            isFirstResponder = false
         }
 
         func textFieldDidChangeSelection(_ textField: UITextField) {
-            otpDebugLog("textFieldDidChangeSelection; fieldCount=\((textField.text ?? "").count)")
             updateCode(from: textField.text ?? "", in: textField)
         }
 
@@ -208,21 +197,34 @@ private struct OneTimeCodeTextField: UIViewRepresentable {
             shouldChangeCharactersIn range: NSRange,
             replacementString string: String
         ) -> Bool {
-            otpDebugLog("shouldChange; replacementCount=\(string.count), range={\(range.location),\(range.length)}")
-            return true
+            let currentText = textField.text ?? ""
+            guard let textRange = Range(range, in: currentText) else {
+                updateCode(from: string, in: textField)
+                return false
+            }
+
+            let proposedText = currentText.replacingCharacters(in: textRange, with: string)
+            updateCode(from: proposedText, in: textField)
+            moveCaretToEnd(in: textField)
+            return false
         }
 
         private func updateCode(from text: String, in textField: UITextField) {
             let digits = text.filter(\.isNumber)
             let sanitized = String(digits.prefix(6))
             if code != sanitized {
-                otpDebugLog("updating binding from UIKit; oldCount=\(code.count), newCount=\(sanitized.count)")
                 code = sanitized
             }
             if textField.text != sanitized {
-                otpDebugLog("sanitizing UIKit field text; fieldCount=\((textField.text ?? "").count), sanitizedCount=\(sanitized.count)")
                 textField.text = sanitized
             }
+        }
+
+        private func moveCaretToEnd(in textField: UITextField) {
+            guard let end = textField.position(from: textField.beginningOfDocument, offset: textField.text?.count ?? 0) else {
+                return
+            }
+            textField.selectedTextRange = textField.textRange(from: end, to: end)
         }
     }
 }

@@ -105,6 +105,7 @@ struct CommunityView: View {
         }
         // Hide the nav bar so the custom header/background fill the safe areas.
         .toolbar(.hidden, for: .navigationBar)
+        .dynamicTypeSize(.xSmall ... .xxLarge)
     }
 
     private var content: some View {
@@ -878,37 +879,21 @@ private struct CommunityCommentRow: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(comment.text)
                 .foregroundColor(.black)
+                .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 12) {
-                Button(action: onLike) {
-                    Label(
-                        "\(comment.likeCount)",
-                        systemImage: isLiked ? "heart.fill" : "heart"
-                    )
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
-                    .foregroundColor(.figmaBlue)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    commentActionButtons
+
+                    Spacer(minLength: 8)
+
+                    timestampLabel
                 }
-                .buttonStyle(.plain)
 
-                Button(action: onReport) {
-                    Label(
-                        "\(comment.reportCount)",
-                        systemImage: isReported ? "flag.fill" : "flag"
-                    )
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
-                    .foregroundColor(.figmaBlue)
+                VStack(alignment: .leading, spacing: 8) {
+                    commentActionButtons
+                    timestampLabel
                 }
-                .buttonStyle(.plain)
-
-                Spacer()
-
-                Label(timeAgoString(from: comment.createdAt), systemImage: "clock")
-                    .font(.caption)
-                    .foregroundColor(.gray.opacity(0.9))
             }
         }
         .padding(12)
@@ -951,6 +936,36 @@ private struct CommunityCommentRow: View {
                 Text("You won’t see any more posts or replies from this user.")
             }
         )
+        .dynamicTypeSize(.xSmall ... .xxLarge)
+    }
+
+    private var commentActionButtons: some View {
+        HStack(spacing: 6) {
+            Button(action: onLike) {
+                CommunityCountActionLabel(
+                    title: "\(comment.likeCount)",
+                    systemImage: isLiked ? "heart.fill" : "heart"
+                )
+            }
+            .buttonStyle(.plain)
+
+            Button(action: onReport) {
+                CommunityCountActionLabel(
+                    title: "\(comment.reportCount)",
+                    systemImage: isReported ? "flag.fill" : "flag"
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var timestampLabel: some View {
+        Label(timeAgoString(from: comment.createdAt), systemImage: "clock")
+            .font(.caption)
+            .foregroundColor(.gray.opacity(0.9))
+            .lineLimit(1)
+            .minimumScaleFactor(0.78)
     }
 
     private func timeAgoString(from date: Date) -> String {
