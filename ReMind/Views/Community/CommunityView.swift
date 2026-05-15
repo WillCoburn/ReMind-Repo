@@ -5,6 +5,7 @@ import FirebaseAuth
 
 struct CommunityView: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject private var revenueCat: RevenueCatManager = .shared
     private let blockService: BlockService = FirestoreBlockService()
     @State private var posts: [CommunityPost] = []
@@ -36,10 +37,12 @@ struct CommunityView: View {
             Button {
                 showComposer = true
             } label: {
+                let buttonSize: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 62 : 56
+
                 Image(systemName: "plus")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.white)
-                    .frame(width: 56, height: 56)
+                    .frame(width: buttonSize, height: buttonSize)
                     .background(
                         Circle()
 
@@ -105,7 +108,7 @@ struct CommunityView: View {
         }
         // Hide the nav bar so the custom header/background fill the safe areas.
         .toolbar(.hidden, for: .navigationBar)
-        .dynamicTypeSize(.xSmall ... .xxLarge)
+        .brainMailDynamicTypeRange()
     }
 
     private var content: some View {
@@ -218,11 +221,13 @@ struct CommunityView: View {
     
     private var header: some View {
         Text("Community")
-            .font(.system(size: 24, weight: .semibold))
+            .font(.title2.weight(.semibold))
             .foregroundColor(.black)
+            .lineLimit(1)
+            .minimumScaleFactor(0.9)
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.top, 36)
-            .padding(.bottom, 40)
+            .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 28 : 40)
     }
 
     private var emptyCommunityState: some View {
@@ -491,6 +496,7 @@ private struct CommunityThreadView: View {
     let post: CommunityPost
 
     @EnvironmentObject private var appVM: AppViewModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     private let blockService: BlockService = FirestoreBlockService()
     private let currentUserId = Auth.auth().currentUser?.uid
     @State private var allComments: [CommunityComment] = []
@@ -528,6 +534,7 @@ private struct CommunityThreadView: View {
                             Text(emptyStateMessage)
                                 .font(.subheadline)
                                 .foregroundColor(Color.black.opacity(0.75))
+                                .fixedSize(horizontal: false, vertical: true)
                                 .padding(.vertical, 8)
                         } else {
                             ForEach(comments) { comment in
@@ -567,6 +574,7 @@ private struct CommunityThreadView: View {
                                 Text("Write a reply…")
                                     .foregroundColor(Color.black.opacity(0.65))
                                     .padding(.horizontal, 14)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
                         .overlay(
@@ -585,10 +593,13 @@ private struct CommunityThreadView: View {
                             Text("Reply")
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.9)
                         }
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(Color.figmaBlue)
+                    .frame(minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 40)
                     .disabled(isSending || newCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
                 .padding()
@@ -635,6 +646,7 @@ private struct CommunityThreadView: View {
                 secondaryButton: .cancel()
             )
         }
+        .brainMailDynamicTypeRange()
     }
 
     private func startListeners() {
@@ -873,13 +885,16 @@ private struct CommunityCommentRow: View {
     let onReport: () -> Void
     let onBlock: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showBlockConfirm = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(comment.text)
+                .font(.body)
                 .foregroundColor(.black)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.trailing, canBlock ? (dynamicTypeSize.brainMailUsesAccessibilityLayout ? 44 : 30) : 0)
 
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 10) {
@@ -921,6 +936,7 @@ private struct CommunityCommentRow: View {
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
+                .accessibilityLabel("Comment options")
                 .padding(.top, 6)
                 .padding(.trailing, 6)
             }
@@ -936,10 +952,23 @@ private struct CommunityCommentRow: View {
                 Text("You won’t see any more posts or replies from this user.")
             }
         )
-        .dynamicTypeSize(.xSmall ... .xxLarge)
+        .brainMailDynamicTypeRange()
     }
 
+    @ViewBuilder
     private var commentActionButtons: some View {
+        if dynamicTypeSize.brainMailUsesAccessibilityLayout {
+            ScrollView(.horizontal, showsIndicators: false) {
+                commentActionButtonRow
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            commentActionButtonRow
+                .fixedSize(horizontal: true, vertical: false)
+        }
+    }
+
+    private var commentActionButtonRow: some View {
         HStack(spacing: 6) {
             Button(action: onLike) {
                 CommunityCountActionLabel(
@@ -957,7 +986,6 @@ private struct CommunityCommentRow: View {
             }
             .buttonStyle(.plain)
         }
-        .fixedSize(horizontal: true, vertical: false)
     }
 
     private var timestampLabel: some View {
@@ -965,7 +993,7 @@ private struct CommunityCommentRow: View {
             .font(.caption)
             .foregroundColor(.gray.opacity(0.9))
             .lineLimit(1)
-            .minimumScaleFactor(0.78)
+            .minimumScaleFactor(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 0.9 : 0.78)
     }
 
     private func timeAgoString(from date: Date) -> String {

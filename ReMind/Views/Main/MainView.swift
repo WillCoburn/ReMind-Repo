@@ -6,6 +6,7 @@ import SwiftUI
 struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var net: NetworkMonitor
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject private var revenueCat: RevenueCatManager = .shared
     var isPageActive: Bool = true
 
@@ -39,23 +40,32 @@ struct MainView: View {
             let safeBottom = max(proxy.safeAreaInsets.bottom, 16)
             let viewportWidth = max(proxy.size.width, 1)
             let topContentWidth = constrainedTopContentWidth(for: viewportWidth)
-            let entryInputHeight = entryInputHeight(for: proxy.size.height, isFocused: isComposing)
+            let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
+            let entryInputHeight = entryInputHeight(
+                for: proxy.size.height,
+                isFocused: isComposing,
+                usesAccessibilityLayout: usesAccessibilityLayout
+            )
 
             ScrollViewReader { scrollProxy in
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: isComposing ? 14 : 18) {
-                        VStack(spacing: isComposing ? 12 : 18) {
-                            VStack(spacing: isComposing ? 12 : 18) {
+                    VStack(spacing: isComposing ? (usesAccessibilityLayout ? 18 : 14) : (usesAccessibilityLayout ? 24 : 18)) {
+                        VStack(spacing: isComposing ? (usesAccessibilityLayout ? 16 : 12) : (usesAccessibilityLayout ? 22 : 18)) {
+                            VStack(spacing: isComposing ? (usesAccessibilityLayout ? 16 : 12) : (usesAccessibilityLayout ? 22 : 18)) {
                                 logoHeader
-                                    .scaleEffect(isComposing ? 0.86 : 1)
+                                    .scaleEffect(isComposing && !usesAccessibilityLayout ? 0.86 : 1)
                                     .opacity(isComposing ? 0.82 : 1)
-                                    .frame(height: isComposing ? 72 : 90)
+                                    .frame(height: logoHeight(isComposing: isComposing, usesAccessibilityLayout: usesAccessibilityLayout))
                                     .padding(.top, safeTop + (isComposing ? 6 : 12))
                                     .id(HomeScrollTarget.top)
 
                                 recentReminderSection(
                                     isComposing: isComposing,
-                                    maxBubbleWidth: recentReminderBubbleMaxWidth(for: topContentWidth)
+                                    maxBubbleWidth: recentReminderBubbleMaxWidth(
+                                        for: topContentWidth,
+                                        usesAccessibilityLayout: usesAccessibilityLayout
+                                    ),
+                                    usesAccessibilityLayout: usesAccessibilityLayout
                                 )
                             }
                             .contentShape(Rectangle())
@@ -179,7 +189,7 @@ struct MainView: View {
             }
             .tint(.figmaBlue)
             .toolbar(.hidden, for: .navigationBar)
-            .dynamicTypeSize(.xSmall ... .xxLarge)
+            .brainMailDynamicTypeRange()
     }
 
     private var logoHeader: some View {
@@ -216,8 +226,14 @@ struct MainView: View {
     }
 
     @ViewBuilder
-    private func recentReminderSection(isComposing: Bool, maxBubbleWidth: CGFloat) -> some View {
-        if isComposing {
+    private func recentReminderSection(
+        isComposing: Bool,
+        maxBubbleWidth: CGFloat,
+        usesAccessibilityLayout: Bool
+    ) -> some View {
+        if isComposing && usesAccessibilityLayout {
+            EmptyView()
+        } else if isComposing {
             recentReminderCard(maxBubbleWidth: maxBubbleWidth)
                 .opacity(0.38)
                 .scaleEffect(0.97, anchor: .top)
@@ -226,11 +242,14 @@ struct MainView: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         } else {
-            recentReminderCard(maxBubbleWidth: maxBubbleWidth)
+            recentReminderCard(
+                maxBubbleWidth: maxBubbleWidth,
+                usesAccessibilityLayout: usesAccessibilityLayout
+            )
         }
     }
 
-    private func recentReminderCard(maxBubbleWidth: CGFloat) -> some View {
+    private func recentReminderCard(maxBubbleWidth: CGFloat, usesAccessibilityLayout: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Most recent reminder")
                 .font(.subheadline.weight(.semibold))
@@ -242,11 +261,24 @@ struct MainView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } else {
-                HStack(spacing: 10) {
-                    Image(systemName: "message")
-                        .font(.subheadline.weight(.semibold))
-                    Text("No received reminders yet")
-                        .font(.subheadline)
+                Group {
+                    if usesAccessibilityLayout {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Image(systemName: "message")
+                                .font(.title3.weight(.semibold))
+                            Text("No received reminders yet")
+                                .font(.body)
+                                .lineLimit(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    } else {
+                        HStack(spacing: 10) {
+                            Image(systemName: "message")
+                                .font(.subheadline.weight(.semibold))
+                            Text("No received reminders yet")
+                                .font(.subheadline)
+                        }
+                    }
                 }
                 .foregroundStyle(Color.black.opacity(0.38))
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -335,22 +367,28 @@ struct MainView: View {
         .accessibilityElement(children: .contain)
     }
 
+    @ViewBuilder
     private func actionIconButton(
         title: String,
         systemImage: String,
         isEnabled: Bool,
         action: @escaping () -> Void
     ) -> some View {
+        let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
+        let circleSize = usesAccessibilityLayout ? HomeLayout.accessibilityActionIconCircleSize : HomeLayout.actionIconCircleSize
+        let buttonWidth = usesAccessibilityLayout ? HomeLayout.accessibilityActionIconButtonWidth : HomeLayout.actionIconButtonWidth
+        let buttonHeight = usesAccessibilityLayout ? HomeLayout.accessibilityActionIconButtonHeight : 104
+
         Button(action: action) {
             VStack(spacing: 8) {
                 ZStack {
                     Circle()
                         .fill(Color.figmaBlue)
-                        .frame(width: HomeLayout.actionIconCircleSize, height: HomeLayout.actionIconCircleSize)
+                        .frame(width: circleSize, height: circleSize)
                         .shadow(color: Color.figmaBlue.opacity(0.24), radius: 12, x: 0, y: 7)
 
                     Image(systemName: systemImage)
-                        .font(.system(size: 24, weight: .semibold))
+                        .font(.system(size: usesAccessibilityLayout ? 27 : 24, weight: .semibold))
                         .foregroundStyle(.white)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -359,10 +397,11 @@ struct MainView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.black.opacity(0.68))
                     .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
+                    .lineLimit(usesAccessibilityLayout ? 3 : 2)
+                    .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.82)
             }
-            .frame(width: HomeLayout.actionIconButtonWidth, height: 104, alignment: .top)
+            .frame(width: buttonWidth, alignment: .top)
+            .frame(minHeight: buttonHeight, alignment: .top)
             .opacity(isEnabled ? 1 : 0.45)
         }
         .disabled(!isEnabled)
@@ -483,18 +522,24 @@ struct MainView: View {
         max(viewportWidth - HomeLayout.horizontalPadding * 2, 1)
     }
 
-    private func recentReminderBubbleMaxWidth(for contentWidth: CGFloat) -> CGFloat {
+    private func recentReminderBubbleMaxWidth(for contentWidth: CGFloat, usesAccessibilityLayout: Bool) -> CGFloat {
         let availableCardContentWidth = max(contentWidth - 32, 1)
-        return max(availableCardContentWidth * 0.84, 1)
+        return max(availableCardContentWidth * (usesAccessibilityLayout ? 0.96 : 0.84), 1)
     }
 
     private func actionRowSidePadding(for viewportWidth: CGFloat, iconSpacing: CGFloat) -> CGFloat {
-        let groupWidth = HomeLayout.actionIconButtonWidth * 4 + iconSpacing * 3
+        let buttonWidth = dynamicTypeSize.brainMailUsesAccessibilityLayout
+            ? HomeLayout.accessibilityActionIconButtonWidth
+            : HomeLayout.actionIconButtonWidth
+        let groupWidth = buttonWidth * 4 + iconSpacing * 3
         return max((viewportWidth - groupWidth) / 2, 0)
     }
 
     private func actionIconSpacing(for viewportWidth: CGFloat) -> CGFloat {
-        let buttonWidth = HomeLayout.actionIconButtonWidth * 4
+        let itemWidth = dynamicTypeSize.brainMailUsesAccessibilityLayout
+            ? HomeLayout.accessibilityActionIconButtonWidth
+            : HomeLayout.actionIconButtonWidth
+        let buttonWidth = itemWidth * 4
         let availableForCenteredRow = max(viewportWidth - HomeLayout.minimumCenteredActionEdgeInset * 2, 1)
         let fittingSpacing = (availableForCenteredRow - buttonWidth) / 3
         return min(
@@ -503,17 +548,42 @@ struct MainView: View {
         )
     }
 
-    private func entryInputHeight(for availableHeight: CGFloat, isFocused: Bool) -> CGFloat {
-        guard isFocused else { return HomeLayout.collapsedEntryInputHeight }
+    private func entryInputHeight(
+        for availableHeight: CGFloat,
+        isFocused: Bool,
+        usesAccessibilityLayout: Bool
+    ) -> CGFloat {
+        guard isFocused else {
+            return usesAccessibilityLayout
+                ? HomeLayout.accessibilityCollapsedEntryInputHeight
+                : HomeLayout.collapsedEntryInputHeight
+        }
+
+        if usesAccessibilityLayout {
+            return min(max(availableHeight * 0.24, 168), 230)
+        }
+
         return min(max(availableHeight * 0.17, 124), 154)
+    }
+
+    private func logoHeight(isComposing: Bool, usesAccessibilityLayout: Bool) -> CGFloat {
+        if usesAccessibilityLayout {
+            return isComposing ? 54 : 70
+        }
+
+        return isComposing ? 72 : 90
     }
 }
 
 private enum HomeLayout {
     static let horizontalPadding: CGFloat = 24
     static let collapsedEntryInputHeight: CGFloat = 112
+    static let accessibilityCollapsedEntryInputHeight: CGFloat = 136
     static let actionIconCircleSize: CGFloat = 64
+    static let accessibilityActionIconCircleSize: CGFloat = 72
     static let actionIconButtonWidth: CGFloat = 68
+    static let accessibilityActionIconButtonWidth: CGFloat = 92
+    static let accessibilityActionIconButtonHeight: CGFloat = 132
     static let actionIconSpacing: CGFloat = 18
     static let minimumActionIconSpacing: CGFloat = 8
     static let minimumCenteredActionEdgeInset: CGFloat = 12
@@ -660,6 +730,7 @@ private struct HomePlaceholderScreen: View {
 
 private struct HelpGuideSheet: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var animateHero = false
 
     var body: some View {
@@ -668,14 +739,15 @@ private struct HelpGuideSheet: View {
                 .ignoresSafeArea()
 
             GeometryReader { proxy in
+                let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
                 let horizontalPadding = min(max(proxy.size.width * 0.055, 18), 28)
                 let contentWidth = max(1, min(520, proxy.size.width - horizontalPadding * 2))
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 18) {
+                    VStack(spacing: usesAccessibilityLayout ? 22 : 18) {
                         HelpHeroIllustration(animate: animateHero)
-                            .frame(height: proxy.size.height < 660 ? 148 : 184)
-                            .padding(.top, 18)
+                            .frame(height: usesAccessibilityLayout ? 124 : (proxy.size.height < 660 ? 148 : 184))
+                            .padding(.top, usesAccessibilityLayout ? 12 : 18)
                             .accessibilityHidden(true)
 
                         VStack(spacing: 8) {
@@ -683,6 +755,7 @@ private struct HelpGuideSheet: View {
                                 .font(.title2.weight(.semibold))
                                 .foregroundStyle(Color.black.opacity(0.82))
                                 .multilineTextAlignment(.center)
+                                .lineLimit(nil)
                                 .fixedSize(horizontal: false, vertical: true)
 
                             Text("I wanted this page to feel less like a manual and more like a quick note from the person who made the thing.")
@@ -762,7 +835,7 @@ private struct HelpGuideSheet: View {
         .navigationBarTitleDisplayMode(.inline)
         .tint(.figmaBlue)
         .onAppear { restartHeroAnimation() }
-        .dynamicTypeSize(.xSmall ... .accessibility4)
+        .brainMailDynamicTypeRange()
     }
 
     private var pricingText: String {
@@ -845,6 +918,8 @@ private struct HelpFloatingNote: View {
 }
 
 private struct HelpSectionCard<Content: View>: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let title: String
     let systemImage: String
     let content: Content
@@ -861,22 +936,16 @@ private struct HelpSectionCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.figmaBlue)
-                    .frame(width: 30, height: 30)
-                    .background(
-                        Circle()
-                            .fill(Color.figmaBlue.opacity(0.09))
-                    )
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    helpHeaderIcon
+                    helpHeaderTitle
+                }
 
-                Text(title)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(Color.black.opacity(0.80))
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 8) {
+                    helpHeaderIcon
+                    helpHeaderTitle
+                }
             }
 
             content
@@ -893,9 +962,34 @@ private struct HelpSectionCard<Content: View>: View {
         )
         .shadow(color: Color.black.opacity(0.035), radius: 14, x: 0, y: 8)
     }
+
+    private var helpHeaderIcon: some View {
+        Image(systemName: systemImage)
+            .font(.system(size: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 18 : 16, weight: .semibold))
+            .foregroundStyle(Color.figmaBlue)
+            .frame(
+                width: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 34 : 30,
+                height: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 34 : 30
+            )
+            .background(
+                Circle()
+                    .fill(Color.figmaBlue.opacity(0.09))
+            )
+    }
+
+    private var helpHeaderTitle: some View {
+        Text(title)
+            .font(.headline.weight(.semibold))
+            .foregroundStyle(Color.black.opacity(0.80))
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
 }
 
 private struct HelpBodyText: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let text: String
 
     init(_ text: String) {
@@ -904,7 +998,7 @@ private struct HelpBodyText: View {
 
     var body: some View {
         Text(text)
-            .font(.subheadline)
+            .font(dynamicTypeSize.brainMailUsesAccessibilityLayout ? .body : .subheadline)
             .foregroundStyle(Color.black.opacity(0.62))
             .lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)
@@ -913,19 +1007,24 @@ private struct HelpBodyText: View {
 }
 
 private struct HelpBullet: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let icon: String
     let text: String
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 15 : 13, weight: .semibold))
                 .foregroundStyle(Color.figmaBlue.opacity(0.86))
-                .frame(width: 18, height: 18)
+                .frame(
+                    width: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 22 : 18,
+                    height: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 22 : 18
+                )
                 .padding(.top, 1)
 
             Text(text)
-                .font(.subheadline)
+                .font(dynamicTypeSize.brainMailUsesAccessibilityLayout ? .body : .subheadline)
                 .foregroundStyle(Color.black.opacity(0.64))
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)

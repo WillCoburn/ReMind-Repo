@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct CommunityPostRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let post: CommunityPost
     let isLiked: Bool
     let isReported: Bool
@@ -21,6 +23,7 @@ struct CommunityPostRow: View {
                 .font(.body)
                 .foregroundColor(.black)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.trailing, (!post.authorId.isEmpty && onBlock != nil) ? (dynamicTypeSize.brainMailUsesAccessibilityLayout ? 44 : 30) : 0)
 
             ViewThatFits(in: .horizontal) {
                 horizontalMetaRow
@@ -50,6 +53,7 @@ struct CommunityPostRow: View {
                         .frame(width: 44, height: 44, alignment: .center) // 👈 Apple-friendly hitbox
                         .contentShape(Rectangle())
                 }
+                .accessibilityLabel("Post options")
 
                 // Match the card’s content inset (same “right padding” feel as timestamp)
                 .padding(.trailing, 16)
@@ -70,7 +74,7 @@ struct CommunityPostRow: View {
                 Text("You won’t see any more posts from this user.")
             }
         )
-        .dynamicTypeSize(.xSmall ... .xxLarge)
+        .brainMailDynamicTypeRange()
     }
 
     private var horizontalMetaRow: some View {
@@ -90,7 +94,22 @@ struct CommunityPostRow: View {
         }
     }
 
+    @ViewBuilder
     private var actionButtons: some View {
+        Group {
+            if dynamicTypeSize.brainMailUsesAccessibilityLayout {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    actionButtonRow
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                actionButtonRow
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+    }
+
+    private var actionButtonRow: some View {
         HStack(spacing: 6) {
             if showsActions {
                 Button {
@@ -119,7 +138,6 @@ struct CommunityPostRow: View {
                 .buttonStyle(PlainButtonStyle())
             }
         }
-        .fixedSize(horizontal: true, vertical: false)
     }
 
     private var timestampLabel: some View {
@@ -127,7 +145,7 @@ struct CommunityPostRow: View {
             .font(.caption)
             .foregroundColor(.gray.opacity(0.9))
             .lineLimit(1)
-            .minimumScaleFactor(0.78)
+            .minimumScaleFactor(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 0.9 : 0.78)
     }
 
     private func metaLabel(_ title: String, systemImage: String) -> some View {
@@ -150,28 +168,34 @@ struct CommunityPostRow: View {
 }
 
 struct CommunityCountActionLabel: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let title: String
     let systemImage: String
 
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: systemImage)
-                .font(.system(size: 14, weight: .semibold))
-                .frame(width: 16, height: 16)
+                .font(.subheadline.weight(.semibold))
+                .frame(width: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 20 : 16, height: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 20 : 16)
 
             Text(title)
                 .font(.system(.subheadline, design: .rounded).weight(.semibold))
                 .monospacedDigit()
                 .lineLimit(1)
-                .minimumScaleFactor(0.65)
-                .frame(minWidth: 18, alignment: .leading)
+                .minimumScaleFactor(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 0.9 : 0.78)
+                .frame(minWidth: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 22 : 18, alignment: .leading)
         }
         .foregroundColor(.figmaBlue)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 6)
-        .frame(minWidth: 54, minHeight: 34, alignment: .center)
+        .padding(.horizontal, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 11 : 9)
+        .padding(.vertical, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 8 : 6)
+        .frame(
+            minWidth: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 62 : 54,
+            minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 42 : 34,
+            alignment: .center
+        )
         .contentShape(Rectangle())
         .fixedSize(horizontal: true, vertical: false)
-        .dynamicTypeSize(.xSmall ... .xxLarge)
+        .brainMailDynamicTypeRange()
     }
 }

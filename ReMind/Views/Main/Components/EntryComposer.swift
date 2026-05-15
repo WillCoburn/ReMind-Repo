@@ -5,6 +5,8 @@ import SwiftUI
 import UIKit
 
 struct EntryComposer: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @Binding var text: String
     @Binding var isSubmitting: Bool
     var isDisabled: Bool
@@ -21,13 +23,14 @@ struct EntryComposer: View {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let hasText = !trimmedText.isEmpty
         let isExpanded = isEntryFieldFocused
+        let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
 
         VStack(alignment: .leading, spacing: 12) {
             Text("New reminder")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(isExpanded ? Color.figmaBlue : Color.black.opacity(0.72))
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
+                .lineLimit(usesAccessibilityLayout ? 2 : 1)
+                .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.82)
 
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -38,12 +41,12 @@ struct EntryComposer: View {
                     .padding(.top, 12)
                     .padding(.leading, 14)
                     .padding(.trailing, 14)
-                    .padding(.bottom, 58)
+                    .padding(.bottom, usesAccessibilityLayout ? 76 : 58)
                     .frame(height: inputHeight, alignment: .topLeading)
                     .background(Color.clear)
                     .scrollContentBackground(.hidden)
                     .foregroundColor(Color.black.opacity(0.84))
-                    .font(.system(size: 17))
+                    .font(.body)
                     .textInputAutocapitalization(.sentences)
 
                 if !hasText {
@@ -51,7 +54,8 @@ struct EntryComposer: View {
                         .foregroundColor(Color.black.opacity(0.34))
                         .padding(.horizontal, 18)
                         .padding(.vertical, 16)
-                        .font(.system(size: 17))
+                        .font(.body)
+                        .fixedSize(horizontal: false, vertical: true)
                         .allowsHitTesting(false)
                 }
 
@@ -90,7 +94,7 @@ struct EntryComposer: View {
         .animation(.easeInOut(duration: 0.2), value: hasText)
         .accessibilityElement(children: .contain)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .dynamicTypeSize(.xSmall ... .xxLarge)
+        .brainMailDynamicTypeRange()
     }
 
     private var accessibilityHint: String {
@@ -99,30 +103,41 @@ struct EntryComposer: View {
     }
 
     private func bottomControls(hasText: Bool, isExpanded: Bool) -> some View {
-        HStack(spacing: 10) {
-            if isExpanded || hasText {
-                Button {
-                    onCancel()
-                } label: {
-                    Label("Cancel", systemImage: "xmark")
-                        .labelStyle(.titleAndIcon)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.black.opacity(0.58))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.82)
-                        .padding(.horizontal, 13)
-                        .frame(height: 34)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(Color.white.opacity(0.68))
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Cancel reminder")
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                cancelButton(hasText: hasText, isExpanded: isExpanded)
+                Spacer(minLength: 8)
+                saveButton()
             }
 
-            Spacer(minLength: 8)
-            saveButton()
+            VStack(alignment: .trailing, spacing: 8) {
+                cancelButton(hasText: hasText, isExpanded: isExpanded)
+                saveButton()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func cancelButton(hasText: Bool, isExpanded: Bool) -> some View {
+        if isExpanded || hasText {
+            Button {
+                onCancel()
+            } label: {
+                Label("Cancel", systemImage: "xmark")
+                    .labelStyle(.titleAndIcon)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.black.opacity(0.58))
+                    .lineLimit(1)
+                    .minimumScaleFactor(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 0.92 : 0.82)
+                    .padding(.horizontal, 13)
+                    .frame(minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 42 : 34)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.white.opacity(0.68))
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Cancel reminder")
         }
     }
 
@@ -143,9 +158,9 @@ struct EntryComposer: View {
             }
             .foregroundStyle(isDisabled ? Color.figmaBlue.opacity(0.55) : .white)
             .padding(.horizontal, 16)
-            .frame(height: 34)
+            .frame(minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 42 : 34)
             .lineLimit(1)
-            .minimumScaleFactor(0.82)
+            .minimumScaleFactor(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 0.92 : 0.82)
             .background(
                 Capsule(style: .continuous)
                     .fill(isDisabled ? Color.figmaBlue.opacity(0.14) : Color.figmaBlue)

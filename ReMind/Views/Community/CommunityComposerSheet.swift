@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CommunityComposerSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var text: String = ""
     @State private var isSubmitting = false
@@ -33,13 +34,16 @@ struct CommunityComposerSheet: View {
                                 .compositingGroup()
                         )
                         .foregroundColor(.black)
+                        .font(.body)
                         .focused($isTextEditorFocused)
                         .overlay(alignment: .topLeading) {
                             if text.isEmpty {
                                 Text("Share something you found uplifting or meaningful...")
                                     .foregroundColor(.gray)
+                                    .font(.body)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 16)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
 
@@ -97,7 +101,9 @@ struct CommunityComposerSheet: View {
                         .font(.headline)
                         .foregroundColor(.white)
                         .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 12 : 10)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.9)
                         .background(
                             Capsule()
                                 .fill(Color.figmaBlue)
@@ -121,7 +127,7 @@ struct CommunityComposerSheet: View {
                     Text(errorMessage ?? "")
                 }
             )
-            .dynamicTypeSize(.xSmall ... .xxLarge)
+            .brainMailDynamicTypeRange()
         }
     }
 

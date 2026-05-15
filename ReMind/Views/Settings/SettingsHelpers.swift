@@ -27,6 +27,25 @@ enum SettingsHelpers {
         return id
     }
 
+    static func timeZoneCityDisplayName(_ id: String) -> String {
+        let city = id.split(separator: "/").last.map(String.init) ?? id
+        return city.replacingOccurrences(of: "_", with: " ")
+    }
+
+    static func timeZoneCityDisplayNameWithGMT(_ id: String, at date: Date = Date()) -> String {
+        let city = timeZoneCityDisplayName(id)
+        guard let tz = TimeZone(identifier: id) else { return city }
+
+        let totalMinutes = tz.secondsFromGMT(for: date) / 60
+        let sign = totalMinutes >= 0 ? "+" : "-"
+        let absoluteMinutes = abs(totalMinutes)
+        let hours = absoluteMinutes / 60
+        let minutes = absoluteMinutes % 60
+        let offset = minutes == 0 ? "\(sign)\(hours)" : "\(sign)\(hours):\(String(format: "%02d", minutes))"
+
+        return "\(city) (GMT\(offset))"
+    }
+
     static func usTimeZones() -> [String] {
         var ids = TimeZone.knownTimeZoneIdentifiers.filter {
             $0.hasPrefix("US/") || $0.hasPrefix("America/")
