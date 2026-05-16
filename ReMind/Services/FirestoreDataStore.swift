@@ -63,7 +63,8 @@ public final class FirestoreDataStore: DataStore, @unchecked Sendable {
         try await doc.setData([
             "text": trimmed,
             "createdAt": FieldValue.serverTimestamp(),
-            "sent": false
+            "sent": false,
+            "deleted": false
         ])
 
         // Local model (createdAt will be resolved on next fetch)
@@ -88,13 +89,17 @@ public final class FirestoreDataStore: DataStore, @unchecked Sendable {
             let ts = data["createdAt"] as? Timestamp
             let sentAt = data["sentAt"] as? Timestamp
             let sent = data["sent"] as? Bool ?? false
+            let deleted = data["deleted"] as? Bool ?? data["archived"] as? Bool ?? false
+            let deletedAt = data["deletedAt"] as? Timestamp
 
             return Entry(
                 id: doc.documentID,
                 text: text,
                 createdAt: ts?.dateValue(),
                 sentAt: sentAt?.dateValue(),
-                sent: sent
+                sent: sent,
+                deleted: deleted,
+                deletedAt: deletedAt?.dateValue()
             )
         }
     }

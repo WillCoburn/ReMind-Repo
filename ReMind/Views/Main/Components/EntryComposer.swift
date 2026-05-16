@@ -38,6 +38,7 @@ struct EntryComposer: View {
 
                 TextEditor(text: $text)
                     .focused($isEntryFieldFocused)
+                    .accessibilityIdentifier("home.entryTextEditor")
                     .padding(.top, 12)
                     .padding(.leading, 14)
                     .padding(.trailing, 14)

@@ -9,18 +9,24 @@ public struct Entry: Identifiable, Sendable, Equatable {
     public var createdAt: Date?
     public var sentAt: Date?
     public var sent: Bool
+    public var deleted: Bool
+    public var deletedAt: Date?
 
     public init(
         id: String,
         text: String,
         createdAt: Date? = nil,
         sentAt: Date? = nil,
-        sent: Bool = false
+        sent: Bool = false,
+        deleted: Bool = false,
+        deletedAt: Date? = nil
     ) {
         self.id = id
         self.text = text
         self.createdAt = createdAt
         self.sentAt = sentAt
         self.sent = sent
+        self.deleted = deleted
+        self.deletedAt = deletedAt
     }
 }

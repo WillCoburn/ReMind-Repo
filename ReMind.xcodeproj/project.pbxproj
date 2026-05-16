@@ -47,6 +47,7 @@
 		D23CFAF92ECAAB0F00FEBF3D /* CommunityComposerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */; };
 		D257852F2EE53D80007D13FA /* SendNowSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D257852E2EE53D7C007D13FA /* SendNowSheet.swift */; };
 		D25785312EE6212F007D13FA /* Deleting Account Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25785302EE62128007D13FA /* Deleting Account Sheet.swift */; };
+		D2FA10022F5A000000000001 /* InspirationBankSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2FA10012F5A000000000001 /* InspirationBankSheet.swift */; };
 		D25C557E2EED16C300A5240E /* CodeEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */; };
 		D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */; };
 		D25C55822EED206400A5240E /* KeyboardObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C55812EED206400A5240E /* KeyboardObserver.swift */; };
@@ -177,6 +178,7 @@
 		D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityComposerSheet.swift; sourceTree = "<group>"; };
 		D257852E2EE53D7C007D13FA /* SendNowSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendNowSheet.swift; sourceTree = "<group>"; };
 		D25785302EE62128007D13FA /* Deleting Account Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Deleting Account Sheet.swift"; sourceTree = "<group>"; };
+		D2FA10012F5A000000000001 /* InspirationBankSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspirationBankSheet.swift; sourceTree = "<group>"; };
 		D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeEntryScreen.swift; sourceTree = "<group>"; };
 		D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEntryScreen.swift; sourceTree = "<group>"; };
 		D25C55812EED206400A5240E /* KeyboardObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardObserver.swift; sourceTree = "<group>"; };
@@ -429,6 +431,7 @@
 			children = (
 				D25785302EE62128007D13FA /* Deleting Account Sheet.swift */,
 				D257852E2EE53D7C007D13FA /* SendNowSheet.swift */,
+				D2FA10012F5A000000000001 /* InspirationBankSheet.swift */,
 				D22EF4992E7B30E700810204 /* ExportSheet.swift */,
 			);
 			path = Sheets;
@@ -804,6 +807,7 @@
 				D2ED48322EC8FB020030CBA7 /* ReMindBackgrounds.swift in Sources */,
 				D21FF4BF2ECED5D70054E7F8 /* ArchivePlaceholderView.swift in Sources */,
 				D257852F2EE53D80007D13FA /* SendNowSheet.swift in Sources */,
+				D2FA10022F5A000000000001 /* InspirationBankSheet.swift in Sources */,
 				D2BEC27D2EAC52EB009E3698 /* UserSettingsSync.swift in Sources */,
 				D23CFAF12ECAAADB00FEBF3D /* CommunityAPI.swift in Sources */,
 				D2BEC2682E7E3525009E3698 /* Haptics.swift in Sources */,

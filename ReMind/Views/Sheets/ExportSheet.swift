@@ -151,7 +151,7 @@ struct ExportSheet: View {
         defer { isExporting = false }
 
         do {
-            let url = try await exporter.exportAndSend(entries: appVM.entries)
+            let url = try await exporter.exportAndSend(entries: appVM.activeEntries)
             print("✅ exportAndSend returned:", url)
             self.link = url
             self.showToast = true

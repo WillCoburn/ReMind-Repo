@@ -15,9 +15,12 @@ struct MainView: View {
     @State private var showSendNowSheet = false
     @State private var showInspirationSheet = false
     @State private var showHelpSheet = false
+    @State private var showDeleteReminderConfirmation = false
+    @State private var pendingDeleteReminder: LastReminder?
     @State private var showSuccessMessage = false
     @State private var pulseEditor = false
     @State private var isSubmitting = false
+    @State private var isDeletingLatestReminder = false
     @FocusState private var isEntryFieldFocused: Bool
 
     // Alerts
@@ -30,7 +33,7 @@ struct MainView: View {
     var body: some View {
         // Observe RevenueCat updates so entitlement changes redraw instantly.
         let _ = revenueCat.entitlementActive
-        let count = appVM.entries.count
+        let count = appVM.activeEntries.count
 
         let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected
@@ -99,7 +102,7 @@ struct MainView: View {
                         }
                         .frame(width: topContentWidth, alignment: .top)
 
-                        actionIconRow(count: count, viewportWidth: viewportWidth)
+                        actionIconActions(count: count, viewportWidth: viewportWidth)
                             .frame(width: viewportWidth)
                             .opacity(isComposing ? 0.72 : 1)
                             .scaleEffect(isComposing ? 0.98 : 1)
@@ -157,11 +160,7 @@ struct MainView: View {
             }
             .sheet(isPresented: $showInspirationSheet) {
                 NavigationStack {
-                    HomePlaceholderScreen(
-                        title: "Inspiration Bank",
-                        systemImage: "lightbulb.fill",
-                        message: "Inspiration Bank coming soon"
-                    )
+                    InspirationBankSheet()
                 }
             }
             .sheet(isPresented: $showHelpSheet) {
@@ -190,6 +189,22 @@ struct MainView: View {
             .tint(.figmaBlue)
             .toolbar(.hidden, for: .navigationBar)
             .brainMailDynamicTypeRange()
+            .overlay {
+                if showDeleteReminderConfirmation, let pendingDeleteReminder {
+                    BrainMailConfirmationOverlay(
+                        title: "Remove reminder?",
+                        message: "Are you sure you want to remove this reminder from your bank?",
+                        confirmTitle: "Yes, delete",
+                        cancelTitle: "Cancel",
+                        symbolName: "trash",
+                        onConfirm: {
+                            confirmDeleteReminder(pendingDeleteReminder)
+                        },
+                        onCancel: cancelDeleteReminder
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                }
+            }
     }
 
     private var logoHeader: some View {
@@ -256,9 +271,14 @@ struct MainView: View {
                 .foregroundStyle(Color.black.opacity(0.72))
 
             if let reminder = mostRecentReceivedReminder {
-                HStack(alignment: .bottom, spacing: 0) {
-                    ReceivedMessageBubble(text: reminder.text, maxBubbleWidth: maxBubbleWidth)
+                HStack(alignment: .center, spacing: 8) {
+                    ReceivedMessageBubble(
+                        text: reminder.text,
+                        maxBubbleWidth: max(maxBubbleWidth - 48, 1)
+                    )
                         .frame(maxWidth: .infinity, alignment: .leading)
+
+                    deleteReminderButton(for: reminder)
                 }
             } else {
                 Group {
@@ -311,6 +331,53 @@ struct MainView: View {
         appVM.latestReminderForDisplay
     }
 
+    private func deleteReminderButton(for reminder: LastReminder) -> some View {
+        let isDeleted = appVM.isReminderDeleted(reminder)
+        let iconSize: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 18 : 15
+        let buttonSize: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 42 : 36
+
+        return Button {
+            pendingDeleteReminder = reminder
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                showDeleteReminderConfirmation = true
+            }
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(isDeleted ? 0.48 : 0.74))
+                    .overlay(
+                        Circle()
+                            .stroke(Color.black.opacity(isDeleted ? 0.04 : 0.06), lineWidth: 1)
+                    )
+
+                if isDeletingLatestReminder && !isDeleted {
+                    ProgressView()
+                        .scaleEffect(0.74)
+                        .tint(Color.figmaBlue.opacity(0.62))
+                } else {
+                    Image(systemName: "trash")
+                        .font(.system(size: iconSize, weight: .semibold))
+                        .foregroundStyle(isDeleted ? Color.black.opacity(0.24) : Color.figmaBlue.opacity(0.58))
+                }
+            }
+            .frame(width: buttonSize, height: buttonSize)
+            .shadow(color: Color.black.opacity(isDeleted ? 0 : 0.035), radius: 8, x: 0, y: 4)
+        }
+        .buttonStyle(.plain)
+        .disabled(isDeleted || isDeletingLatestReminder)
+        .accessibilityLabel(isDeleted ? "Reminder removed from bank" : "Remove reminder from bank")
+        .accessibilityIdentifier("home.recentReminder.delete")
+    }
+
+    @ViewBuilder
+    private func actionIconActions(count: Int, viewportWidth: CGFloat) -> some View {
+        if dynamicTypeSize.brainMailUsesAccessibilityLayout {
+            actionIconGrid(count: count, viewportWidth: viewportWidth)
+        } else {
+            actionIconRow(count: count, viewportWidth: viewportWidth)
+        }
+    }
+
     private func actionIconRow(count: Int, viewportWidth: CGFloat) -> some View {
         let canUseGuardedActions = net.isConnected && count >= goal
         let iconSpacing = actionIconSpacing(for: viewportWidth)
@@ -323,6 +390,7 @@ struct MainView: View {
                         title: "Send One Now",
                         systemImage: "bolt.fill",
                         isEnabled: canUseGuardedActions,
+                        style: .compact,
                         action: handleSendNowTap
                     )
 
@@ -330,6 +398,7 @@ struct MainView: View {
                         title: "Full PDF",
                         systemImage: "doc.fill",
                         isEnabled: canUseGuardedActions,
+                        style: .compact,
                         action: handleExportTap
                     )
 
@@ -337,6 +406,7 @@ struct MainView: View {
                         title: "Inspiration Bank",
                         systemImage: "lightbulb.fill",
                         isEnabled: true,
+                        style: .compact,
                         action: { showInspirationSheet = true }
                     )
 
@@ -344,6 +414,7 @@ struct MainView: View {
                         title: "Help",
                         systemImage: "questionmark.circle.fill",
                         isEnabled: true,
+                        style: .compact,
                         action: { showHelpSheet = true }
                     )
                 }
@@ -367,17 +438,63 @@ struct MainView: View {
         .accessibilityElement(children: .contain)
     }
 
+    private func actionIconGrid(count: Int, viewportWidth: CGFloat) -> some View {
+        let canUseGuardedActions = net.isConnected && count >= goal
+        let gridWidth = actionGridWidth(for: viewportWidth)
+        let columns = [
+            GridItem(.flexible(minimum: HomeLayout.accessibilityActionGridCellMinWidth), spacing: HomeLayout.accessibilityActionGridColumnSpacing),
+            GridItem(.flexible(minimum: HomeLayout.accessibilityActionGridCellMinWidth), spacing: HomeLayout.accessibilityActionGridColumnSpacing)
+        ]
+
+        return LazyVGrid(columns: columns, spacing: HomeLayout.accessibilityActionGridRowSpacing) {
+            actionIconButton(
+                title: "Send One Now",
+                systemImage: "bolt.fill",
+                isEnabled: canUseGuardedActions,
+                style: .accessibilityGrid,
+                action: handleSendNowTap
+            )
+
+            actionIconButton(
+                title: "Full PDF",
+                systemImage: "doc.fill",
+                isEnabled: canUseGuardedActions,
+                style: .accessibilityGrid,
+                action: handleExportTap
+            )
+
+            actionIconButton(
+                title: "Inspiration Bank",
+                systemImage: "lightbulb.fill",
+                isEnabled: true,
+                style: .accessibilityGrid,
+                action: { showInspirationSheet = true }
+            )
+
+            actionIconButton(
+                title: "Help",
+                systemImage: "questionmark.circle.fill",
+                isEnabled: true,
+                style: .accessibilityGrid,
+                action: { showHelpSheet = true }
+            )
+        }
+        .frame(width: gridWidth)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .accessibilityElement(children: .contain)
+    }
+
     @ViewBuilder
     private func actionIconButton(
         title: String,
         systemImage: String,
         isEnabled: Bool,
+        style: HomeActionIconStyle,
         action: @escaping () -> Void
     ) -> some View {
-        let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
-        let circleSize = usesAccessibilityLayout ? HomeLayout.accessibilityActionIconCircleSize : HomeLayout.actionIconCircleSize
-        let buttonWidth = usesAccessibilityLayout ? HomeLayout.accessibilityActionIconButtonWidth : HomeLayout.actionIconButtonWidth
-        let buttonHeight = usesAccessibilityLayout ? HomeLayout.accessibilityActionIconButtonHeight : 104
+        let circleSize = style.circleSize
+        let buttonHeight = style.buttonHeight
 
         Button(action: action) {
             VStack(spacing: 8) {
@@ -388,25 +505,28 @@ struct MainView: View {
                         .shadow(color: Color.figmaBlue.opacity(0.24), radius: 12, x: 0, y: 7)
 
                     Image(systemName: systemImage)
-                        .font(.system(size: usesAccessibilityLayout ? 27 : 24, weight: .semibold))
+                        .font(.system(size: style.iconSize, weight: .semibold))
                         .foregroundStyle(.white)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: style.iconAlignment)
 
                 Text(title)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.black.opacity(0.68))
                     .multilineTextAlignment(.center)
-                    .lineLimit(usesAccessibilityLayout ? 3 : 2)
-                    .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.82)
+                    .lineLimit(style.labelLineLimit)
+                    .minimumScaleFactor(style.minimumLabelScale)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(width: buttonWidth, alignment: .top)
+            .frame(maxWidth: .infinity, alignment: .top)
+            .frame(width: style.buttonWidth, alignment: .top)
             .frame(minHeight: buttonHeight, alignment: .top)
             .opacity(isEnabled ? 1 : 0.45)
         }
         .disabled(!isEnabled)
         .buttonStyle(.plain)
         .accessibilityLabel(title)
+        .accessibilityIdentifier("home.action.\(title)")
     }
 
     private func resetActionRowToLeading(using scrollProxy: ScrollViewProxy, animated: Bool) {
@@ -455,7 +575,7 @@ struct MainView: View {
     }
 
     private func handleExportTap() {
-        let count = appVM.entries.count
+        let count = appVM.activeEntries.count
         guard net.isConnected else { presentOfflineAlert(); return }
         if count < goal { presentLockedAlert(feature: "Export PDF"); return }
         Task {
@@ -466,13 +586,48 @@ struct MainView: View {
     }
 
     private func handleSendNowTap() {
-        let count = appVM.entries.count
+        let count = appVM.activeEntries.count
         guard net.isConnected else { presentOfflineAlert(); return }
         if count < goal { presentLockedAlert(feature: "Send One Now"); return }
         Task {
             let freshOptOut = await appVM.reloadSmsOptOut()
             if freshOptOut { presentOptOutAlert(); return }
             showSendNowSheet = true
+        }
+    }
+
+    private func cancelDeleteReminder() {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            showDeleteReminderConfirmation = false
+        }
+        pendingDeleteReminder = nil
+    }
+
+    private func confirmDeleteReminder(_ reminder: LastReminder) {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            showDeleteReminderConfirmation = false
+        }
+
+        Task {
+            await deleteReminderFromBank(reminder)
+        }
+    }
+
+    private func deleteReminderFromBank(_ reminder: LastReminder) async {
+        guard !isDeletingLatestReminder else { return }
+        isDeletingLatestReminder = true
+        defer {
+            isDeletingLatestReminder = false
+            pendingDeleteReminder = nil
+        }
+
+        do {
+            try await appVM.softDeleteReminderFromBank(reminder)
+            Haptics.success()
+        } catch {
+            alertTitle = "Couldn't remove reminder"
+            alertMessage = error.localizedDescription
+            showAlert = true
         }
     }
 
@@ -548,6 +703,11 @@ struct MainView: View {
         )
     }
 
+    private func actionGridWidth(for viewportWidth: CGFloat) -> CGFloat {
+        let availableWidth = max(viewportWidth - HomeLayout.horizontalPadding * 2, 1)
+        return min(HomeLayout.accessibilityActionGridMaxWidth, availableWidth)
+    }
+
     private func entryInputHeight(
         for availableHeight: CGFloat,
         isFocused: Bool,
@@ -583,10 +743,82 @@ private enum HomeLayout {
     static let accessibilityActionIconCircleSize: CGFloat = 72
     static let actionIconButtonWidth: CGFloat = 68
     static let accessibilityActionIconButtonWidth: CGFloat = 92
-    static let accessibilityActionIconButtonHeight: CGFloat = 132
+    static let accessibilityActionIconButtonHeight: CGFloat = 152
     static let actionIconSpacing: CGFloat = 18
     static let minimumActionIconSpacing: CGFloat = 8
     static let minimumCenteredActionEdgeInset: CGFloat = 12
+    static let accessibilityActionGridCellMinWidth: CGFloat = 112
+    static let accessibilityActionGridColumnSpacing: CGFloat = 18
+    static let accessibilityActionGridRowSpacing: CGFloat = 16
+    static let accessibilityActionGridMaxWidth: CGFloat = 360
+}
+
+private enum HomeActionIconStyle {
+    case compact
+    case accessibilityGrid
+
+    var circleSize: CGFloat {
+        switch self {
+        case .compact:
+            return HomeLayout.actionIconCircleSize
+        case .accessibilityGrid:
+            return HomeLayout.accessibilityActionIconCircleSize
+        }
+    }
+
+    var iconSize: CGFloat {
+        switch self {
+        case .compact:
+            return 24
+        case .accessibilityGrid:
+            return 27
+        }
+    }
+
+    var buttonWidth: CGFloat? {
+        switch self {
+        case .compact:
+            return HomeLayout.actionIconButtonWidth
+        case .accessibilityGrid:
+            return nil
+        }
+    }
+
+    var iconAlignment: Alignment {
+        switch self {
+        case .compact:
+            return .leading
+        case .accessibilityGrid:
+            return .center
+        }
+    }
+
+    var buttonHeight: CGFloat {
+        switch self {
+        case .compact:
+            return 104
+        case .accessibilityGrid:
+            return HomeLayout.accessibilityActionIconButtonHeight
+        }
+    }
+
+    var labelLineLimit: Int {
+        switch self {
+        case .compact:
+            return 2
+        case .accessibilityGrid:
+            return 2
+        }
+    }
+
+    var minimumLabelScale: CGFloat {
+        switch self {
+        case .compact:
+            return 0.82
+        case .accessibilityGrid:
+            return 0.88
+        }
+    }
 }
 
 private enum HomeScrollTarget: Hashable {

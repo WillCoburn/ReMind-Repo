@@ -26,8 +26,11 @@ const randExpHrs = (mean: number) => -Math.log(1 - Math.random()) * mean;
 export const MIN_ENTRIES_FOR_SCHEDULING = 3;
 
 async function hasAtLeastEntries(uid: string, min = MIN_ENTRIES_FOR_SCHEDULING) {
-  const snap = await db.collection(`users/${uid}/entries`).limit(min).get();
-  return snap.size >= min;
+  const snap = await db.collection(`users/${uid}/entries`).limit(Math.max(50, min * 5)).get();
+  return snap.docs.filter((doc) => {
+    const data = doc.data() as any;
+    return isSendableEntry(data) && !!entryBody(data);
+  }).length >= min;
 }
 
 function nextLocalTime(
@@ -177,6 +180,29 @@ type PickResult = {
   ref: FirebaseFirestore.DocumentReference | null;
 };
 
+function isSendableEntry(data: any) {
+  return data?.deleted !== true && data?.archived !== true;
+}
+
+function entryBody(data: any) {
+  return (data.text ?? data.content ?? "").toString().trim();
+}
+
+function pickRandomSendable(
+  docs: FirebaseFirestore.QueryDocumentSnapshot[]
+): PickResult | null {
+  const candidates = docs
+    .map((doc) => {
+      const data = doc.data() as any;
+      return { doc, body: entryBody(data), isSendable: isSendableEntry(data) };
+    })
+    .filter((candidate) => candidate.isSendable && candidate.body);
+  if (candidates.length === 0) return null;
+
+  const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+  return { body: chosen.body, ref: chosen.doc.ref };
+}
+
 async function pickEntry(uid: string, opts: PickOpts = {}): Promise<PickResult | null> {
   const cutoffDays = opts.cutoffDays ?? 7;
   const allowRecentFallback = opts.allowRecentFallback ?? false;
@@ -191,32 +217,22 @@ async function pickEntry(uid: string, opts: PickOpts = {}): Promise<PickResult |
     .where("sent", "==", false)
     .where("createdAt", "<=", cutoffTS)
     .orderBy("createdAt", "desc")
-    .limit(50)
+    .limit(200)
     .get();
 
-  if (!qs.empty) {
-    const docs = qs.docs;
-    const chosen = docs[Math.floor(Math.random() * docs.length)];
-    const data = chosen.data() as any;
-    const body = (data.text ?? data.content ?? "").toString().trim() || null;
-    return body ? { body, ref: chosen.ref } : null;
-  }
+  const olderUnsent = pickRandomSendable(qs.docs);
+  if (olderUnsent) return olderUnsent;
 
   // 2) Any entries older than cutoff (even if sent)
   qs = await db
     .collection(`users/${uid}/entries`)
     .where("createdAt", "<=", cutoffTS)
     .orderBy("createdAt", "desc")
-    .limit(50)
+    .limit(200)
     .get();
 
-  if (!qs.empty) {
-    const docs = qs.docs;
-    const chosen = docs[Math.floor(Math.random() * docs.length)];
-    const data = chosen.data() as any;
-    const body = (data.text ?? data.content ?? "").toString().trim() || null;
-    return body ? { body, ref: chosen.ref } : null;
-  }
+  const olderAny = pickRandomSendable(qs.docs);
+  if (olderAny) return olderAny;
 
   // 3) Optional: recent UNSENT (for new/active users)
   if (allowRecentFallback) {
@@ -224,32 +240,22 @@ async function pickEntry(uid: string, opts: PickOpts = {}): Promise<PickResult |
       .collection(`users/${uid}/entries`)
       .where("sent", "==", false)
       .orderBy("createdAt", "desc")
-      .limit(50)
+      .limit(200)
       .get();
 
-    if (!qs.empty) {
-      const docs = qs.docs;
-      const chosen = docs[Math.floor(Math.random() * docs.length)];
-      const data = chosen.data() as any;
-      const body = (data.text ?? data.content ?? "").toString().trim() || null;
-      return body ? { body, ref: chosen.ref } : null;
-    }
+    const recentUnsent = pickRandomSendable(qs.docs);
+    if (recentUnsent) return recentUnsent;
   }
 
   // 4) FINAL FALLBACK: pick ANY entry (even recent & already sent)
   qs = await db
     .collection(`users/${uid}/entries`)
     .orderBy("createdAt", "desc")
-    .limit(50)
+    .limit(200)
     .get();
 
-  if (!qs.empty) {
-    const docs = qs.docs;
-    const chosen = docs[Math.floor(Math.random() * docs.length)];
-    const data = chosen.data() as any;
-    const body = (data.text ?? data.content ?? "").toString().trim() || null;
-    return body ? { body, ref: chosen.ref } : null;
-  }
+  const anyEntry = pickRandomSendable(qs.docs);
+  if (anyEntry) return anyEntry;
 
   // No entries at all
   return null;

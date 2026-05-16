@@ -8,13 +8,17 @@ import FirebaseFirestore
 
 extension AppViewModel {
     // MARK: - Entries
-    
+
+    var activeEntries: [Entry] {
+        entries.filter { !$0.deleted }
+    }
+
     var sentEntriesCount: Int {
-          entries.filter { $0.sent }.count
-      }
+        activeEntries.filter { $0.sent }.count
+    }
 
     private var streakStatus: StreakStatus {
-        StreakCalculator.compute(entries: entries, calendar: streakCalendar)
+        StreakCalculator.compute(entries: activeEntries, calendar: streakCalendar)
     }
 
     var streakCount: Int {
@@ -70,34 +74,132 @@ extension AppViewModel {
         }
 
         do {
-            let db = Firestore.firestore()
-            let ref = db.collection("users")
-                .document(uid)
-                .collection("entries")
-                .document()
-
-            print("🧪 submit writing to:", ref.path)
-
-            try await ref.setData([
-                "text": trimmed,
-                "createdAt": FieldValue.serverTimestamp(),
-                "sent": false
-            ])
-
+            _ = try await addEntryToBank(text: trimmed)
             print("✅ submit write success")
             Haptics.success()
-
-            let optimistic = Entry(
-                id: ref.documentID,
-                text: trimmed,
-                createdAt: Date(),
-                sent: false
-            )
-
-            entries.removeAll { $0.id == optimistic.id }
-            entries.insert(optimistic, at: 0)
         } catch {
             print("❌ submit write failed:", error.localizedDescription)
+        }
+    }
+
+    @discardableResult
+    func addEntryToBank(
+        text: String,
+        source: String? = nil,
+        sourceCategory: String? = nil
+    ) async throws -> Entry {
+        guard NetworkMonitor.shared.isConnected else {
+            throw NSError(
+                domain: "ReMindEntries",
+                code: -1009,
+                userInfo: [NSLocalizedDescriptionKey: "Please reconnect to the internet to save this reminder."]
+            )
+        }
+
+        guard let uid = Auth.auth().currentUser?.uid else {
+            throw NSError(
+                domain: "ReMindEntries",
+                code: 401,
+                userInfo: [NSLocalizedDescriptionKey: "Sign in required."]
+            )
+        }
+
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw NSError(
+                domain: "ReMindEntries",
+                code: 400,
+                userInfo: [NSLocalizedDescriptionKey: "Reminder text cannot be empty."]
+            )
+        }
+
+        if let duplicate = activeEntries.first(where: { normalizedEntryText($0.text) == normalizedEntryText(trimmed) }) {
+            return duplicate
+        }
+
+        let ref = db.collection("users")
+            .document(uid)
+            .collection("entries")
+            .document()
+
+        print("🧪 entry writing to:", ref.path)
+
+        var data: [String: Any] = [
+            "text": trimmed,
+            "createdAt": FieldValue.serverTimestamp(),
+            "sent": false,
+            "deleted": false
+        ]
+
+        if let source {
+            data["source"] = source
+        }
+
+        if let sourceCategory {
+            data["sourceCategory"] = sourceCategory
+        }
+
+        try await ref.setData(data)
+
+        let optimistic = Entry(
+            id: ref.documentID,
+            text: trimmed,
+            createdAt: Date(),
+            sent: false,
+            deleted: false
+        )
+
+        entries.removeAll { $0.id == optimistic.id }
+        entries.insert(optimistic, at: 0)
+        return optimistic
+    }
+
+    func hasActiveEntryMatching(_ text: String) -> Bool {
+        let normalized = normalizedEntryText(text)
+        return activeEntries.contains { normalizedEntryText($0.text) == normalized }
+    }
+
+    func isReminderDeleted(_ reminder: LastReminder) -> Bool {
+        if let entryId = reminder.entryId,
+           let entry = entries.first(where: { $0.id == entryId }) {
+            return entry.deleted
+        }
+
+        let normalized = normalizedEntryText(reminder.text)
+        return entries.contains { entry in
+            entry.deleted && normalizedEntryText(entry.text) == normalized
+        }
+    }
+
+    func softDeleteReminderFromBank(_ reminder: LastReminder) async throws {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            throw NSError(
+                domain: "ReMindEntries",
+                code: 401,
+                userInfo: [NSLocalizedDescriptionKey: "Sign in required."]
+            )
+        }
+
+        guard let entryId = try await entryIDForReminder(reminder, uid: uid) else {
+            throw NSError(
+                domain: "ReMindEntries",
+                code: 404,
+                userInfo: [NSLocalizedDescriptionKey: "I couldn't find this reminder in your bank."]
+            )
+        }
+
+        try await db.collection("users")
+            .document(uid)
+            .collection("entries")
+            .document(entryId)
+            .setData([
+                "deleted": true,
+                "deletedAt": FieldValue.serverTimestamp()
+            ], merge: true)
+
+        if let index = entries.firstIndex(where: { $0.id == entryId }) {
+            entries[index].deleted = true
+            entries[index].deletedAt = Date()
         }
     }
 
@@ -171,14 +273,54 @@ extension AppViewModel {
         let ts = (data["createdAt"] as? Timestamp)?.dateValue()
         let sentAt = (data["sentAt"] as? Timestamp)?.dateValue()
         let sent = data["sent"] as? Bool ?? false
+        let deleted = data["deleted"] as? Bool ?? data["archived"] as? Bool ?? false
+        let deletedAt = (data["deletedAt"] as? Timestamp)?.dateValue()
 
         return Entry(
             id: doc.documentID,
             text: text,
             createdAt: ts,
             sentAt: sentAt,
-            sent: sent
+            sent: sent,
+            deleted: deleted,
+            deletedAt: deletedAt
         )
+    }
+
+    private func entryIDForReminder(_ reminder: LastReminder, uid: String) async throws -> String? {
+        if let entryId = reminder.entryId, !entryId.isEmpty {
+            return entryId
+        }
+
+        let normalized = normalizedEntryText(reminder.text)
+        if let local = entries
+            .filter({ !$0.deleted && normalizedEntryText($0.text) == normalized })
+            .max(by: { lhs, rhs in
+                (lhs.sentAt ?? lhs.createdAt ?? .distantPast) < (rhs.sentAt ?? rhs.createdAt ?? .distantPast)
+            }) {
+            return local.id
+        }
+
+        let snapshot = try await db.collection("users")
+            .document(uid)
+            .collection("entries")
+            .whereField("text", isEqualTo: reminder.text)
+            .limit(to: 10)
+            .getDocuments()
+
+        return snapshot.documents
+            .compactMap(mapEntry)
+            .filter { !$0.deleted }
+            .max(by: { lhs, rhs in
+                (lhs.sentAt ?? lhs.createdAt ?? .distantPast) < (rhs.sentAt ?? rhs.createdAt ?? .distantPast)
+            })?
+            .id
+    }
+
+    private func normalizedEntryText(_ text: String) -> String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .lowercased()
     }
 
     private var streakCalendar: Calendar {

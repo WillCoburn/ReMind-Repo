@@ -20,13 +20,13 @@ private enum StatsSettingsTextRole {
         case .screenTitle:
             return .title2.weight(.semibold)
         case .statCardLabel:
-            return .subheadline.weight(.medium)
+            return .callout.weight(.semibold)
         case .statCardValue:
             return .system(.title, design: .rounded).weight(.bold)
         case .statCardUnit:
             return .callout.weight(.semibold)
         case .freeBannerText:
-            return .caption.weight(.semibold)
+            return .body
         case .freeBannerButton:
             return .caption.weight(.semibold)
         case .sectionHeader:
@@ -43,17 +43,19 @@ private enum StatsSettingsTextRole {
             switch self {
             case .screenTitle, .statCardValue, .sectionHeader, .settingsRowTitle:
                 return .xLarge
-            case .statCardLabel, .statCardUnit, .freeBannerText, .freeBannerButton, .settingsRowValue:
+            case .statCardLabel, .statCardUnit, .freeBannerButton, .settingsRowValue:
                 return .large
+            case .freeBannerText:
+                return .xLarge
             }
         }
 
         switch self {
         case .screenTitle, .statCardValue:
             return .accessibility3
-        case .freeBannerText, .freeBannerButton:
+        case .freeBannerButton:
             return .accessibility3
-        case .statCardLabel, .statCardUnit, .sectionHeader, .settingsRowTitle, .settingsRowValue:
+        case .statCardLabel, .statCardUnit, .freeBannerText, .sectionHeader, .settingsRowTitle, .settingsRowValue:
             return .accessibility5
         }
     }
@@ -94,8 +96,10 @@ private enum StatsSettingsTextRole {
             return 0.84
         case .settingsRowTitle, .settingsRowValue:
             return 0.86
-        case .freeBannerText, .freeBannerButton, .sectionHeader:
+        case .freeBannerButton, .sectionHeader:
             return 0.88
+        case .freeBannerText:
+            return 0.86
         }
     }
 }
@@ -179,12 +183,6 @@ struct RightPanelPlaceholderView: View {
         }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
-            case .reminders:
-                RemindersPerWeekSheet(
-                    remindersPerWeek: $remindersPerWeek,
-                    onChange: persistSettingsDebounced,
-                    onDone: { activeSheet = nil; persistSettingsDebounced() }
-                )
             case .sendWindow:
                 SendWindowSheet(
                     startHour: $quietStartHour,
@@ -280,9 +278,7 @@ struct RightPanelPlaceholderView: View {
 
     private var settingsList: some View {
         VStack(spacing: 12) {
-            if !appVM.isProUser {
-                freeLimitsBanner
-            }
+            remindersPerWeekInlineCard
 
             automaticSettingsSection
             experienceSection
@@ -290,98 +286,77 @@ struct RightPanelPlaceholderView: View {
         }
     }
 
-    private var freeLimitsBanner: some View {
-        Group {
-            if usesAccessibilityLayout {
-                VStack(alignment: .leading, spacing: 10) {
-                    freeLimitsText
-                    freeLimitsButtons
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-            } else {
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .center, spacing: 10) {
-                        freeLimitsText
-                        Spacer(minLength: 6)
-                        freeLimitsButtons
-                    }
-
-                    VStack(alignment: .center, spacing: 8) {
-                        freeLimitsText
-                        freeLimitsButtons
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                }
+    private var remindersPerWeekInlineCard: some View {
+        VStack(alignment: .center, spacing: usesAccessibilityLayout ? 16 : 13) {
+            VStack(alignment: .center, spacing: usesAccessibilityLayout ? 9 : 7) {
+                remindersPerWeekHeaderTitle
+                remindersPerWeekValueText
             }
+            .frame(maxWidth: .infinity, alignment: .center)
+
+            RemindersPerWeekSliderSection(
+                remindersPerWeek: $remindersPerWeek,
+                showsCenteredValue: false,
+                onChange: persistSettingsDebounced,
+                onWhy: { showFreeLimitsWhy = true },
+                onUpgrade: {
+                    RevenueCatManager.shared.forceIdentify {
+                        showPaywall = true
+                    }
+                }
+            )
+            .environmentObject(appVM)
         }
-        .padding(.horizontal, usesAccessibilityLayout ? 12 : 10)
-        .padding(.vertical, usesAccessibilityLayout ? 10 : 6)
-        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.horizontal, usesAccessibilityLayout ? 16 : 18)
+        .padding(.vertical, usesAccessibilityLayout ? 16 : 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.yellow.opacity(0.12))
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.035), radius: 12, x: 0, y: 6)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.yellow.opacity(0.24), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.gray.opacity(0.18), lineWidth: 1)
         )
     }
 
-    private var freeLimitsButtons: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 6) {
-                whyButton
-                upgradeButton
-            }
+    private var remindersPerWeekHeaderTitle: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: "bell.badge.fill")
+                .font(.headline.weight(.semibold))
+                .foregroundColor(.figmaBlue)
+                .frame(width: 28, height: 28)
+                .background(Color.figmaBlue.opacity(0.08), in: Circle())
+                .dynamicTypeSize(.xSmall ... (usesAccessibilityLayout ? .accessibility1 : .large))
+                .accessibilityHidden(true)
 
-            VStack(spacing: 7) {
-                whyButton
-                upgradeButton
-            }
+            Text("Reminders per Week")
+                .statsSettingsText(.settingsRowTitle)
+                .foregroundColor(.black)
+                .multilineTextAlignment(.center)
+                .lineLimit(usesAccessibilityLayout ? 2 : 1)
+                .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.88)
         }
-        .frame(minHeight: usesAccessibilityLayout ? 44 : 34, alignment: .center)
-        .fixedSize(horizontal: !usesAccessibilityLayout, vertical: false)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    private var whyButton: some View {
-        Button {
-            showFreeLimitsWhy = true
-        } label: {
-            Text("Why?")
-                .statsSettingsText(.freeBannerButton)
-        }
-        .frame(minHeight: usesAccessibilityLayout ? 38 : 28, alignment: .center)
-        .padding(.horizontal, usesAccessibilityLayout ? 13 : 9)
-        .padding(.vertical, usesAccessibilityLayout ? 5 : 3)
-        .background(Color.white.opacity(0.7))
-        .foregroundColor(.black.opacity(0.8))
-        .clipShape(Capsule())
-        .contentShape(Rectangle())
+    private var remindersPerWeekValueText: some View {
+        Text(SettingsHelpers.remindersDisplay(effectiveRemindersPerWeek))
+            .statsSettingsText(.statCardValue)
+            .foregroundColor(.figmaBlue)
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.92)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .accessibilityLabel("\(SettingsHelpers.remindersDisplay(effectiveRemindersPerWeek)) reminders per week")
     }
 
-    private var upgradeButton: some View {
-        Button {
-            RevenueCatManager.shared.forceIdentify {
-                showPaywall = true
-            }
-        } label: {
-            Text("Upgrade")
-                .statsSettingsText(.freeBannerButton)
-        }
-        .frame(minHeight: usesAccessibilityLayout ? 38 : 28, alignment: .center)
-        .padding(.horizontal, usesAccessibilityLayout ? 14 : 10)
-        .padding(.vertical, usesAccessibilityLayout ? 5 : 3)
-        .background(Color.figmaBlue)
-        .foregroundColor(.white)
-        .clipShape(Capsule())
-        .contentShape(Rectangle())
-    }
-
-    private var freeLimitsText: some View {
-        Text("Free users limited to 3 random reminders a week.")
-            .statsSettingsText(.freeBannerText)
-            .foregroundColor(.black.opacity(0.8))
-            .frame(maxWidth: .infinity, alignment: .leading)
+    private var effectiveRemindersPerWeek: Double {
+        let minReminders: Double = 1
+        let maxReminders = appVM.isProUser ? 20.0 : 3.0
+        return min(max(remindersPerWeek, minReminders), maxReminders)
     }
 
     private func settingsSectionHeader(_ title: String) -> some View {
@@ -399,13 +374,6 @@ struct RightPanelPlaceholderView: View {
             settingsSectionHeader("Automatic Reminder Settings")
 
             VStack(spacing: 0) {
-                SettingsRow(
-                    title: "Reminders per Week",
-                    value: "\(SettingsHelpers.remindersDisplay(remindersPerWeek))",
-                    isDestructive: false,
-                    action: { activeSheet = .reminders }
-                )
-
                 SettingsRow(
                     title: "Message Window",
                     value: "\(SettingsHelpers.hourLabel(quietStartHour)) - \(SettingsHelpers.hourLabel(quietEndHour))",
@@ -541,7 +509,6 @@ struct RightPanelPlaceholderView: View {
 // MARK: - Active sheet enum
 
 enum ActiveSettingsSheet: Identifiable {
-    case reminders
     case sendWindow
     case timeZone
     case background
@@ -604,7 +571,7 @@ private extension RightPanelPlaceholderView {
                 VStack(alignment: .center, spacing: 10) {
                     statIcon(systemImage)
                     statLabel(title, alignment: .center)
-                        .frame(maxWidth: .infinity, minHeight: 36, alignment: .center)
+                        .frame(maxWidth: .infinity, minHeight: 40, alignment: .center)
                     statMetric(value: value, suffix: suffix, alignment: .center)
                         .frame(maxWidth: .infinity, minHeight: 38, alignment: .center)
                 }
@@ -946,11 +913,6 @@ struct RemindersPerWeekSheet: View {
     var onChange: () -> Void
     var onDone: () -> Void
 
-    private let minReminders: Double = 1
-    private let freeMaxReminders: Double = 3
-    private let maxReminders: Double = 20
-    private let stepReminders: Double = 1
-
     var body: some View {
         ZStack {
             SettingsSubpageBackground()
@@ -972,57 +934,14 @@ struct RemindersPerWeekSheet: View {
                         )
 
                         SettingsSubpageCard {
-                            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                Text(SettingsHelpers.remindersDisplay(remindersPerWeek))
-                                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                                    .monospacedDigit()
-                                    .foregroundColor(.figmaBlue)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.82)
-
-                                Text("per week")
-                                    .font(.headline.weight(.semibold))
-                                    .foregroundColor(Color.black.opacity(0.58))
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.9)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .accessibilityElement(children: .combine)
-
-                            Slider(
-                                value: remindersBinding,
-                                in: minReminders...availableMaxReminders,
-                                step: stepReminders
+                            RemindersPerWeekSliderSection(
+                                remindersPerWeek: $remindersPerWeek,
+                                showsCenteredValue: true,
+                                onChange: onChange,
+                                onWhy: nil,
+                                onUpgrade: nil
                             )
-                            .tint(.figmaBlue)
-                            .onChange(of: remindersPerWeek) { _ in onChange() }
-
-                            HStack {
-                                Text("\(SettingsHelpers.remindersDisplay(minReminders))")
-                                Spacer()
-                                Text("\(SettingsHelpers.remindersDisplay(availableMaxReminders))")
-                            }
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(Color.black.opacity(0.42))
-
-                            if !appVM.isProUser {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "sparkles")
-                                        .font(.footnote.weight(.semibold))
-                                    Text("Upgrade to unlock up to 20 reminders per week.")
-                                        .font(.footnote.weight(.medium))
-                                        .lineLimit(2)
-                                        .minimumScaleFactor(0.9)
-                                }
-                                .foregroundColor(Color.black.opacity(0.62))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(Color.figmaBlue.opacity(0.07))
-                                )
-                            }
+                            .environmentObject(appVM)
                         }
                         .padding(.horizontal, 24)
 
@@ -1043,6 +962,178 @@ struct RemindersPerWeekSheet: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.hidden)
         .brainMailDynamicTypeRange()
+    }
+}
+
+private struct RemindersPerWeekSliderSection: View {
+    @EnvironmentObject private var appVM: AppViewModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Binding var remindersPerWeek: Double
+
+    let showsCenteredValue: Bool
+    var onChange: () -> Void
+    var onWhy: (() -> Void)?
+    var onUpgrade: (() -> Void)?
+
+    private let minReminders: Double = 1
+    private let freeMaxReminders: Double = 3
+    private let maxReminders: Double = 20
+    private let stepReminders: Double = 1
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 16 : 14) {
+            if showsCenteredValue {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(SettingsHelpers.remindersDisplay(displayedReminders))
+                        .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                        .monospacedDigit()
+                        .foregroundColor(.figmaBlue)
+                        .lineLimit(1)
+                        .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.82)
+                        .dynamicTypeSize(.xSmall ... (usesAccessibilityLayout ? .accessibility3 : .xLarge))
+
+                    Text("per week")
+                        .font(.headline.weight(.semibold))
+                        .foregroundColor(Color.black.opacity(0.58))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.9)
+                        .dynamicTypeSize(.xSmall ... (usesAccessibilityLayout ? .accessibility3 : .large))
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .accessibilityElement(children: .combine)
+            }
+
+            Slider(
+                value: remindersBinding,
+                in: minReminders...availableMaxReminders,
+                step: stepReminders
+            )
+            .tint(.figmaBlue)
+            .onChange(of: remindersPerWeek) { _ in onChange() }
+
+            HStack {
+                Text("\(SettingsHelpers.remindersDisplay(minReminders))")
+                Spacer()
+                Text("\(SettingsHelpers.remindersDisplay(availableMaxReminders))")
+            }
+            .font(.footnote.weight(.semibold))
+            .foregroundColor(Color.black.opacity(0.42))
+            .lineLimit(1)
+            .minimumScaleFactor(0.9)
+            .dynamicTypeSize(.xSmall ... (usesAccessibilityLayout ? .accessibility3 : .large))
+
+            if !appVM.isProUser {
+                upgradeLimitBanner
+            }
+        }
+    }
+
+    private var upgradeLimitBanner: some View {
+        Group {
+            if usesAccessibilityLayout {
+                VStack(alignment: .leading, spacing: 10) {
+                    upgradeLimitMessage
+                    upgradeLimitButtons
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .center, spacing: 10) {
+                        upgradeLimitMessage
+                            .layoutPriority(1)
+                        upgradeLimitButtons
+                    }
+
+                    VStack(alignment: .trailing, spacing: 9) {
+                        upgradeLimitMessage
+                        upgradeLimitButtons
+                    }
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+            }
+        }
+        .foregroundColor(Color.black.opacity(0.62))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.figmaBlue.opacity(0.07))
+        )
+        .dynamicTypeSize(.xSmall ... (usesAccessibilityLayout ? .accessibility4 : .large))
+    }
+
+    private var upgradeLimitMessage: some View {
+        HStack(alignment: usesAccessibilityLayout ? .top : .center, spacing: 8) {
+            Image(systemName: "plus.circle.fill")
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(.figmaBlue)
+                .padding(.top, usesAccessibilityLayout ? 2 : 0)
+                .accessibilityHidden(true)
+
+            Text("Upgrade to unlock up to 20 reminders per week.")
+                .font(.footnote.weight(.medium))
+                .lineLimit(usesAccessibilityLayout ? nil : 2)
+                .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.9)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var upgradeLimitButtons: some View {
+        if let onWhy, let onUpgrade {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    upgradeLimitWhyButton(action: onWhy)
+                    upgradeLimitUpgradeButton(action: onUpgrade)
+                }
+
+                VStack(alignment: .trailing, spacing: 7) {
+                    upgradeLimitWhyButton(action: onWhy)
+                    upgradeLimitUpgradeButton(action: onUpgrade)
+                }
+            }
+            .frame(minHeight: usesAccessibilityLayout ? 44 : 34, alignment: .center)
+            .fixedSize(horizontal: !usesAccessibilityLayout, vertical: false)
+        }
+    }
+
+    private func upgradeLimitWhyButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text("Why?")
+                .statsSettingsText(.freeBannerButton)
+        }
+        .frame(minHeight: usesAccessibilityLayout ? 38 : 28, alignment: .center)
+        .padding(.horizontal, usesAccessibilityLayout ? 13 : 9)
+        .padding(.vertical, usesAccessibilityLayout ? 5 : 3)
+        .background(Color.white.opacity(0.72))
+        .foregroundColor(.black.opacity(0.8))
+        .clipShape(Capsule())
+        .contentShape(Rectangle())
+    }
+
+    private func upgradeLimitUpgradeButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text("Upgrade")
+                .statsSettingsText(.freeBannerButton)
+        }
+        .frame(minHeight: usesAccessibilityLayout ? 38 : 28, alignment: .center)
+        .padding(.horizontal, usesAccessibilityLayout ? 14 : 10)
+        .padding(.vertical, usesAccessibilityLayout ? 5 : 3)
+        .background(Color.figmaBlue)
+        .foregroundColor(.white)
+        .clipShape(Capsule())
+        .contentShape(Rectangle())
+    }
+
+    private var usesAccessibilityLayout: Bool {
+        dynamicTypeSize.brainMailUsesAccessibilityLayout
+    }
+
+    private var displayedReminders: Double {
+        min(max(remindersPerWeek, minReminders), availableMaxReminders)
     }
 
     private var availableMaxReminders: Double {
