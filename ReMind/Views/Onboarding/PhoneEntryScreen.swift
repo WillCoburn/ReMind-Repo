@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct PhoneEntryScreen: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @Binding var phoneDigits: String
     @Binding var showErrorBorder: Bool
     @Binding var errorText: String
@@ -103,7 +105,11 @@ struct PhoneEntryScreen: View {
     }
 
     private var animatedLogo: some View {
-        ZStack {
+        let logoSize: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 108 : 132
+        let waveHeight: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 28 : 34
+        let waveBottomPadding: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 13 : 16
+
+        return ZStack {
             logoImage
                 .offset(y: logoIsFloating ? -2 : 2)
                 .rotationEffect(.degrees(logoIsFloating ? 1.5 : -1.5))
@@ -114,24 +120,26 @@ struct PhoneEntryScreen: View {
                     VStack {
                         Spacer()
                         Rectangle()
-                            .frame(height: 34)
+                            .frame(height: waveHeight)
                             .padding(.horizontal, 8)
-                            .padding(.bottom, 16)
-                        }
+                            .padding(.bottom, waveBottomPadding)
+                    }
                 }
                 .opacity(0.24)
         }
-        .frame(width: 132, height: 132)
+        .frame(width: logoSize, height: logoSize)
         .animation(.easeInOut(duration: 3.4).repeatForever(autoreverses: true), value: logoIsFloating)
         .animation(.easeInOut(duration: 3.8).repeatForever(autoreverses: true), value: waveIsDrifting)
         .accessibilityHidden(true)
     }
 
     private var logoImage: some View {
-        Image("BottleLogo")
+        let logoSize: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 108 : 132
+
+        return Image("BottleLogo")
             .resizable()
             .scaledToFit()
-            .frame(width: 132, height: 132)
+            .frame(width: logoSize, height: logoSize)
     }
 
     private var consentAndContinue: some View {

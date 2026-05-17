@@ -186,64 +186,127 @@ private struct ExportPDFIllustration: View {
     let isExporting: Bool
     let didExport: Bool
     let animate: Bool
+    @State private var cycleStart = Date()
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.figmaBlue.opacity(0.08))
-                .frame(width: 210, height: 210)
-                .scaleEffect(animate ? 1.04 : 0.96)
-                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animate)
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: !animate)) { timeline in
+            let elapsed = animate ? timeline.date.timeIntervalSince(cycleStart) : 0
+            let phase = CGFloat(elapsed.truncatingRemainder(dividingBy: 4.2) / 4.2)
 
-            ForEach(0..<3, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.white.opacity(0.94))
-                    .frame(width: 112, height: 146)
-                    .overlay(alignment: .topLeading) {
-                        VStack(alignment: .leading, spacing: 9) {
-                            Capsule()
-                                .fill(Color.figmaBlue.opacity(0.26))
-                                .frame(width: 54, height: 7)
-                            Capsule()
-                                .fill(Color.figmaBlue.opacity(0.14))
-                                .frame(width: 78, height: 6)
-                            Capsule()
-                                .fill(Color.figmaBlue.opacity(0.11))
-                                .frame(width: 66, height: 6)
-                        }
-                        .padding(18)
-                    }
-                    .shadow(color: Color.black.opacity(0.07), radius: 14, x: 0, y: 7)
-                    .rotationEffect(.degrees(Double(index - 1) * (animate ? 5.5 : 3.5)))
-                    .offset(
-                        x: CGFloat(index - 1) * 23,
-                        y: CGFloat(index) * 5 + (animate ? CGFloat(index - 1) * -3 : 0)
-                    )
-                    .animation(
-                        .easeInOut(duration: 2.1)
-                            .repeatForever(autoreverses: true)
-                            .delay(Double(index) * 0.13),
-                        value: animate
-                    )
-            }
-
-            if didExport {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 42, weight: .semibold))
-                    .foregroundColor(.figmaBlue)
-                    .background(Circle().fill(Color.white))
-                    .offset(x: 68, y: -62)
-                    .transition(.scale.combined(with: .opacity))
-            } else if isExporting {
-                Image(systemName: "arrow.down.doc.fill")
-                    .font(.system(size: 34, weight: .semibold))
-                    .foregroundColor(.figmaBlue)
-                    .offset(x: 70, y: -58)
-                    .scaleEffect(animate ? 1.06 : 0.92)
-                    .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: animate)
+            ExportPDFStackAnimation(
+                phase: phase,
+                isExporting: isExporting,
+                didExport: didExport
+            )
+        }
+        .onAppear {
+            cycleStart = Date()
+        }
+        .onChange(of: animate) { isAnimating in
+            if isAnimating {
+                cycleStart = Date()
             }
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+private struct ExportPDFStackAnimation: View {
+    let phase: CGFloat
+    let isExporting: Bool
+    let didExport: Bool
+
+    var body: some View {
+        GeometryReader { proxy in
+            let availableWidth = max(proxy.size.width, 1)
+            let availableHeight = max(proxy.size.height, 1)
+            let pageWidth = min(max(availableWidth * 0.34, 96), 118)
+            let pageHeight = pageWidth * 1.30
+            let circleSize = min(max(pageWidth * 1.92, 190), min(availableWidth * 0.84, availableHeight * 0.96))
+            let fan = fanProgress(for: phase)
+            let glowPulse = 1 + sin(Double(phase) * Double.pi * 2) * 0.018
+
+            ZStack {
+                Circle()
+                    .fill(Color.figmaBlue.opacity(0.08))
+                    .frame(width: circleSize, height: circleSize)
+                    .scaleEffect(glowPulse + Double(fan) * 0.018)
+
+                ForEach(0..<3, id: \.self) { index in
+                    let side = CGFloat(index - 1)
+                    let drift = CGFloat(sin(Double(phase) * Double.pi * 2 + Double(index) * 0.78))
+                    let rotation = side * (3.0 + fan * 8.0) + drift * 0.65
+                    let offsetX = side * (10 + fan * 31) + drift * 2.2
+                    let offsetY = CGFloat(index) * 5 - (index == 1 ? fan * 8 : 0) + drift * 3
+                    let pageScale = 1 + (index == 1 ? fan * 0.018 : -fan * 0.006)
+
+                    ExportPDFPage(width: pageWidth, height: pageHeight, index: index)
+                        .scaleEffect(pageScale)
+                        .rotationEffect(.degrees(Double(rotation)))
+                        .offset(x: offsetX, y: offsetY)
+                        .zIndex(index == 1 ? 3 : Double(index))
+                }
+
+                if didExport {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 42, weight: .semibold))
+                        .foregroundColor(.figmaBlue)
+                        .background(Circle().fill(Color.white))
+                        .offset(x: pageWidth * 0.64, y: -pageHeight * 0.43)
+                        .transition(.scale.combined(with: .opacity))
+                } else if isExporting {
+                    Image(systemName: "arrow.down.doc.fill")
+                        .font(.system(size: 34, weight: .semibold))
+                        .foregroundColor(.figmaBlue)
+                        .offset(x: pageWidth * 0.66, y: -pageHeight * 0.40)
+                        .scaleEffect(0.94 + fan * 0.10)
+                }
+            }
+            .frame(width: availableWidth, height: availableHeight)
+        }
+    }
+
+    private func fanProgress(for phase: CGFloat) -> CGFloat {
+        if phase < 0.10 { return 0 }
+        if phase < 0.36 { return easeInOut((phase - 0.10) / 0.26) }
+        if phase < 0.66 { return 1 }
+        if phase < 0.90 { return 1 - easeInOut((phase - 0.66) / 0.24) }
+        return 0
+    }
+
+    private func easeInOut(_ value: CGFloat) -> CGFloat {
+        let clamped = min(max(value, 0), 1)
+        return clamped * clamped * (3 - 2 * clamped)
+    }
+}
+
+private struct ExportPDFPage: View {
+    let width: CGFloat
+    let height: CGFloat
+    let index: Int
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(Color.white.opacity(0.94))
+            .frame(width: width, height: height)
+            .overlay(alignment: .topLeading) {
+                VStack(alignment: .leading, spacing: 9) {
+                    Capsule()
+                        .fill(Color.figmaBlue.opacity(0.26))
+                        .frame(width: width * 0.48, height: 7)
+                    Capsule()
+                        .fill(Color.figmaBlue.opacity(0.14))
+                        .frame(width: width * 0.70, height: 6)
+                    Capsule()
+                        .fill(Color.figmaBlue.opacity(0.11))
+                        .frame(width: width * 0.58, height: 6)
+                    Capsule()
+                        .fill(Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.20))
+                        .frame(width: width * (index == 1 ? 0.44 : 0.36), height: 6)
+                }
+                .padding(18)
+            }
+            .shadow(color: Color.black.opacity(0.07), radius: 14, x: 0, y: 7)
     }
 }
 

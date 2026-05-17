@@ -401,7 +401,7 @@ struct MainView: View {
                     )
 
                     actionIconButton(
-                        title: "Inspiration Bank",
+                        title: inspirationBankActionTitle,
                         systemImage: "lightbulb.fill",
                         isEnabled: true,
                         style: .compact,
@@ -462,7 +462,7 @@ struct MainView: View {
             )
 
             actionIconButton(
-                title: "Inspiration Bank",
+                title: inspirationBankActionTitle,
                 systemImage: "lightbulb.fill",
                 isEnabled: true,
                 style: .accessibilityGrid,
@@ -493,6 +493,7 @@ struct MainView: View {
     ) -> some View {
         let circleSize = style.circleSize
         let buttonHeight = style.buttonHeight
+        let accessibilityTitle = title == "Inspo Bank" ? "Inspiration Bank" : title
 
         Button(action: action) {
             VStack(spacing: 8) {
@@ -523,8 +524,17 @@ struct MainView: View {
         }
         .disabled(!isEnabled)
         .buttonStyle(.plain)
-        .accessibilityLabel(title)
-        .accessibilityIdentifier("home.action.\(title)")
+        .accessibilityLabel(accessibilityTitle)
+        .accessibilityIdentifier("home.action.\(accessibilityTitle)")
+    }
+
+    private var inspirationBankActionTitle: String {
+        switch dynamicTypeSize {
+        case .xSmall, .small, .medium, .large, .xLarge:
+            return "Inspiration Bank"
+        default:
+            return "Inspo Bank"
+        }
     }
 
     private func resetActionRowToLeading(using scrollProxy: ScrollViewProxy, animated: Bool) {
@@ -835,40 +845,74 @@ private struct ReceivedMessageBubble: View {
     var body: some View {
         let bubbleWidth = max(maxBubbleWidth, 1)
 
+        ViewThatFits(in: .horizontal) {
+            shortBubble
+                .frame(maxWidth: bubbleWidth, alignment: .center)
+
+            fullWidthBubble(width: bubbleWidth)
+        }
+        .frame(width: bubbleWidth, alignment: .center)
+        .accessibilityIdentifier("home.recentReminder.bubble")
+    }
+
+    private var shortBubble: some View {
+        Text(text)
+            .font(.body)
+            .foregroundStyle(Color.white)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.leading, 25)
+            .padding(.trailing, 18)
+            .padding(.vertical, 13)
+            .background(bubbleBackground)
+            .overlay(bubbleStroke)
+    }
+
+    private func fullWidthBubble(width: CGFloat) -> some View {
         Text(text)
             .font(.body)
             .foregroundStyle(Color.white)
             .lineLimit(nil)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.leading, 18)
-            .padding(.trailing, 25)
+            .padding(.leading, 25)
+            .padding(.trailing, 18)
             .padding(.vertical, 13)
-            .frame(width: bubbleWidth, alignment: .leading)
-            .background {
-                ModernSMSBubbleShape()
-                    .fill(Color.figmaBlue)
-                    .shadow(color: Color.figmaBlue.opacity(0.18), radius: 12, x: 0, y: 6)
-            }
-            .overlay {
-                ModernSMSBubbleShape()
-                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
-            }
+            .frame(width: width, alignment: .leading)
+            .background(bubbleBackground)
+            .overlay(bubbleStroke)
+    }
+
+    private var bubbleBackground: some View {
+        ModernSMSBubbleShape()
+            .fill(Color.figmaBlue)
+            .shadow(color: Color.figmaBlue.opacity(0.18), radius: 12, x: 0, y: 6)
+    }
+
+    private var bubbleStroke: some View {
+        ModernSMSBubbleShape()
+            .stroke(Color.white.opacity(0.16), lineWidth: 1)
     }
 }
 
 private struct ModernSMSBubbleShape: Shape {
     func path(in rect: CGRect) -> Path {
-        let tailWidth = min(max(rect.width * 0.07, 12), 17)
-        let tailHeight = min(max(rect.height * 0.30, 16), 24)
-        let bubbleMinX = rect.minX + 0.5
-        let bubbleMaxX = rect.maxX - tailWidth
+        guard rect.width > 4, rect.height > 4 else {
+            var path = Path()
+            path.addRect(rect)
+            return path
+        }
+
+        let tailWidth = min(max(rect.width * 0.07, 12), min(17, rect.width * 0.32))
+        let tailHeight = min(max(rect.height * 0.30, 16), min(24, rect.height * 0.62))
+        let bubbleMinX = rect.minX + tailWidth
+        let bubbleMaxX = rect.maxX - 0.5
         let bubbleMinY = rect.minY + 0.5
         let bubbleMaxY = rect.maxY - 0.5
-        let corner = min(23, rect.height * 0.47, (rect.width - tailWidth) / 2)
+        let corner = max(1, min(23, rect.height * 0.47, (rect.width - tailWidth) / 2))
         let lowerCorner = min(corner, 21)
-        let tailTip = CGPoint(x: rect.maxX - 0.8, y: bubbleMaxY - 2.8)
-        let tailBaseTop = CGPoint(x: bubbleMaxX, y: bubbleMaxY - tailHeight)
-        let tailBaseBottom = CGPoint(x: bubbleMaxX - lowerCorner * 0.55, y: bubbleMaxY)
+        let tailTip = CGPoint(x: rect.minX + 0.8, y: bubbleMaxY - 2.8)
+        let tailBaseTop = CGPoint(x: bubbleMinX, y: bubbleMaxY - tailHeight)
+        let tailBaseBottom = CGPoint(x: bubbleMinX + lowerCorner * 0.55, y: bubbleMaxY)
 
         var path = Path()
 
@@ -879,22 +923,22 @@ private struct ModernSMSBubbleShape: Shape {
             control1: CGPoint(x: bubbleMaxX - corner * 0.28, y: bubbleMinY),
             control2: CGPoint(x: bubbleMaxX, y: bubbleMinY + corner * 0.28)
         )
-        path.addLine(to: tailBaseTop)
+        path.addLine(to: CGPoint(x: bubbleMaxX, y: bubbleMaxY - lowerCorner))
+        path.addCurve(
+            to: CGPoint(x: bubbleMaxX - lowerCorner, y: bubbleMaxY),
+            control1: CGPoint(x: bubbleMaxX, y: bubbleMaxY - lowerCorner * 0.28),
+            control2: CGPoint(x: bubbleMaxX - lowerCorner * 0.28, y: bubbleMaxY)
+        )
+        path.addLine(to: tailBaseBottom)
         path.addCurve(
             to: tailTip,
-            control1: CGPoint(x: bubbleMaxX + 1.8, y: bubbleMaxY - tailHeight * 0.50),
-            control2: CGPoint(x: rect.maxX - 4.8, y: bubbleMaxY - 9.2)
+            control1: CGPoint(x: bubbleMinX - 4.2, y: bubbleMaxY + 0.8),
+            control2: CGPoint(x: rect.minX + 4.0, y: bubbleMaxY + 0.5)
         )
         path.addCurve(
-            to: tailBaseBottom,
-            control1: CGPoint(x: rect.maxX - 4.0, y: bubbleMaxY + 0.5),
-            control2: CGPoint(x: bubbleMaxX + 4.2, y: bubbleMaxY + 0.8)
-        )
-        path.addLine(to: CGPoint(x: bubbleMinX + lowerCorner, y: bubbleMaxY))
-        path.addCurve(
-            to: CGPoint(x: bubbleMinX, y: bubbleMaxY - lowerCorner),
-            control1: CGPoint(x: bubbleMinX + lowerCorner * 0.28, y: bubbleMaxY),
-            control2: CGPoint(x: bubbleMinX, y: bubbleMaxY - lowerCorner * 0.28)
+            to: tailBaseTop,
+            control1: CGPoint(x: rect.minX + 4.8, y: bubbleMaxY - 9.2),
+            control2: CGPoint(x: bubbleMinX - 1.8, y: bubbleMaxY - tailHeight * 0.50)
         )
         path.addLine(to: CGPoint(x: bubbleMinX, y: bubbleMinY + corner))
         path.addCurve(
@@ -943,37 +987,41 @@ private struct HelpGuideSheet: View {
     @State private var animateHero = false
 
     var body: some View {
+        let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
         ZStack {
-            OnboardingBackgroundView()
-                .ignoresSafeArea()
+            LinearGradient(
+                colors: [
+                    Color.white,
+                    Color(red: 246/255, green: 249/255, blue: 255/255),
+                    Color(red: 249/255, green: 244/255, blue: 251/255)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
 
             GeometryReader { proxy in
-                let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
                 let horizontalPadding = min(max(proxy.size.width * 0.055, 18), 28)
-                let contentMaxWidth = max(1, min(520, proxy.size.width - horizontalPadding * 2))
+                let contentWidth = max(1, min(560, proxy.size.width - horizontalPadding * 2))
+                let heroHeight: CGFloat = usesAccessibilityLayout ? 132 : (proxy.size.height < 660 ? 140 : 174)
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: usesAccessibilityLayout ? 22 : 18) {
-                        HelpHeroIllustration(animate: animateHero)
-                            .frame(height: usesAccessibilityLayout ? 124 : (proxy.size.height < 660 ? 148 : 184))
-                            .padding(.top, usesAccessibilityLayout ? 12 : 18)
-                            .accessibilityHidden(true)
+                        VStack(spacing: usesAccessibilityLayout ? 8 : 10) {
+                            HelpHeroIllustration(animate: animateHero)
+                                .frame(width: contentWidth, height: heroHeight)
+                                .accessibilityHidden(true)
 
-                        VStack(spacing: 8) {
-                            Text("A little guide to BrainMail")
-                                .font(.title2.weight(.semibold))
+                            Text("A guide to BrainMail")
+                                .font((usesAccessibilityLayout ? Font.title3 : Font.title2).weight(.semibold))
                                 .foregroundStyle(Color.black.opacity(0.82))
                                 .multilineTextAlignment(.center)
                                 .lineLimit(nil)
                                 .fixedSize(horizontal: false, vertical: true)
-
-                            Text("I wanted this page to feel less like a manual and more like a quick note from the person who made the thing.")
-                                .font(.subheadline)
-                                .foregroundStyle(Color.black.opacity(0.58))
-                                .multilineTextAlignment(.center)
-                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        .frame(maxWidth: 430)
+                        .frame(maxWidth: min(430, contentWidth))
+                        .frame(width: contentWidth)
+                        .padding(.top, usesAccessibilityLayout ? 10 : 18)
 
                         HelpSectionCard(title: "What is this app?", systemImage: "sparkles") {
                             HelpBodyText("BrainMail is a mini positivity journal for your future self. Jot down affirmations, moments of clarity, ideas, reminders, or thoughts that resonate with you, and BrainMail will text them back to you at random times.")
@@ -1010,14 +1058,6 @@ private struct HelpGuideSheet: View {
                             HelpBodyText(pricingText)
                         }
 
-                        HelpSectionCard(title: "A few writing tips", systemImage: "leaf") {
-                            VStack(alignment: .leading, spacing: 12) {
-                                HelpBullet(icon: "quote.opening", text: "Write the way you would talk to someone you care about.")
-                                HelpBullet(icon: "scope", text: "Specific usually lands better than perfect.")
-                                HelpBullet(icon: "heart", text: "Save the thoughts you tend to forget when life gets loud.")
-                            }
-                        }
-
                         HelpSectionCard(title: "Support / Contact", systemImage: "envelope") {
                             VStack(alignment: .leading, spacing: 12) {
                                 HelpBodyText("Questions, bugs, weird ideas, or honest feedback are welcome. I genuinely read feedback and ideas.")
@@ -1026,18 +1066,21 @@ private struct HelpGuideSheet: View {
                                     Label("remindapphelp@gmail.com", systemImage: "paperplane.fill")
                                         .font(.subheadline.weight(.semibold))
                                         .foregroundStyle(Color.figmaBlue)
-                                        .lineLimit(1)
+                                        .lineLimit(usesAccessibilityLayout ? 2 : 1)
                                         .minimumScaleFactor(0.78)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
                             }
                         }
                     }
-                    .frame(maxWidth: contentMaxWidth)
-                    .padding(.horizontal, horizontalPadding)
-                    .frame(width: proxy.size.width, alignment: .top)
-                    .padding(.bottom, max(proxy.safeAreaInsets.bottom + 28, 36))
+                    .frame(width: contentWidth)
+                    .padding(.top, usesAccessibilityLayout ? 4 : 2)
+                    .padding(.bottom, max(proxy.safeAreaInsets.bottom + 28, 42))
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(width: proxy.size.width)
+                .accessibilityIdentifier("help.scroll")
+                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
             }
         }
         .navigationTitle("Help")
@@ -1071,58 +1114,54 @@ private struct HelpHeroIllustration: View {
     let animate: Bool
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.figmaBlue.opacity(0.08))
-                .frame(width: 174, height: 174)
-                .scaleEffect(animate ? 1.04 : 0.96)
-                .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: animate)
+        GeometryReader { proxy in
+            let availableWidth = max(proxy.size.width, 1)
+            let availableHeight = max(proxy.size.height, 1)
+            let logoSize = min(132, availableWidth * 0.46, availableHeight * 0.92)
+            let waveHeight = max(28, logoSize * 0.26)
 
-            BottleAnimationView(width: 58, height: 98)
-                .offset(x: -58, y: animate ? 2 : 9)
-                .rotationEffect(.degrees(animate ? -8 : -4))
-                .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: animate)
+            ZStack {
+                Circle()
+                    .fill(Color.figmaBlue.opacity(0.08))
+                    .frame(width: logoSize * 1.34, height: logoSize * 1.34)
+                    .scaleEffect(animate ? 1.04 : 0.96)
+                    .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: animate)
 
-            HelpFloatingNote(width: 138, accent: Color.figmaBlue)
-                .offset(x: animate ? 34 : 20, y: animate ? -28 : -16)
-                .rotationEffect(.degrees(animate ? 4 : 1))
-                .animation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true), value: animate)
+                Image("BottleLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: logoSize, height: logoSize)
+                    .offset(y: animate ? -2 : 2)
+                    .rotationEffect(.degrees(animate ? 1.5 : -1.5))
+                    .animation(.easeInOut(duration: 3.4).repeatForever(autoreverses: true), value: animate)
 
-            HelpFloatingNote(width: 104, accent: Color(red: 222/255, green: 174/255, blue: 202/255))
-                .offset(x: animate ? 62 : 74, y: animate ? 44 : 32)
-                .rotationEffect(.degrees(animate ? -7 : -2))
-                .opacity(0.84)
-                .animation(.easeInOut(duration: 3.2).repeatForever(autoreverses: true), value: animate)
+                Image("BottleLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: logoSize, height: logoSize)
+                    .offset(x: animate ? logoSize * 0.04 : -logoSize * 0.04)
+                    .mask(alignment: .bottom) {
+                        VStack {
+                            Spacer()
+                            Rectangle()
+                                .frame(height: waveHeight)
+                                .padding(.horizontal, logoSize * 0.06)
+                                .padding(.bottom, logoSize * 0.12)
+                        }
+                    }
+                    .opacity(0.24)
+                    .animation(.easeInOut(duration: 3.8).repeatForever(autoreverses: true), value: animate)
+
+                Capsule(style: .continuous)
+                    .fill(Color.figmaBlue.opacity(0.10))
+                    .frame(width: logoSize * 1.12, height: max(9, logoSize * 0.08))
+                    .offset(x: animate ? logoSize * 0.06 : -logoSize * 0.06, y: logoSize * 0.34)
+                    .animation(.easeInOut(duration: 3.8).repeatForever(autoreverses: true), value: animate)
+            }
+            .frame(width: availableWidth, height: availableHeight)
+            .clipped()
         }
-        .frame(maxWidth: 240)
         .clipped()
-    }
-}
-
-private struct HelpFloatingNote: View {
-    let width: CGFloat
-    let accent: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Capsule()
-                .fill(accent.opacity(0.28))
-                .frame(width: width * 0.42, height: 6)
-            Capsule()
-                .fill(Color.figmaBlue.opacity(0.13))
-                .frame(width: width * 0.68, height: 6)
-            Capsule()
-                .fill(Color.figmaBlue.opacity(0.09))
-                .frame(width: width * 0.54, height: 6)
-        }
-        .padding(.horizontal, 15)
-        .padding(.vertical, 14)
-        .frame(width: width)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.86))
-                .shadow(color: Color.black.opacity(0.055), radius: 12, x: 0, y: 7)
-        )
     }
 }
 

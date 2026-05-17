@@ -218,7 +218,7 @@ private struct LockScreenNotificationAnimation: View {
                     .frame(width: min(availableWidth * 0.84, 238), height: min(availableWidth * 0.84, 238))
                     .scaleEffect(1 + landingEnergy * 0.018 + (isSending ? 0.01 : 0))
 
-                LockScreenPhone(width: phoneWidth, height: phoneHeight, phase: phase, isSending: isSending)
+                LockScreenPhone(width: phoneWidth, height: phoneHeight)
                     .scaleEffect(1 + landingEnergy * 0.006)
 
                 LockScreenNotificationBanner(width: bannerWidth, height: bannerHeight, pulse: landingEnergy)
@@ -271,8 +271,6 @@ private struct LockScreenNotificationAnimation: View {
 private struct LockScreenPhone: View {
     let width: CGFloat
     let height: CGFloat
-    let phase: CGFloat
-    let isSending: Bool
 
     var body: some View {
         RoundedRectangle(cornerRadius: width * 0.24, style: .continuous)
@@ -291,55 +289,13 @@ private struct LockScreenPhone: View {
                 RoundedRectangle(cornerRadius: width * 0.24, style: .continuous)
                     .stroke(Color.figmaBlue.opacity(0.46), lineWidth: 3)
             )
-            .overlay {
-                lockScreenContent
-                    .padding(.horizontal, width * 0.12)
-                    .padding(.vertical, height * 0.075)
+            .overlay(alignment: .top) {
+                Capsule()
+                    .fill(Color.figmaBlue.opacity(0.20))
+                    .frame(width: width * 0.24, height: 4)
+                    .padding(.top, height * 0.07)
             }
             .shadow(color: Color.figmaBlue.opacity(0.14), radius: 20, x: 0, y: 10)
-    }
-
-    private var lockScreenContent: some View {
-        VStack(spacing: 0) {
-            Capsule()
-                .fill(Color.figmaBlue.opacity(0.26))
-                .frame(width: width * 0.25, height: 5)
-
-            Spacer(minLength: height * 0.08)
-
-            Image(systemName: "lock.fill")
-                .font(.system(size: max(10, width * 0.11), weight: .semibold))
-                .foregroundStyle(Color.figmaBlue.opacity(isSending ? 0.54 : 0.38))
-                .scaleEffect(1 + pulse(for: phase) * 0.08)
-
-            VStack(spacing: 7) {
-                Capsule()
-                    .fill(Color.figmaBlue.opacity(0.24))
-                    .frame(width: width * 0.46, height: 8)
-
-                Capsule()
-                    .fill(Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.32))
-                    .frame(width: width * 0.34, height: 5)
-            }
-            .padding(.top, 10)
-
-            Spacer()
-
-            VStack(spacing: 7) {
-                Capsule()
-                    .fill(Color.figmaBlue.opacity(0.10))
-                    .frame(width: width * 0.56, height: 6)
-                Capsule()
-                    .fill(Color.figmaBlue.opacity(0.08))
-                    .frame(width: width * 0.40, height: 6)
-            }
-        }
-    }
-
-    private func pulse(for phase: CGFloat) -> CGFloat {
-        guard phase >= 0.34 && phase <= 0.58 else { return 0 }
-        let local = (phase - 0.34) / 0.24
-        return max(0, sin(local * .pi) * (1 - local * 0.3))
     }
 }
 

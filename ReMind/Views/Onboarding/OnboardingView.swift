@@ -102,7 +102,7 @@ struct OnboardingView: View {
                 errorText = ""
             }
         }
-        .dynamicTypeSize(.xSmall ... .xxLarge)
+        .brainMailDynamicTypeRange()
         .preferredColorScheme(.light)
     }
 

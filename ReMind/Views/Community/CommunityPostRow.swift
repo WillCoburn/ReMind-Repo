@@ -177,7 +177,10 @@ struct CommunityCountActionLabel: View {
         HStack(spacing: 5) {
             Image(systemName: systemImage)
                 .font(.subheadline.weight(.semibold))
-                .frame(width: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 20 : 16, height: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 20 : 16)
+                .frame(
+                    minWidth: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 22 : 16,
+                    minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 22 : 16
+                )
 
             Text(title)
                 .font(.system(.subheadline, design: .rounded).weight(.semibold))

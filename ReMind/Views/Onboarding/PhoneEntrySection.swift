@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 struct PhoneEntrySection: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @Binding var phoneDigits: String
     @Binding var showErrorBorder: Bool
     @Binding var errorText: String
@@ -12,6 +14,9 @@ struct PhoneEntrySection: View {
     }
 
     var body: some View {
+        let fieldHeight: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 56 : 44
+        let dividerHeight: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 34 : 24
+
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
                 Text("+1")
@@ -20,10 +25,10 @@ struct PhoneEntrySection: View {
                     .padding(.horizontal, 4)
 
                 Divider()
-                    .frame(height: 24)
+                    .frame(height: dividerHeight)
 
                 PhoneField(digits: $phoneDigits)
-                    .frame(height: 44)
+                    .frame(minHeight: fieldHeight)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
@@ -46,9 +51,10 @@ struct PhoneEntrySection: View {
                 Text("Please enter a valid 10-digit US number like (123)-456-7890.")
                     .font(.footnote)
                     .foregroundColor(.red)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .dynamicTypeSize(.xSmall ... .xxLarge)
+        .brainMailDynamicTypeRange()
     }
 }
 

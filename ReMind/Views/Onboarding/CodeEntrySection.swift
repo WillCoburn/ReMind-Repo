@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 struct CodeEntrySection: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @Binding var code: String
     let phoneNumber: String
     let onEditNumber: () -> Void
@@ -38,12 +40,13 @@ struct CodeEntrySection: View {
                 .foregroundColor(.figmaBlue)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .opacity(0.9)
+                .frame(minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 44 : 32)
         }
         .padding(.top, showTopBar ? 4 : 0)
         .onAppear {
             isCodeFieldFocused = true
         }
-        .dynamicTypeSize(.xSmall ... .xxLarge)
+        .brainMailDynamicTypeRange()
     }
 
     private var topBar: some View {
@@ -95,7 +98,7 @@ struct CodeEntrySection: View {
                     .frame(maxWidth: .infinity, minHeight: 64)
             }
         }
-        .frame(height: 64)
+        .frame(height: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 74 : 64)
         .contentShape(Rectangle())
         .onTapGesture {
             isCodeFieldFocused = true
@@ -108,10 +111,10 @@ struct CodeEntrySection: View {
     }
 
     private func codeBoxMetrics(for availableWidth: CGFloat) -> (width: CGFloat, height: CGFloat, spacing: CGFloat) {
-        let minimumWidth: CGFloat = 34
-        let maximumWidth: CGFloat = 46
-        let minimumSpacing: CGFloat = 6
-        let maximumSpacing: CGFloat = 12
+        let minimumWidth: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 30 : 34
+        let maximumWidth: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 44 : 46
+        let minimumSpacing: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 5 : 6
+        let maximumSpacing: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 10 : 12
         let spacing = min(maximumSpacing, max(minimumSpacing, (availableWidth - minimumWidth * 6) / 5))
         let width = min(maximumWidth, max(minimumWidth, (availableWidth - spacing * 5) / 6))
         return (width, max(48, width * 1.2), spacing)

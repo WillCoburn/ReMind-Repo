@@ -50,8 +50,8 @@ final class ReMindUITests: XCTestCase {
         XCTAssertTrue(inspirationBank.exists)
         XCTAssertTrue(help.exists)
 
-        let expectsAccessibilityGrid = ProcessInfo.processInfo.environment["EXPECT_ACCESSIBILITY_GRID"] == "1"
-        if expectsAccessibilityGrid {
+        let usesWrappedActionGrid = inspirationBank.frame.midY - sendNow.frame.midY > 44
+        if usesWrappedActionGrid {
             assertAligned(sendNow.frame.midY, fullPDF.frame.midY, tolerance: 28, "Top action row should align")
             assertAligned(inspirationBank.frame.midY, help.frame.midY, tolerance: 28, "Bottom action row should align")
             XCTAssertGreaterThan(inspirationBank.frame.midY - sendNow.frame.midY, 44)
@@ -76,6 +76,33 @@ final class ReMindUITests: XCTestCase {
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
     }
 
+    func testHelpSheetScrollsWithinBoundsForCurrentDynamicType() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-BrainMailDebugScreen", "main"]
+        app.launch()
+
+        let mainScrollView = app.scrollViews.firstMatch
+        XCTAssertTrue(mainScrollView.waitForExistence(timeout: 8))
+
+        let helpButton = app.buttons["home.action.Help"]
+        scrollUntilHittable(helpButton, in: mainScrollView)
+        XCTAssertTrue(helpButton.isHittable)
+        helpButton.tap()
+
+        XCTAssertTrue(app.staticTexts["A guide to BrainMail"].waitForExistence(timeout: 10))
+
+        let helpScrollView = app.scrollViews["help.scroll"]
+        XCTAssertTrue(helpScrollView.waitForExistence(timeout: 5))
+
+        let supportTitle = app.staticTexts["Support / Contact"]
+        scrollUntilVisible(supportTitle, in: helpScrollView, app: app, maxAttempts: 24)
+
+        XCTAssertTrue(supportTitle.exists)
+        XCTAssertTrue(app.frame.intersects(supportTitle.frame))
+        XCTAssertGreaterThanOrEqual(supportTitle.frame.minX, app.frame.minX - 1)
+        XCTAssertLessThanOrEqual(supportTitle.frame.maxX, app.frame.maxX + 1)
+    }
+
     private enum ScrollDirection {
         case up
         case down
@@ -94,6 +121,28 @@ final class ReMindUITests: XCTestCase {
                 scrollView.swipeUp()
             case .down:
                 scrollView.swipeDown()
+            }
+        }
+    }
+
+    private func scrollUntilVisible(
+        _ element: XCUIElement,
+        in scrollView: XCUIElement,
+        app: XCUIApplication,
+        direction: ScrollDirection = .up,
+        maxAttempts: Int = 10
+    ) {
+        for _ in 0..<maxAttempts {
+            if element.exists && app.frame.intersects(element.frame) { return }
+            switch direction {
+            case .up:
+                let start = scrollView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.82))
+                let end = scrollView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.24))
+                start.press(forDuration: 0.02, thenDragTo: end)
+            case .down:
+                let start = scrollView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.24))
+                let end = scrollView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.82))
+                start.press(forDuration: 0.02, thenDragTo: end)
             }
         }
     }

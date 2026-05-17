@@ -52,7 +52,8 @@ struct CommunityView: View {
                     .shadow(radius: 4)
             }
             .padding(.trailing, 20)
-            .padding(.bottom, 24)
+            .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 32 : 24)
+            .accessibilityLabel("Create community post")
         }
 
         .sheet(isPresented: $showComposer) {
@@ -156,7 +157,7 @@ struct CommunityView: View {
                             emptyCommunityState
                                 .padding(.horizontal, 28)
 
-                            Spacer(minLength: 84)
+                            Spacer(minLength: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 112 : 84)
                         }
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: proxy.size.height)
@@ -204,7 +205,7 @@ struct CommunityView: View {
                         }
                     }
                     .padding(.horizontal)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 112 : 92)
                 }
                 .refreshable {
                     await refreshFeed()

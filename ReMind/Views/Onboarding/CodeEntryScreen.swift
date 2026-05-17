@@ -66,6 +66,7 @@ struct CodeEntryScreen: View {
                         .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .transition(.opacity)
                         .padding(.horizontal, 4)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Button(action: onVerify) {
@@ -105,13 +106,19 @@ struct CodeEntryScreen: View {
 }
 
 private struct CodeMessageIllustration: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let messageIsArriving: Bool
 
     var body: some View {
+        let illustrationSize: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 112 : 132
+        let phoneWidth: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 66 : 76
+        let phoneHeight: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 98 : 112
+
         ZStack {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(Color.figmaBlue, lineWidth: 5)
-                .frame(width: 76, height: 112)
+                .frame(width: phoneWidth, height: phoneHeight)
                 .overlay(alignment: .top) {
                     Capsule()
                         .fill(Color.figmaBlue.opacity(0.35))
@@ -142,7 +149,7 @@ private struct CodeMessageIllustration: View {
                 .offset(x: messageIsArriving ? 34 : 26, y: messageIsArriving ? -22 : -28)
                 .opacity(0.95)
         }
-        .frame(width: 132, height: 132)
+        .frame(width: illustrationSize, height: illustrationSize)
         .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: messageIsArriving)
         .accessibilityHidden(true)
     }

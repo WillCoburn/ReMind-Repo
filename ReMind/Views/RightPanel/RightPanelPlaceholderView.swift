@@ -240,11 +240,17 @@ struct RightPanelPlaceholderView: View {
                 Text(mailError ?? "")
             }
         )
-        .alert("Why the limits?", isPresented: $showFreeLimitsWhy) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("I'm very sorry to have to limit your experience :( But using a toll-free number costs money every time a text is sent, so I'm running a loss on free users and have to put up some guardrails.")
+        .overlay {
+            if showFreeLimitsWhy {
+                FreeLimitsWhyOverlay {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        showFreeLimitsWhy = false
+                    }
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            }
         }
+        .animation(.easeInOut(duration: 0.18), value: showFreeLimitsWhy)
         .onAppear {
             //no rc calls
 
@@ -298,7 +304,11 @@ struct RightPanelPlaceholderView: View {
                 remindersPerWeek: $remindersPerWeek,
                 showsCenteredValue: false,
                 onChange: persistSettingsDebounced,
-                onWhy: { showFreeLimitsWhy = true },
+                onWhy: {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        showFreeLimitsWhy = true
+                    }
+                },
                 onUpgrade: {
                     RevenueCatManager.shared.forceIdentify {
                         showPaywall = true
@@ -1149,6 +1159,88 @@ private struct RemindersPerWeekSliderSection: View {
             get: { min(max(remindersPerWeek, minReminders), freeMaxReminders) },
             set: { remindersPerWeek = min(max($0, minReminders), freeMaxReminders) }
         )
+    }
+}
+
+private struct FreeLimitsWhyOverlay: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    let onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.20)
+                .ignoresSafeArea()
+                .onTapGesture(perform: onDismiss)
+
+            GeometryReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    VStack {
+                        Spacer(minLength: max(proxy.safeAreaInsets.top + 24, 28))
+
+                        VStack(spacing: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 18 : 16) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.figmaBlue.opacity(0.11))
+                                    .frame(width: 54, height: 54)
+
+                                Image(systemName: "message.fill")
+                                    .font(.system(size: 22, weight: .semibold))
+                                    .foregroundStyle(Color.figmaBlue)
+                            }
+                            .accessibilityHidden(true)
+
+                            VStack(spacing: 9) {
+                                Text("Why the limits?")
+                                    .font(.headline.weight(.semibold))
+                                    .foregroundStyle(Color.black.opacity(0.80))
+                                    .multilineTextAlignment(.center)
+                                    .fixedSize(horizontal: false, vertical: true)
+
+                                Text("SMS costs money each time BrainMail sends a text. Free limits keep the app sustainable while still letting people try reminders before upgrading.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(Color.black.opacity(0.60))
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(nil)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
+                            Button(action: onDismiss) {
+                                Text("OK")
+                                    .font(.headline.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.82)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 54 : 50)
+                                    .background(Color.figmaBlue)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 22 : 20)
+                        .frame(maxWidth: 350)
+                        .background(
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .fill(Color.white.opacity(0.97))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .stroke(Color.white.opacity(0.90), lineWidth: 1)
+                        )
+                        .shadow(color: Color.black.opacity(0.12), radius: 24, x: 0, y: 14)
+                        .padding(.horizontal, 24)
+
+                        Spacer(minLength: max(proxy.safeAreaInsets.bottom + 24, 28))
+                    }
+                    .frame(width: proxy.size.width)
+                    .frame(minHeight: proxy.size.height)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
+        .brainMailDynamicTypeRange()
     }
 }
 
