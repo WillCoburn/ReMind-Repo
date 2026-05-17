@@ -95,13 +95,65 @@ final class ReMindUITests: XCTestCase {
         let helpScrollView = app.scrollViews["help.scroll"]
         XCTAssertTrue(helpScrollView.waitForExistence(timeout: 5))
 
-        let supportTitle = app.staticTexts["Support / Contact"]
+        let supportTitle = app.staticTexts["Support/contact"]
         scrollUntilVisible(supportTitle, in: helpScrollView, app: app, maxAttempts: 24)
 
         XCTAssertTrue(supportTitle.exists)
         XCTAssertTrue(app.frame.intersects(supportTitle.frame))
         XCTAssertGreaterThanOrEqual(supportTitle.frame.minX, app.frame.minX - 1)
         XCTAssertLessThanOrEqual(supportTitle.frame.maxX, app.frame.maxX + 1)
+    }
+
+    func testInspirationBankModalContentWithLargeDynamicType() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-BrainMailDebugScreen", "main",
+            "-UIPreferredContentSizeCategoryName", UIContentSizeCategory.accessibilityExtraExtraLarge.rawValue
+        ]
+        app.launch()
+
+        let mainScrollView = app.scrollViews.firstMatch
+        XCTAssertTrue(mainScrollView.waitForExistence(timeout: 8))
+
+        let inspirationBank = app.buttons["home.action.Inspiration Bank"]
+        scrollUntilHittable(inspirationBank, in: mainScrollView)
+        XCTAssertTrue(inspirationBank.isHittable)
+        inspirationBank.tap()
+
+        XCTAssertTrue(app.staticTexts["Borrow some inspiration"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Add anything that you'd want to receive later."].exists)
+        XCTAssertFalse(app.staticTexts["Philosophers"].exists)
+
+        let categoryTabs = app.scrollViews["inspiration.categoryTabs"]
+        XCTAssertTrue(categoryTabs.waitForExistence(timeout: 5))
+
+        let categoryIDs = [
+            "Eastern Philosophy",
+            "Writers & Poets",
+            "Stoicism",
+            "Christian",
+            "Discipline",
+            "Mindfulness",
+            "Anxiety & overthinking",
+            "Self-worth",
+            "Developer's favorites"
+        ]
+        for categoryID in categoryIDs {
+            XCTAssertTrue(app.buttons["inspiration.category.\(categoryID)"].exists)
+        }
+
+        let firstEasternSource = app.staticTexts["inspiration.source.eastern-philosophy-1"]
+        XCTAssertTrue(firstEasternSource.waitForExistence(timeout: 5))
+        XCTAssertEqual(firstEasternSource.label, "Lao Tzu, Tao Te Ching, attributed")
+
+        let developerFavorites = app.buttons["inspiration.category.Developer's favorites"]
+        scrollHorizontallyUntilHittable(developerFavorites, in: categoryTabs)
+        XCTAssertTrue(developerFavorites.isHittable)
+        developerFavorites.tap()
+
+        let firstDeveloperFavorite = app.staticTexts["Be cockier"]
+        XCTAssertTrue(firstDeveloperFavorite.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["inspiration.source.developer-favorites-1"].exists)
     }
 
     func testPhoneSignupConsentGatingWithLargeDynamicType() throws {
@@ -127,7 +179,7 @@ final class ReMindUITests: XCTestCase {
         XCTAssertFalse(continueButton.isEnabled)
 
         let scrollView = app.scrollViews.firstMatch
-        let consentButton = app.buttons["I agree to receive reminder text messages from BrainMail."]
+        let consentButton = app.buttons["I agree to receive text messages from BrainMail."]
         XCTAssertTrue(consentButton.waitForExistence(timeout: 5))
         scrollUntilHittable(consentButton, in: scrollView)
         XCTAssertTrue(consentButton.isHittable)
@@ -161,6 +213,17 @@ final class ReMindUITests: XCTestCase {
             case .down:
                 scrollView.swipeDown()
             }
+        }
+    }
+
+    private func scrollHorizontallyUntilHittable(
+        _ element: XCUIElement,
+        in scrollView: XCUIElement,
+        maxAttempts: Int = 10
+    ) {
+        for _ in 0..<maxAttempts {
+            if element.exists && element.isHittable { return }
+            scrollView.swipeLeft()
         }
     }
 

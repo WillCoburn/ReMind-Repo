@@ -983,7 +983,6 @@ private struct HomePlaceholderScreen: View {
 }
 
 private struct HelpGuideSheet: View {
-    @EnvironmentObject private var appVM: AppViewModel
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var animateHero = false
 
@@ -1025,46 +1024,56 @@ private struct HelpGuideSheet: View {
                         .padding(.top, usesAccessibilityLayout ? 10 : 18)
 
                         HelpSectionCard(title: "What is this app?", systemImage: "sparkles") {
-                            HelpBodyText("BrainMail is a mini positivity journal for your future self. Jot down affirmations, moments of clarity, ideas, reminders, or thoughts that resonate with you, and BrainMail will text them back to you at random times.")
-                        }
-
-                        HelpSectionCard(title: "Why did I make this?", systemImage: "heart.text.square") {
                             VStack(alignment: .leading, spacing: 10) {
-                                HelpBodyText("At first I made this app just for me in an attempt to be more thoughtful, intentional, and kind to myself. Journaling was always too much work just to end up forgetting all that hard-earned clarity the next day.")
-                                HelpBodyText("I recognize this isn't for everyone, and that's totally fine. But I ended up sharing this app in the off chance that you're like me, and you've tried to support yourself or take account of your own wandering mind through notes, journaling, affirmations, or little reminders, but nothing ever stuck.")
+                                HelpBodyText("BrainMail is a tool for focusing on healthy thoughts.")
+                                HelpBodyText("Keep track of moments of clarity and inspiration, and they’ll be continually texted back to you to keep you in a better headspace.")
                             }
                         }
 
                         HelpSectionCard(title: "How do I use it?", systemImage: "pencil.and.outline") {
-                            VStack(alignment: .leading, spacing: 12) {
-                                HelpBullet(icon: "plus.bubble", text: "Write small notes you would actually want to receive later.")
-                                HelpBullet(icon: "tray.and.arrow.down", text: "Save thoughts, reminders, affirmations, quotes, or moments of clarity.")
-                                HelpBullet(icon: "message", text: "Let BrainMail text them back at random times inside your reminder window.")
-                                HelpBullet(icon: "bolt.fill", text: "Use Send One Now when you want something from your own archive right away.")
-                                HelpBullet(icon: "doc.text", text: "Export a Full PDF when you want a clean copy of what you've written.")
-                                HelpBullet(icon: "person.2", text: "Use Community if you want to share something encouraging with others.")
+                            VStack(alignment: .leading, spacing: 10) {
+                                HelpBodyText("Challenge yourself to be more intentional about recognizing and celebrating your good thoughts.")
+                                HelpBodyText("Jot them down here, and we will do the rest.")
                             }
                         }
 
                         HelpSectionCard(title: "How does it work?", systemImage: "shuffle") {
-                            VStack(alignment: .leading, spacing: 12) {
-                                HelpBullet(icon: "text.quote", text: "Reminder texts are selected from your own saved entries.")
-                                HelpBullet(icon: "clock", text: "Your settings control roughly how often reminders arrive and what hours they can send.")
-                                HelpBullet(icon: "lock", text: "Your private entries stay private unless you intentionally post something to Community.")
-                                HelpBullet(icon: "shield", text: "Community posts are anonymous and moderated so the space can stay kind.")
+                            VStack(alignment: .leading, spacing: 10) {
+                                HelpBodyText("An algorithm selects random entries and routes them to you through a toll-free phone number based on the frequency settings you select.")
+                                HelpBodyText("We never see your entries or phone number.")
+                            }
+                        }
+
+                        HelpSectionCard(title: "What’s the deal with the community page?", systemImage: "person.2") {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HelpBodyText("We wanted to create a space for people to uplift others and connect if they feel so inclined.")
+                                HelpBodyText("All messages are from real people. Click the flag icon to report inappropriate messages.")
                             }
                         }
 
                         HelpSectionCard(title: "Do I have to pay?", systemImage: "creditcard") {
-                            HelpBodyText(pricingText)
+                            VStack(alignment: .leading, spacing: 10) {
+                                HelpBodyText("All features are free to use, but we had to place some limits due to SMS backend cost.")
+                                HelpBodyText("If you’d like roomier limits — 15 auto/week and unlimited instant sends — consider upgrading to Pro for $0.99/month.")
+                                HelpBodyText("If you genuinely can’t pay for premium but it would improve your well-being, hit the help email and I’ll hook you up.")
+                            }
                         }
 
-                        HelpSectionCard(title: "Support / Contact", systemImage: "envelope") {
+                        HelpSectionCard(title: "A note from the developer", systemImage: "heart.text.square") {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HelpBodyText("I recognize this isn’t for everyone, and that’s okay.")
+                                HelpBodyText("I originally made this for myself in a deep NYC winter in an attempt to be more thoughtful, intentional, and self-kind.")
+                                HelpBodyText("But it was useful for me, so I decided to share. If you’ve also tried to take account of your wandering mind in the Notes app, journaling, affirmations, etc. but nothing ever stuck, I hope this helps you too.")
+                                HelpBodyText("Remember, you’re somebody’s everything :)")
+                            }
+                        }
+
+                        HelpSectionCard(title: "Support/contact", systemImage: "envelope") {
                             VStack(alignment: .leading, spacing: 12) {
-                                HelpBodyText("Questions, bugs, weird ideas, or honest feedback are welcome. I genuinely read feedback and ideas.")
+                                HelpBodyText("Questions, bugs, feedback, and suggestions are all welcome. Find me here:")
 
                                 Link(destination: supportURL) {
-                                    Label("remindapphelp@gmail.com", systemImage: "paperplane.fill")
+                                    Label("brainmailhelp@gmail.com", systemImage: "paperplane.fill")
                                         .font(.subheadline.weight(.semibold))
                                         .foregroundStyle(Color.figmaBlue)
                                         .lineLimit(usesAccessibilityLayout ? 2 : 1)
@@ -1091,16 +1100,8 @@ private struct HelpGuideSheet: View {
         .brainMailDynamicTypeRange()
     }
 
-    private var pricingText: String {
-        if appVM.isProUser {
-            return "You're on Premium, so you have the roomier version of the app. Thank you for helping cover the texting and backend costs that keep BrainMail running."
-        }
-
-        return "You can save reminders and receive up to a few random texts each week for free. Premium is there if you want roomier limits, like higher reminder frequency and more instant sends. No pressure, truly. SMS and backend costs are the reason there are limits at all."
-    }
-
     private var supportURL: URL {
-        URL(string: "mailto:remindapphelp@gmail.com?subject=BrainMail%20Feedback")!
+        URL(string: "mailto:brainmailhelp@gmail.com?subject=BrainMail%20Feedback")!
     }
 
     private func restartHeroAnimation() {

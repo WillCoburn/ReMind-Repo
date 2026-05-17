@@ -167,7 +167,7 @@ struct PhoneEntryScreen: View {
 
             VStack(alignment: .leading, spacing: 9) {
                 Toggle(isOn: $hasConsented) {
-                    Text("I agree to receive reminder text messages from BrainMail.")
+                    Text("I agree to receive text messages from BrainMail.")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
