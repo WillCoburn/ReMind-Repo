@@ -224,41 +224,14 @@ private struct InspirationCategoryPill: View {
 
 private struct InspirationBankHeader: View {
     let usesAccessibilityLayout: Bool
+    @State private var animateLight = false
 
     var body: some View {
         VStack(spacing: usesAccessibilityLayout ? 8 : 12) {
             if !usesAccessibilityLayout {
-                ZStack {
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color.white.opacity(0.95),
-                                    Color.figmaBlue.opacity(0.11),
-                                    Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.18)
-                                ],
-                                center: .center,
-                                startRadius: 12,
-                                endRadius: 78
-                            )
-                        )
-                        .frame(width: 118, height: 118)
-
-                    Image(systemName: "lightbulb.fill")
-                        .font(.system(size: 42, weight: .semibold))
-                        .foregroundStyle(Color.figmaBlue)
-                        .shadow(color: Color.figmaBlue.opacity(0.18), radius: 10, x: 0, y: 5)
-
-                    Circle()
-                        .fill(Color(red: 130/255, green: 198/255, blue: 184/255).opacity(0.35))
-                        .frame(width: 12, height: 12)
-                        .offset(x: 45, y: -34)
-
-                    Circle()
-                        .fill(Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.42))
-                        .frame(width: 9, height: 9)
-                        .offset(x: -42, y: 36)
-                }
+                InspirationLightbulbAnimation(isLit: animateLight)
+                    .frame(width: 122, height: 122)
+                    .onAppear(perform: restartLightAnimation)
                 .accessibilityHidden(true)
             }
 
@@ -277,6 +250,70 @@ private struct InspirationBankHeader: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: 430)
+        }
+    }
+
+    private func restartLightAnimation() {
+        animateLight = false
+        DispatchQueue.main.async {
+            animateLight = true
+        }
+    }
+}
+
+private struct InspirationLightbulbAnimation: View {
+    let isLit: Bool
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(red: 255/255, green: 244/255, blue: 187/255).opacity(isLit ? 0.34 : 0.16),
+                            Color.figmaBlue.opacity(isLit ? 0.12 : 0.07),
+                            Color(red: 222/255, green: 174/255, blue: 202/255).opacity(isLit ? 0.16 : 0.08),
+                            Color.white.opacity(0.0)
+                        ],
+                        center: .center,
+                        startRadius: 8,
+                        endRadius: 72
+                    )
+                )
+                .scaleEffect(isLit ? 1.06 : 0.94)
+                .opacity(isLit ? 1 : 0.78)
+                .animation(.easeInOut(duration: 2.7).repeatForever(autoreverses: true), value: isLit)
+
+            ForEach(0..<8, id: \.self) { index in
+                Capsule(style: .continuous)
+                    .fill(Color.figmaBlue.opacity(isLit ? 0.20 : 0.08))
+                    .frame(width: 3, height: index.isMultiple(of: 2) ? 16 : 11)
+                    .offset(y: -50)
+                    .rotationEffect(.degrees(Double(index) * 45))
+                    .scaleEffect(isLit ? 1.0 : 0.78, anchor: .center)
+                    .animation(
+                        .easeInOut(duration: 2.7)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.025),
+                        value: isLit
+                    )
+            }
+
+            Circle()
+                .fill(Color.white.opacity(0.88))
+                .frame(width: 72, height: 72)
+                .shadow(color: Color.figmaBlue.opacity(isLit ? 0.16 : 0.08), radius: isLit ? 18 : 9, x: 0, y: 8)
+                .animation(.easeInOut(duration: 2.7).repeatForever(autoreverses: true), value: isLit)
+
+            Image(systemName: "lightbulb.fill")
+                .font(.system(size: 43, weight: .semibold))
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(
+                    Color(red: 255/255, green: 222/255, blue: 108/255).opacity(isLit ? 0.88 : 0.28),
+                    Color.figmaBlue.opacity(isLit ? 0.96 : 0.68)
+                )
+                .shadow(color: Color(red: 255/255, green: 222/255, blue: 108/255).opacity(isLit ? 0.26 : 0.06), radius: isLit ? 14 : 4, x: 0, y: 4)
+                .animation(.easeInOut(duration: 2.7).repeatForever(autoreverses: true), value: isLit)
         }
     }
 }

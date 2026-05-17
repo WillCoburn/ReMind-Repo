@@ -1,5 +1,4 @@
 import MessageUI
-import PhotosUI
 import SafariServices
 import StoreKit
 import SwiftUI
@@ -138,10 +137,7 @@ struct RightPanelPlaceholderView: View {
     @AppStorage("tzIdentifier")    private var tzIdentifier: String = TimeZone.current.identifier
     @AppStorage("quietStartHour")  private var quietStartHour: Double = 9     // 0...24
     @AppStorage("quietEndHour")    private var quietEndHour: Double = 22      // 0...24
-    @AppStorage("bgImageBase64")   private var bgImageBase64: String = ""
 
-    @State private var photoItem: PhotosPickerItem?
-    @State private var loadError: String?
     @State private var pendingSaveWorkItem: DispatchWorkItem?
     @State private var activeSheet: ActiveSettingsSheet?
     @State private var showDeleteSheet = false
@@ -193,14 +189,6 @@ struct RightPanelPlaceholderView: View {
             case .timeZone:
                 TimeZoneSheet(
                     tzIdentifier: $tzIdentifier,
-                    onChange: persistSettingsDebounced,
-                    onDone: { activeSheet = nil; persistSettingsDebounced() }
-                )
-            case .background:
-                BackgroundPickerSheet(
-                    photoItem: $photoItem,
-                    bgImageBase64: $bgImageBase64,
-                    loadError: $loadError,
                     onChange: persistSettingsDebounced,
                     onDone: { activeSheet = nil; persistSettingsDebounced() }
                 )
@@ -284,10 +272,7 @@ struct RightPanelPlaceholderView: View {
 
     private var settingsList: some View {
         VStack(spacing: 12) {
-            remindersPerWeekInlineCard
-
             automaticSettingsSection
-            experienceSection
             accountSection
         }
     }
@@ -383,6 +368,8 @@ struct RightPanelPlaceholderView: View {
         VStack(alignment: .leading, spacing: 10) {
             settingsSectionHeader("Automatic Reminder Settings")
 
+            remindersPerWeekInlineCard
+
             VStack(spacing: 0) {
                 SettingsRow(
                     title: "Message Window",
@@ -403,9 +390,9 @@ struct RightPanelPlaceholderView: View {
         }
     }
 
-    private var experienceSection: some View {
+    private var accountSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            settingsSectionHeader("My Experience")
+            settingsSectionHeader("Account")
 
             VStack(spacing: 0) {
                 SettingsRow(
@@ -415,23 +402,6 @@ struct RightPanelPlaceholderView: View {
                     action: { activeSheet = .subscription }
                 )
 
-                SettingsRow(
-                    title: "Personalize Background",
-                    value: nil,
-                    isDestructive: false,
-                    action: { activeSheet = .background }
-                )
-            }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        }
-    }
-
-    private var accountSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            settingsSectionHeader("Account")
-
-            VStack(spacing: 0) {
                 SettingsRow(
                     title: "Contact Us",
                     value: nil,
@@ -521,7 +491,6 @@ struct RightPanelPlaceholderView: View {
 enum ActiveSettingsSheet: Identifiable {
     case sendWindow
     case timeZone
-    case background
     case subscription
     case contactUs
 
@@ -1433,41 +1402,6 @@ struct TimeZoneSheet: View {
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
-    }
-}
-
-struct BackgroundPickerSheet: View {
-    @Binding var photoItem: PhotosPickerItem?
-    @Binding var bgImageBase64: String
-    @Binding var loadError: String?
-
-    var onChange: () -> Void
-    var onDone: () -> Void
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Capsule()
-                .fill(Color.secondary.opacity(0.3))
-                .frame(width: 44, height: 6)
-                .padding(.top, 8)
-
-            Text("Personalize Background")
-                .font(.headline)
-
-            BackgroundPickerSection(
-                photoItem: $photoItem,
-                bgImageBase64: $bgImageBase64,
-                loadError: $loadError
-            )
-            .onChange(of: bgImageBase64) { _ in onChange() }
-
-            Button("Done") { onDone() }
-                .buttonStyle(.borderedProminent)
-                .tint(.figmaBlue)
-                .padding(.bottom, 12)
-        }
-        .padding()
-        .presentationDetents([.medium])
     }
 }
 

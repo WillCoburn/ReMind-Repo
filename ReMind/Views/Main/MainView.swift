@@ -2,6 +2,7 @@
 // File: Views/Main/MainView.swift
 // ======================
 import SwiftUI
+import Foundation
 
 struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
@@ -847,11 +848,11 @@ private struct ReceivedMessageBubble: View {
 
         ViewThatFits(in: .horizontal) {
             shortBubble
-                .frame(maxWidth: bubbleWidth, alignment: .center)
+                .frame(maxWidth: bubbleWidth, alignment: .leading)
 
             fullWidthBubble(width: bubbleWidth)
         }
-        .frame(width: bubbleWidth, alignment: .center)
+        .frame(width: bubbleWidth, alignment: .leading)
         .accessibilityIdentifier("home.recentReminder.bubble")
     }
 
@@ -1117,51 +1118,145 @@ private struct HelpHeroIllustration: View {
         GeometryReader { proxy in
             let availableWidth = max(proxy.size.width, 1)
             let availableHeight = max(proxy.size.height, 1)
-            let logoSize = min(132, availableWidth * 0.46, availableHeight * 0.92)
-            let waveHeight = max(28, logoSize * 0.26)
+            let logoSize = min(128, availableWidth * 0.44, availableHeight * 0.76)
+            let waterWidth = min(availableWidth * 0.72, logoSize * 1.74)
+            let waterHeight = max(34, logoSize * 0.34)
+            let wavePhase: CGFloat = animate ? 1 : 0
+            let bobOffset: CGFloat = animate ? -5 : 4
+            let driftOffset: CGFloat = animate ? 3 : -3
+            let tilt: Double = animate ? 2.2 : -2.0
 
             ZStack {
                 Circle()
-                    .fill(Color.figmaBlue.opacity(0.08))
-                    .frame(width: logoSize * 1.34, height: logoSize * 1.34)
-                    .scaleEffect(animate ? 1.04 : 0.96)
-                    .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: animate)
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.figmaBlue.opacity(0.09),
+                                Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.10),
+                                Color.white.opacity(0.0)
+                            ],
+                            center: .center,
+                            startRadius: 8,
+                            endRadius: logoSize * 0.86
+                        )
+                    )
+                    .frame(width: logoSize * 1.42, height: logoSize * 1.42)
+                    .offset(y: -logoSize * 0.04)
+                    .opacity(animate ? 0.95 : 0.78)
+                    .animation(.easeInOut(duration: 3.8).repeatForever(autoreverses: true), value: animate)
 
                 Image("BottleLogo")
                     .resizable()
                     .scaledToFit()
                     .frame(width: logoSize, height: logoSize)
-                    .offset(y: animate ? -2 : 2)
-                    .rotationEffect(.degrees(animate ? 1.5 : -1.5))
-                    .animation(.easeInOut(duration: 3.4).repeatForever(autoreverses: true), value: animate)
+                    .rotationEffect(.degrees(tilt), anchor: .center)
+                    .offset(x: driftOffset, y: bobOffset - logoSize * 0.08)
+                    .shadow(color: Color.figmaBlue.opacity(0.10), radius: 12, x: 0, y: 8)
+                    .animation(.easeInOut(duration: 3.2).repeatForever(autoreverses: true), value: animate)
 
-                Image("BottleLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: logoSize, height: logoSize)
-                    .offset(x: animate ? logoSize * 0.04 : -logoSize * 0.04)
-                    .mask(alignment: .bottom) {
-                        VStack {
-                            Spacer()
-                            Rectangle()
-                                .frame(height: waveHeight)
-                                .padding(.horizontal, logoSize * 0.06)
-                                .padding(.bottom, logoSize * 0.12)
-                        }
-                    }
-                    .opacity(0.24)
-                    .animation(.easeInOut(duration: 3.8).repeatForever(autoreverses: true), value: animate)
+                ZStack {
+                    HelpWaterWaveShape(phase: wavePhase, amplitude: waterHeight * 0.10, baseline: waterHeight * 0.36)
+                        .fill(Color.figmaBlue.opacity(0.14))
+                        .animation(.easeInOut(duration: 4.4).repeatForever(autoreverses: true), value: animate)
 
-                Capsule(style: .continuous)
-                    .fill(Color.figmaBlue.opacity(0.10))
-                    .frame(width: logoSize * 1.12, height: max(9, logoSize * 0.08))
-                    .offset(x: animate ? logoSize * 0.06 : -logoSize * 0.06, y: logoSize * 0.34)
-                    .animation(.easeInOut(duration: 3.8).repeatForever(autoreverses: true), value: animate)
+                    HelpWaterWaveShape(phase: 1 - wavePhase, amplitude: waterHeight * 0.08, baseline: waterHeight * 0.45)
+                        .fill(Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.14))
+                        .offset(x: animate ? -8 : 8)
+                        .animation(.easeInOut(duration: 5.0).repeatForever(autoreverses: true), value: animate)
+
+                    HelpWaveLineShape(phase: wavePhase, amplitude: waterHeight * 0.09, baseline: waterHeight * 0.30)
+                        .stroke(Color.figmaBlue.opacity(0.20), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                        .animation(.easeInOut(duration: 4.4).repeatForever(autoreverses: true), value: animate)
+                }
+                .frame(width: waterWidth, height: waterHeight)
+                .offset(x: animate ? -4 : 4, y: logoSize * 0.34)
+                .mask {
+                    RoundedRectangle(cornerRadius: waterHeight * 0.48, style: .continuous)
+                        .frame(width: waterWidth, height: waterHeight)
+                }
+                .animation(.easeInOut(duration: 4.8).repeatForever(autoreverses: true), value: animate)
             }
             .frame(width: availableWidth, height: availableHeight)
             .clipped()
         }
         .clipped()
+    }
+}
+
+private struct HelpWaterWaveShape: Shape {
+    var phase: CGFloat
+    var amplitude: CGFloat
+    var baseline: CGFloat
+
+    var animatableData: AnimatablePair<CGFloat, CGFloat> {
+        get { AnimatablePair(phase, amplitude) }
+        set {
+            phase = newValue.first
+            amplitude = newValue.second
+        }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let step = max(rect.width / 24, 3)
+        let startX = rect.minX
+        let endX = rect.maxX
+        let phaseRadians = Double(phase * 2 * .pi)
+
+        path.move(to: CGPoint(x: startX, y: waveY(for: startX, in: rect, phaseRadians: phaseRadians)))
+
+        var x = startX
+        while x <= endX {
+            path.addLine(to: CGPoint(x: x, y: waveY(for: x, in: rect, phaseRadians: phaseRadians)))
+            x += step
+        }
+
+        path.addLine(to: CGPoint(x: endX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: startX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+
+    private func waveY(for x: CGFloat, in rect: CGRect, phaseRadians: Double) -> CGFloat {
+        let progress = rect.width > 0 ? (x - rect.minX) / rect.width : 0
+        let sine = sin(Double(progress * 2 * .pi) + phaseRadians)
+        return rect.minY + baseline + CGFloat(sine) * amplitude
+    }
+}
+
+private struct HelpWaveLineShape: Shape {
+    var phase: CGFloat
+    var amplitude: CGFloat
+    var baseline: CGFloat
+
+    var animatableData: AnimatablePair<CGFloat, CGFloat> {
+        get { AnimatablePair(phase, amplitude) }
+        set {
+            phase = newValue.first
+            amplitude = newValue.second
+        }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let step = max(rect.width / 24, 3)
+        let phaseRadians = Double(phase * 2 * .pi)
+
+        path.move(to: CGPoint(x: rect.minX, y: waveY(for: rect.minX, in: rect, phaseRadians: phaseRadians)))
+
+        var x = rect.minX
+        while x <= rect.maxX {
+            path.addLine(to: CGPoint(x: x, y: waveY(for: x, in: rect, phaseRadians: phaseRadians)))
+            x += step
+        }
+
+        return path
+    }
+
+    private func waveY(for x: CGFloat, in rect: CGRect, phaseRadians: Double) -> CGFloat {
+        let progress = rect.width > 0 ? (x - rect.minX) / rect.width : 0
+        let sine = sin(Double(progress * 2 * .pi) + phaseRadians)
+        return rect.minY + baseline + CGFloat(sine) * amplitude
     }
 }
 
