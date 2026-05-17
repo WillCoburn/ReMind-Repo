@@ -1260,6 +1260,7 @@ struct SendWindowSheet: View {
 
 struct TimeZoneSheet: View {
     @Binding var tzIdentifier: String
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var animateHeader = false
 
     var onChange: () -> Void
@@ -1291,9 +1292,10 @@ struct TimeZoneSheet: View {
                             HStack(spacing: 12) {
                                 Text(SettingsHelpers.timeZoneCityDisplayNameWithGMT(id))
                                     .font(.body)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(1)
+                                    .foregroundColor(.figmaBlue)
+                                    .lineLimit(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 2 : 1)
                                     .minimumScaleFactor(0.86)
+                                    .fixedSize(horizontal: false, vertical: true)
 
                                 Spacer(minLength: 8)
 

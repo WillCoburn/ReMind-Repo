@@ -14,10 +14,14 @@ struct TimeZoneSection: View {
 
             Picker("Time Zone", selection: $tzIdentifier) {
                 ForEach(usTimeZones, id: \.self) { id in
-                    Text(SettingsHelpers.prettyTimeZone(id)).tag(id)
+                    Text(SettingsHelpers.prettyTimeZone(id))
+                        .foregroundColor(.figmaBlue)
+                        .tag(id)
                 }
             }
             .pickerStyle(.menu)
+            .tint(.figmaBlue)
+            .foregroundColor(.figmaBlue)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }

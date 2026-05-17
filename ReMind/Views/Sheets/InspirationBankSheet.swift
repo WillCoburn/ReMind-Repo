@@ -78,7 +78,7 @@ struct InspirationBankSheet: View {
                     },
                     onCancel: cancelAdd
                 )
-                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                .transition(.opacity)
             }
 
             if let toastMessage {
@@ -383,82 +383,101 @@ struct BrainMailConfirmationOverlay: View {
     let onCancel: () -> Void
 
     var body: some View {
+        let hasMessage = !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
         ZStack {
-            Color.black.opacity(0.20)
+            Color.black.opacity(0.22)
                 .ignoresSafeArea()
                 .onTapGesture(perform: onCancel)
 
-            VStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(Color.figmaBlue.opacity(0.10))
-                        .frame(width: 52, height: 52)
+            GeometryReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    VStack {
+                        Spacer(minLength: max(proxy.safeAreaInsets.top + 24, 28))
 
-                    Image(systemName: symbolName)
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(Color.figmaBlue)
-                }
-                .accessibilityHidden(true)
+                        VStack(spacing: 16) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.figmaBlue.opacity(0.10))
+                                    .frame(width: 52, height: 52)
 
-                VStack(spacing: 8) {
-                    Text(title)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(Color.black.opacity(0.78))
-                        .multilineTextAlignment(.center)
+                                Image(systemName: symbolName)
+                                    .font(.system(size: 22, weight: .semibold))
+                                    .foregroundStyle(Color.figmaBlue)
+                            }
+                            .accessibilityHidden(true)
 
-                    Text(message)
-                        .font(.subheadline)
-                        .foregroundStyle(Color.black.opacity(0.58))
-                        .multilineTextAlignment(.center)
-                        .lineLimit(nil)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                            VStack(spacing: hasMessage ? 8 : 0) {
+                                Text(title)
+                                    .font(.headline.weight(.semibold))
+                                    .foregroundStyle(Color.black.opacity(0.78))
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(nil)
+                                    .fixedSize(horizontal: false, vertical: true)
 
-                VStack(spacing: 10) {
-                    Button(action: onConfirm) {
-                        Text(confirmTitle)
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
-                            .frame(maxWidth: .infinity)
-                            .frame(minHeight: 50)
-                            .background(Color.figmaBlue)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                if hasMessage {
+                                    Text(message)
+                                        .font(.subheadline)
+                                        .foregroundStyle(Color.black.opacity(0.58))
+                                        .multilineTextAlignment(.center)
+                                        .lineLimit(nil)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+
+                            VStack(spacing: 10) {
+                                Button(action: onConfirm) {
+                                    Text(confirmTitle)
+                                        .font(.headline)
+                                        .foregroundStyle(.white)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.82)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(minHeight: 50)
+                                        .background(Color.figmaBlue)
+                                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                }
+                                .buttonStyle(.plain)
+
+                                Button(action: onCancel) {
+                                    Text(cancelTitle)
+                                        .font(.headline)
+                                        .foregroundStyle(Color.black.opacity(0.62))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.82)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(minHeight: 50)
+                                        .background(Color.white.opacity(0.74))
+                                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(20)
+                        .frame(maxWidth: 340)
+                        .background(
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .fill(Color.white.opacity(0.96))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .stroke(Color.white.opacity(0.90), lineWidth: 1)
+                        )
+                        .shadow(color: Color.black.opacity(0.12), radius: 24, x: 0, y: 14)
+                        .padding(.horizontal, 24)
+
+                        Spacer(minLength: max(proxy.safeAreaInsets.bottom + 24, 28))
                     }
-                    .buttonStyle(.plain)
-
-                    Button(action: onCancel) {
-                        Text(cancelTitle)
-                            .font(.headline)
-                            .foregroundStyle(Color.black.opacity(0.62))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
-                            .frame(maxWidth: .infinity)
-                            .frame(minHeight: 50)
-                            .background(Color.white.opacity(0.74))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(Color.black.opacity(0.06), lineWidth: 1)
-                            )
-                    }
-                    .buttonStyle(.plain)
+                    .frame(width: proxy.size.width)
+                    .frame(minHeight: proxy.size.height)
                 }
             }
-            .padding(20)
-            .frame(maxWidth: 340)
-            .background(
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .fill(Color.white.opacity(0.96))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .stroke(Color.white.opacity(0.90), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.12), radius: 24, x: 0, y: 14)
-            .padding(.horizontal, 24)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .contain)
     }
 }

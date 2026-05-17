@@ -192,8 +192,8 @@ struct MainView: View {
             .overlay {
                 if showDeleteReminderConfirmation, let pendingDeleteReminder {
                     BrainMailConfirmationOverlay(
-                        title: "Remove reminder?",
-                        message: "Are you sure you want to remove this reminder from your bank?",
+                        title: "Are you sure you want to remove this reminder from your bank?",
+                        message: "",
                         confirmTitle: "Yes, delete",
                         cancelTitle: "Cancel",
                         symbolName: "trash",
@@ -202,7 +202,7 @@ struct MainView: View {
                         },
                         onCancel: cancelDeleteReminder
                     )
-                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                    .transition(.opacity)
                 }
             }
     }
@@ -271,15 +271,20 @@ struct MainView: View {
                 .foregroundStyle(Color.black.opacity(0.72))
 
             if let reminder = mostRecentReceivedReminder {
-                HStack(alignment: .center, spacing: 8) {
+                let deleteButtonSize: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 44
+                let bubbleWidth = max(maxBubbleWidth - deleteButtonSize - 6, 1)
+
+                HStack(alignment: .center, spacing: 6) {
                     ReceivedMessageBubble(
                         text: reminder.text,
-                        maxBubbleWidth: max(maxBubbleWidth - 48, 1)
+                        maxBubbleWidth: bubbleWidth
                     )
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    .layoutPriority(1)
 
                     deleteReminderButton(for: reminder)
+                        .frame(width: deleteButtonSize, height: deleteButtonSize)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Group {
                     if usesAccessibilityLayout {
@@ -334,7 +339,7 @@ struct MainView: View {
     private func deleteReminderButton(for reminder: LastReminder) -> some View {
         let isDeleted = appVM.isReminderDeleted(reminder)
         let iconSize: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 18 : 15
-        let buttonSize: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 42 : 36
+        let buttonSize: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 44
 
         return Button {
             pendingDeleteReminder = reminder
@@ -343,13 +348,6 @@ struct MainView: View {
             }
         } label: {
             ZStack {
-                Circle()
-                    .fill(Color.white.opacity(isDeleted ? 0.48 : 0.74))
-                    .overlay(
-                        Circle()
-                            .stroke(Color.black.opacity(isDeleted ? 0.04 : 0.06), lineWidth: 1)
-                    )
-
                 if isDeletingLatestReminder && !isDeleted {
                     ProgressView()
                         .scaleEffect(0.74)
@@ -361,7 +359,7 @@ struct MainView: View {
                 }
             }
             .frame(width: buttonSize, height: buttonSize)
-            .shadow(color: Color.black.opacity(isDeleted ? 0 : 0.035), radius: 8, x: 0, y: 4)
+            .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .disabled(isDeleted || isDeletingLatestReminder)
@@ -679,7 +677,7 @@ struct MainView: View {
 
     private func recentReminderBubbleMaxWidth(for contentWidth: CGFloat, usesAccessibilityLayout: Bool) -> CGFloat {
         let availableCardContentWidth = max(contentWidth - 32, 1)
-        return max(availableCardContentWidth * (usesAccessibilityLayout ? 0.96 : 0.84), 1)
+        return max(availableCardContentWidth * (usesAccessibilityLayout ? 0.99 : 0.98), 1)
     }
 
     private func actionRowSidePadding(for viewportWidth: CGFloat, iconSpacing: CGFloat) -> CGFloat {
@@ -833,55 +831,44 @@ private enum HomeActionScrollTarget: Hashable {
 private struct ReceivedMessageBubble: View {
     let text: String
     let maxBubbleWidth: CGFloat
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
+        let bubbleWidth = max(maxBubbleWidth, 1)
+
         Text(text)
             .font(.body)
-            .foregroundStyle(textColor)
+            .foregroundStyle(Color.white)
+            .lineLimit(nil)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.leading, 25)
-            .padding(.trailing, 18)
+            .padding(.leading, 18)
+            .padding(.trailing, 25)
             .padding(.vertical, 13)
-            .frame(maxWidth: maxBubbleWidth, alignment: .leading)
+            .frame(width: bubbleWidth, alignment: .leading)
             .background {
-                IncomingSMSBubbleShape()
-                    .fill(bubbleFill)
-                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.18 : 0.07), radius: 12, x: 0, y: 6)
+                ModernSMSBubbleShape()
+                    .fill(Color.figmaBlue)
+                    .shadow(color: Color.figmaBlue.opacity(0.18), radius: 12, x: 0, y: 6)
             }
             .overlay {
-                IncomingSMSBubbleShape()
-                    .stroke(Color.white.opacity(colorScheme == .dark ? 0.16 : 0.76), lineWidth: 1)
+                ModernSMSBubbleShape()
+                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var bubbleFill: Color {
-        colorScheme == .dark
-        ? Color(UIColor.secondarySystemBackground).opacity(0.94)
-        : Color.white.opacity(0.94)
-    }
-
-    private var textColor: Color {
-        colorScheme == .dark
-        ? Color.white.opacity(0.90)
-        : Color.black.opacity(0.82)
     }
 }
 
-private struct IncomingSMSBubbleShape: Shape {
+private struct ModernSMSBubbleShape: Shape {
     func path(in rect: CGRect) -> Path {
         let tailWidth = min(max(rect.width * 0.07, 12), 17)
         let tailHeight = min(max(rect.height * 0.30, 16), 24)
-        let bubbleMinX = rect.minX + tailWidth
-        let bubbleMaxX = rect.maxX - 0.5
+        let bubbleMinX = rect.minX + 0.5
+        let bubbleMaxX = rect.maxX - tailWidth
         let bubbleMinY = rect.minY + 0.5
         let bubbleMaxY = rect.maxY - 0.5
         let corner = min(23, rect.height * 0.47, (rect.width - tailWidth) / 2)
         let lowerCorner = min(corner, 21)
-        let tailTip = CGPoint(x: rect.minX + 0.8, y: bubbleMaxY - 2.8)
-        let tailCurl = CGPoint(x: bubbleMinX + 6.3, y: bubbleMaxY - 1.2)
-        let tailRejoin = CGPoint(x: bubbleMinX + 5.4, y: bubbleMaxY - tailHeight)
+        let tailTip = CGPoint(x: rect.maxX - 0.8, y: bubbleMaxY - 2.8)
+        let tailBaseTop = CGPoint(x: bubbleMaxX, y: bubbleMaxY - tailHeight)
+        let tailBaseBottom = CGPoint(x: bubbleMaxX - lowerCorner * 0.55, y: bubbleMaxY)
 
         var path = Path()
 
@@ -892,32 +879,22 @@ private struct IncomingSMSBubbleShape: Shape {
             control1: CGPoint(x: bubbleMaxX - corner * 0.28, y: bubbleMinY),
             control2: CGPoint(x: bubbleMaxX, y: bubbleMinY + corner * 0.28)
         )
-        path.addLine(to: CGPoint(x: bubbleMaxX, y: bubbleMaxY - lowerCorner))
-        path.addCurve(
-            to: CGPoint(x: bubbleMaxX - lowerCorner, y: bubbleMaxY),
-            control1: CGPoint(x: bubbleMaxX, y: bubbleMaxY - lowerCorner * 0.28),
-            control2: CGPoint(x: bubbleMaxX - lowerCorner * 0.28, y: bubbleMaxY)
-        )
-        path.addLine(to: CGPoint(x: bubbleMinX + lowerCorner + 9, y: bubbleMaxY))
-        path.addCurve(
-            to: tailCurl,
-            control1: CGPoint(x: bubbleMinX + 23, y: bubbleMaxY + 0.2),
-            control2: CGPoint(x: bubbleMinX + 13.8, y: bubbleMaxY + 1.0)
-        )
+        path.addLine(to: tailBaseTop)
         path.addCurve(
             to: tailTip,
-            control1: CGPoint(x: bubbleMinX + 3.9, y: bubbleMaxY + 0.1),
-            control2: CGPoint(x: rect.minX + 2.3, y: bubbleMaxY + 0.1)
+            control1: CGPoint(x: bubbleMaxX + 1.8, y: bubbleMaxY - tailHeight * 0.50),
+            control2: CGPoint(x: rect.maxX - 4.8, y: bubbleMaxY - 9.2)
         )
         path.addCurve(
-            to: tailRejoin,
-            control1: CGPoint(x: rect.minX + 5.2, y: bubbleMaxY - 7.6),
-            control2: CGPoint(x: bubbleMinX + 2.9, y: bubbleMaxY - tailHeight * 0.58)
+            to: tailBaseBottom,
+            control1: CGPoint(x: rect.maxX - 4.0, y: bubbleMaxY + 0.5),
+            control2: CGPoint(x: bubbleMaxX + 4.2, y: bubbleMaxY + 0.8)
         )
+        path.addLine(to: CGPoint(x: bubbleMinX + lowerCorner, y: bubbleMaxY))
         path.addCurve(
             to: CGPoint(x: bubbleMinX, y: bubbleMaxY - lowerCorner),
-            control1: CGPoint(x: bubbleMinX + 1.0, y: bubbleMaxY - tailHeight - 5.2),
-            control2: CGPoint(x: bubbleMinX, y: bubbleMaxY - lowerCorner + 6)
+            control1: CGPoint(x: bubbleMinX + lowerCorner * 0.28, y: bubbleMaxY),
+            control2: CGPoint(x: bubbleMinX, y: bubbleMaxY - lowerCorner * 0.28)
         )
         path.addLine(to: CGPoint(x: bubbleMinX, y: bubbleMinY + corner))
         path.addCurve(
@@ -973,7 +950,7 @@ private struct HelpGuideSheet: View {
             GeometryReader { proxy in
                 let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
                 let horizontalPadding = min(max(proxy.size.width * 0.055, 18), 28)
-                let contentWidth = max(1, min(520, proxy.size.width - horizontalPadding * 2))
+                let contentMaxWidth = max(1, min(520, proxy.size.width - horizontalPadding * 2))
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: usesAccessibilityLayout ? 22 : 18) {
@@ -1055,9 +1032,9 @@ private struct HelpGuideSheet: View {
                             }
                         }
                     }
-                    .frame(width: contentWidth)
+                    .frame(maxWidth: contentMaxWidth)
                     .padding(.horizontal, horizontalPadding)
-                    .frame(maxWidth: .infinity)
+                    .frame(width: proxy.size.width, alignment: .top)
                     .padding(.bottom, max(proxy.safeAreaInsets.bottom + 28, 36))
                 }
                 .frame(width: proxy.size.width)

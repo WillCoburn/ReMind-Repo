@@ -34,106 +34,113 @@ struct ExportSheet: View {
             GeometryReader { proxy in
                 let isCompact = proxy.size.height < 650
 
-                VStack(spacing: isCompact ? 18 : 24) {
-                    Spacer(minLength: isCompact ? 12 : 28)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: isCompact ? 18 : 24) {
+                        Spacer(minLength: isCompact ? 12 : 28)
 
-                    ExportPDFIllustration(
-                        isExporting: isExporting,
-                        didExport: link != nil,
-                        animate: animateIllustration
-                    )
-                    .frame(height: isCompact ? 190 : 240)
-                    .accessibilityHidden(true)
-
-                    VStack(spacing: 10) {
-                        Text(titleText)
-                            .font(.title3.weight(.semibold))
-                            .foregroundColor(Color.black.opacity(0.78))
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        if let error {
-                            Text(error)
-                                .font(.subheadline)
-                                .foregroundColor(.red)
-                                .multilineTextAlignment(.center)
-                                .fixedSize(horizontal: false, vertical: true)
-                        } else {
-                            Text("Compile your entries into a clean PDF and receive a text with the link.")
-                                .font(.subheadline)
-                                .foregroundColor(Color.black.opacity(0.58))
-                                .multilineTextAlignment(.center)
-                                .lineLimit(nil)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        if let link {
-                            HStack(spacing: 10) {
-                                Button("Copy link") {
-                                    UIPasteboard.general.string = link.absoluteString
-                                }
-                                .buttonStyle(.bordered)
-
-                                Link("Open link", destination: link)
-                                    .buttonStyle(.bordered)
-                            }
-                            .padding(.top, 4)
-                        }
-                    }
-                    .padding(.horizontal, 30)
-                    .frame(maxWidth: 430)
-
-                    Spacer(minLength: 12)
-
-                    VStack(spacing: 12) {
-                        Button {
-                            print("🧭 Export button tapped")
-                            Task { await runExport() }
-                        } label: {
-                            Group {
-                                if isExporting {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .tint(.white)
-                                } else {
-                                    Text(link == nil ? "Export" : "Export again")
-                                        .font(.headline)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                        }
-                        .foregroundColor(.white)
-                        .background(isExporting ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .shadow(color: Color.figmaBlue.opacity(isExporting ? 0 : 0.22), radius: 16, x: 0, y: 8)
-                        .disabled(isExporting)
-
-                        Button(action: { dismiss() }) {
-                            Text("Cancel")
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .font(.headline)
-                        }
-                        .foregroundColor(Color.black.opacity(0.62))
-                        .background(Color.white.opacity(0.78))
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                        ExportPDFIllustration(
+                            isExporting: isExporting,
+                            didExport: link != nil,
+                            animate: animateIllustration
                         )
+                        .frame(height: isCompact ? 190 : 240)
+                        .accessibilityHidden(true)
+
+                        VStack(spacing: 10) {
+                            Text(titleText)
+                                .font(.title3.weight(.semibold))
+                                .foregroundColor(Color.black.opacity(0.78))
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+
+                            if let error {
+                                Text(error)
+                                    .font(.subheadline)
+                                    .foregroundColor(.red)
+                                    .multilineTextAlignment(.center)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            } else {
+                                Text("Compile all of your entries into a chronological PDF to view your thoughts over time.")
+                                    .font(.subheadline)
+                                    .foregroundColor(Color.black.opacity(0.58))
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(nil)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
+                            if let link {
+                                HStack(spacing: 10) {
+                                    Button("Copy link") {
+                                        UIPasteboard.general.string = link.absoluteString
+                                    }
+                                    .buttonStyle(.bordered)
+
+                                    Link("Open link", destination: link)
+                                        .buttonStyle(.bordered)
+                                }
+                                .padding(.top, 4)
+                            }
+                        }
+                        .padding(.horizontal, 30)
+                        .frame(maxWidth: 430)
+
+                        Spacer(minLength: 12)
+
+                        VStack(spacing: 12) {
+                            Button {
+                                print("🧭 Export button tapped")
+                                Task { await runExport() }
+                            } label: {
+                                Group {
+                                    if isExporting {
+                                        ProgressView()
+                                            .progressViewStyle(.circular)
+                                            .tint(.white)
+                                    } else {
+                                        Text(link == nil ? "Export" : "Export again")
+                                            .font(.headline)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.82)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: 52)
+                            }
+                            .foregroundColor(.white)
+                            .background(isExporting ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .shadow(color: Color.figmaBlue.opacity(isExporting ? 0 : 0.22), radius: 16, x: 0, y: 8)
+                            .disabled(isExporting)
+
+                            Button(action: { dismiss() }) {
+                                Text("Cancel")
+                                    .frame(maxWidth: .infinity)
+                                    .frame(minHeight: 52)
+                                    .font(.headline)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.82)
+                            }
+                            .foregroundColor(Color.black.opacity(0.62))
+                            .background(Color.white.opacity(0.78))
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                            )
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, max(proxy.safeAreaInsets.bottom + 16, 24))
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, max(proxy.safeAreaInsets.bottom + 16, 24))
+                    .frame(width: proxy.size.width)
+                    .frame(minHeight: proxy.size.height)
                 }
-                .frame(width: proxy.size.width, height: proxy.size.height)
             }
         }
         .navigationTitle("Export")
         .navigationBarTitleDisplayMode(.inline)
         .tint(.figmaBlue)
         .onAppear { restartIllustration() }
-        .dynamicTypeSize(.xSmall ... .xxLarge)
+        .brainMailDynamicTypeRange()
         .toast(isPresented: $showToast) {
             HStack {
                 Image(systemName: "checkmark.circle.fill")

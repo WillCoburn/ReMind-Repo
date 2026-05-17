@@ -46,7 +46,7 @@ struct SendNowSheet: View {
                                 .multilineTextAlignment(.center)
                                 .fixedSize(horizontal: false, vertical: true)
 
-                            Text("We’ll pull one saved thought from your journal and text it back like a note from past you.")
+                            Text("We’ll send a random entry from your saved bank.")
                                 .font(.subheadline)
                                 .foregroundColor(Color.black.opacity(0.58))
                                 .multilineTextAlignment(.center)
@@ -84,7 +84,7 @@ struct SendNowSheet: View {
                                     }
                                 }
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 52)
+                                .frame(minHeight: 52)
                             }
                             .foregroundColor(.white)
                             .background((isSending || appVM.hasUsedFreeInstantSendThisWeek) ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
@@ -95,7 +95,7 @@ struct SendNowSheet: View {
                             Button(action: { dismiss() }) {
                                 Text("Cancel")
                                     .frame(maxWidth: .infinity)
-                                    .frame(height: 52)
+                                    .frame(minHeight: 52)
                                     .font(.headline)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.82)
@@ -121,7 +121,7 @@ struct SendNowSheet: View {
         .tint(.figmaBlue)
         .onAppear { restartIllustration() }
         .onDisappear { animateIllustration = false }
-        .dynamicTypeSize(.xSmall ... .xxLarge)
+        .brainMailDynamicTypeRange()
         .alert("Weekly Instant Send Used", isPresented: $showWeeklyLimitAlert) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -159,251 +159,223 @@ struct SendNowSheet: View {
 private struct SendNowIllustration: View {
     let isSending: Bool
     let animate: Bool
+    @State private var cycleStart = Date()
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            Color.white.opacity(0.94),
-                            Color.figmaBlue.opacity(0.11),
-                            Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.16)
-                        ],
-                        center: .center,
-                        startRadius: 18,
-                        endRadius: 132
-                    )
-                )
-                .frame(width: 230, height: 230)
-                .scaleEffect(animate ? 1.04 : 0.96)
-                .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: animate)
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: !animate)) { timeline in
+            let elapsed = animate ? timeline.date.timeIntervalSince(cycleStart) : 0
+            let phase = CGFloat(elapsed.truncatingRemainder(dividingBy: 3.8) / 3.8)
 
-            ArrivalTrailDots(animate: animate)
-                .offset(x: -10, y: -8)
-
-            PastSelfNoteCard(animate: animate)
-                .offset(x: animate ? -72 : -88, y: animate ? 46 : 54)
-                .rotationEffect(.degrees(animate ? -7 : -11))
-                .opacity(0.88)
-                .animation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true), value: animate)
-
-            PhoneMessageFrame(animate: animate)
-                .offset(x: 36, y: animate ? 6 : 12)
-                .rotationEffect(.degrees(animate ? 2 : -1))
-                .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: animate)
-
-            WisdomMessagePreview(isSending: isSending, animate: animate)
-                .offset(x: animate ? -4 : -34, y: animate ? -42 : -56)
-                .scaleEffect(isSending ? 0.97 : (animate ? 1 : 0.94))
-                .opacity(animate ? 1 : 0.72)
-                .animation(.spring(response: 0.72, dampingFraction: 0.82), value: animate)
+            LockScreenNotificationAnimation(
+                phase: phase,
+                isSending: isSending
+            )
+        }
+        .onAppear {
+            cycleStart = Date()
+        }
+        .onChange(of: animate) { isAnimating in
+            if isAnimating {
+                cycleStart = Date()
+            }
         }
         .frame(maxWidth: .infinity)
     }
 }
 
-private struct ArrivalTrailDots: View {
-    let animate: Bool
+private struct LockScreenNotificationAnimation: View {
+    let phase: CGFloat
+    let isSending: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            ForEach(0..<5, id: \.self) { index in
+        GeometryReader { proxy in
+            let availableWidth = max(proxy.size.width, 1)
+            let availableHeight = max(proxy.size.height, 1)
+            let phoneHeight = min(availableHeight * 0.92, 214)
+            let phoneWidth = min(max(phoneHeight * 0.56, 106), min(availableWidth * 0.54, 132))
+            let bannerWidth = phoneWidth * 0.86
+            let bannerHeight = min(max(phoneHeight * 0.21, 42), 50)
+            let slideProgress = slideProgress(for: phase)
+            let bannerY = (-phoneHeight * 0.50) + (phoneHeight * 0.27 * slideProgress) + bounceOffset(for: phase)
+            let landingEnergy = landingEnergy(for: phase)
+            let bannerOpacity = notificationOpacity(for: phase)
+            let wobble = sin(Double(phase) * 118) * Double(landingEnergy) * 1.8
+
+            ZStack {
                 Circle()
-                    .fill(index == 4 ? Color.figmaBlue.opacity(0.28) : Color.figmaBlue.opacity(0.14))
-                    .frame(width: 7, height: 7)
-                    .scaleEffect(animate ? 1 + CGFloat(index) * 0.035 : 0.78)
-                    .opacity(animate ? 0.92 - Double(index) * 0.08 : 0.42)
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.white.opacity(0.96),
+                                Color.figmaBlue.opacity(0.11),
+                                Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.17)
+                            ],
+                            center: .center,
+                            startRadius: 18,
+                            endRadius: 132
+                        )
+                    )
+                    .frame(width: min(availableWidth * 0.84, 238), height: min(availableWidth * 0.84, 238))
+                    .scaleEffect(1 + landingEnergy * 0.018 + (isSending ? 0.01 : 0))
+
+                LockScreenPhone(width: phoneWidth, height: phoneHeight, phase: phase, isSending: isSending)
+                    .scaleEffect(1 + landingEnergy * 0.006)
+
+                LockScreenNotificationBanner(width: bannerWidth, height: bannerHeight, pulse: landingEnergy)
+                    .opacity(bannerOpacity)
+                    .scaleEffect(0.98 + slideProgress * 0.02 + landingEnergy * 0.018)
+                    .offset(x: CGFloat(wobble), y: bannerY)
             }
+            .frame(width: availableWidth, height: availableHeight)
         }
-        .rotationEffect(.degrees(-18))
-        .animation(.easeInOut(duration: 1.7).repeatForever(autoreverses: true), value: animate)
+    }
+
+    private func slideProgress(for phase: CGFloat) -> CGFloat {
+        if phase < 0.08 { return 0 }
+        if phase < 0.36 { return easeOutCubic((phase - 0.08) / 0.28) }
+        if phase < 0.78 { return 1 }
+        return 0
+    }
+
+    private func notificationOpacity(for phase: CGFloat) -> Double {
+        if phase < 0.05 { return 0 }
+        if phase < 0.13 { return Double(easeOutCubic((phase - 0.05) / 0.08)) }
+        if phase < 0.76 { return 1 }
+        if phase < 0.86 { return Double(1 - easeInOut((phase - 0.76) / 0.10)) }
+        return 0
+    }
+
+    private func landingEnergy(for phase: CGFloat) -> CGFloat {
+        guard phase >= 0.34 && phase <= 0.56 else { return 0 }
+        let local = (phase - 0.34) / 0.22
+        return max(0, 1 - local)
+    }
+
+    private func bounceOffset(for phase: CGFloat) -> CGFloat {
+        guard phase >= 0.34 && phase <= 0.52 else { return 0 }
+        let local = (phase - 0.34) / 0.18
+        return sin(local * .pi * 2.2) * (1 - local) * 7
+    }
+
+    private func easeOutCubic(_ value: CGFloat) -> CGFloat {
+        let clamped = min(max(value, 0), 1)
+        return 1 - CGFloat(pow(Double(1 - clamped), 3))
+    }
+
+    private func easeInOut(_ value: CGFloat) -> CGFloat {
+        let clamped = min(max(value, 0), 1)
+        return clamped * clamped * (3 - 2 * clamped)
     }
 }
 
-private struct PhoneMessageFrame: View {
-    let animate: Bool
+private struct LockScreenPhone: View {
+    let width: CGFloat
+    let height: CGFloat
+    let phase: CGFloat
+    let isSending: Bool
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 28, style: .continuous)
-            .fill(Color.white.opacity(0.70))
-            .frame(width: 116, height: 174)
-            .overlay(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(Color.figmaBlue.opacity(0.50), lineWidth: 4)
+        RoundedRectangle(cornerRadius: width * 0.24, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.82),
+                        Color(red: 246/255, green: 249/255, blue: 255/255).opacity(0.90)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
             )
-            .overlay(alignment: .top) {
+            .frame(width: width, height: height)
+            .overlay(
+                RoundedRectangle(cornerRadius: width * 0.24, style: .continuous)
+                    .stroke(Color.figmaBlue.opacity(0.46), lineWidth: 3)
+            )
+            .overlay {
+                lockScreenContent
+                    .padding(.horizontal, width * 0.12)
+                    .padding(.vertical, height * 0.075)
+            }
+            .shadow(color: Color.figmaBlue.opacity(0.14), radius: 20, x: 0, y: 10)
+    }
+
+    private var lockScreenContent: some View {
+        VStack(spacing: 0) {
+            Capsule()
+                .fill(Color.figmaBlue.opacity(0.26))
+                .frame(width: width * 0.25, height: 5)
+
+            Spacer(minLength: height * 0.08)
+
+            Image(systemName: "lock.fill")
+                .font(.system(size: max(10, width * 0.11), weight: .semibold))
+                .foregroundStyle(Color.figmaBlue.opacity(isSending ? 0.54 : 0.38))
+                .scaleEffect(1 + pulse(for: phase) * 0.08)
+
+            VStack(spacing: 7) {
+                Capsule()
+                    .fill(Color.figmaBlue.opacity(0.24))
+                    .frame(width: width * 0.46, height: 8)
+
+                Capsule()
+                    .fill(Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.32))
+                    .frame(width: width * 0.34, height: 5)
+            }
+            .padding(.top, 10)
+
+            Spacer()
+
+            VStack(spacing: 7) {
+                Capsule()
+                    .fill(Color.figmaBlue.opacity(0.10))
+                    .frame(width: width * 0.56, height: 6)
+                Capsule()
+                    .fill(Color.figmaBlue.opacity(0.08))
+                    .frame(width: width * 0.40, height: 6)
+            }
+        }
+    }
+
+    private func pulse(for phase: CGFloat) -> CGFloat {
+        guard phase >= 0.34 && phase <= 0.58 else { return 0 }
+        let local = (phase - 0.34) / 0.24
+        return max(0, sin(local * .pi) * (1 - local * 0.3))
+    }
+}
+
+private struct LockScreenNotificationBanner: View {
+    let width: CGFloat
+    let height: CGFloat
+    let pulse: CGFloat
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(Color.figmaBlue.opacity(0.34 + pulse * 0.16))
+                .frame(width: 12, height: 12)
+
+            VStack(alignment: .leading, spacing: 6) {
                 Capsule()
                     .fill(Color.figmaBlue.opacity(0.28))
-                    .frame(width: 30, height: 5)
-                    .padding(.top, 12)
-            }
-            .overlay(alignment: .bottom) {
-                Circle()
-                    .stroke(Color.figmaBlue.opacity(0.20), lineWidth: 2)
-                    .frame(width: 11, height: 11)
-                    .padding(.bottom, 11)
-            }
-            .overlay {
-                VStack(alignment: .leading, spacing: 7) {
-                    Spacer(minLength: 28)
-                    MiniIncomingBubble(width: 78, accent: Color.figmaBlue.opacity(0.18))
-                    MiniIncomingBubble(width: animate ? 66 : 54, accent: Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.22))
-                    Spacer(minLength: 20)
-                }
-                .padding(.horizontal, 13)
-            }
-            .shadow(color: Color.figmaBlue.opacity(0.12), radius: 18, x: 0, y: 9)
-    }
-}
+                    .frame(width: width * 0.42, height: 6)
 
-private struct MiniIncomingBubble: View {
-    let width: CGFloat
-    let accent: Color
+                Capsule()
+                    .fill(Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.34))
+                    .frame(width: width * 0.58, height: 5)
+            }
 
-    var body: some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(Color.figmaBlue.opacity(0.34))
-                .frame(width: 4, height: 4)
-            Capsule()
-                .fill(accent)
-                .frame(width: max(width - 18, 18), height: 5)
+            Spacer(minLength: 0)
         }
-        .padding(.leading, 11)
-        .padding(.trailing, 9)
-        .padding(.vertical, 8)
-        .frame(width: width, alignment: .leading)
+        .padding(.horizontal, 12)
+        .frame(width: width, height: height)
         .background(
-            SheetIncomingMessageShape()
-                .fill(Color.white.opacity(0.82))
+            RoundedRectangle(cornerRadius: min(18, height * 0.38), style: .continuous)
+                .fill(Color.white.opacity(0.94))
+                .shadow(color: Color.black.opacity(0.09), radius: 14, x: 0, y: 7)
         )
-    }
-}
-
-private struct WisdomMessagePreview: View {
-    let isSending: Bool
-    let animate: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(Color.figmaBlue.opacity(isSending ? 0.34 : 0.24))
-                    .frame(width: 8, height: 8)
-
-                Text("past you")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Color.black.opacity(0.44))
-            }
-
-            Capsule()
-                .fill(Color.figmaBlue.opacity(isSending ? 0.30 : 0.23))
-                .frame(width: 104, height: 7)
-            Capsule()
-                .fill(Color.figmaBlue.opacity(0.13))
-                .frame(width: 142, height: 7)
-            Capsule()
-                .fill(Color(red: 222/255, green: 174/255, blue: 202/255).opacity(0.34))
-                .frame(width: animate ? 78 : 52, height: 7)
-                .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: animate)
-        }
-        .padding(.leading, 25)
-        .padding(.trailing, 20)
-        .padding(.vertical, 16)
-        .background(
-            SheetIncomingMessageShape()
-                .fill(Color.white.opacity(0.92))
-                .shadow(color: Color.black.opacity(0.075), radius: 15, x: 0, y: 8)
+        .overlay(
+            RoundedRectangle(cornerRadius: min(18, height * 0.38), style: .continuous)
+                .stroke(Color.white.opacity(0.84), lineWidth: 1)
         )
-        .overlay {
-            SheetIncomingMessageShape()
-                .stroke(Color.white.opacity(0.78), lineWidth: 1)
-        }
-    }
-}
-
-private struct PastSelfNoteCard: View {
-    let animate: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("saved earlier")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color.black.opacity(0.38))
-
-            Capsule()
-                .fill(Color.figmaBlue.opacity(0.20))
-                .frame(width: 54, height: 5)
-            Capsule()
-                .fill(Color.figmaBlue.opacity(0.12))
-                .frame(width: 84, height: 5)
-            Capsule()
-                .fill(Color(red: 130/255, green: 198/255, blue: 184/255).opacity(0.28))
-                .frame(width: animate ? 68 : 48, height: 5)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 13)
-        .frame(width: 118, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.70))
-                .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 6)
-        )
-    }
-}
-
-private struct SheetIncomingMessageShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        let tailWidth = min(max(rect.width * 0.07, 12), 16)
-        let bubbleMinX = rect.minX + tailWidth
-        let corner = min(24, rect.height * 0.46, (rect.width - tailWidth) / 2)
-        let lowerCorner = min(corner, 21)
-        let tailTip = CGPoint(x: rect.minX + 1, y: rect.maxY - 4)
-        let tailJoin = CGPoint(x: bubbleMinX + 5, y: rect.maxY - 20)
-
-        var path = Path()
-        path.move(to: CGPoint(x: bubbleMinX + corner, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX - corner, y: rect.minY))
-        path.addCurve(
-            to: CGPoint(x: rect.maxX, y: rect.minY + corner),
-            control1: CGPoint(x: rect.maxX - corner * 0.24, y: rect.minY),
-            control2: CGPoint(x: rect.maxX, y: rect.minY + corner * 0.24)
-        )
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - lowerCorner))
-        path.addCurve(
-            to: CGPoint(x: rect.maxX - lowerCorner, y: rect.maxY),
-            control1: CGPoint(x: rect.maxX, y: rect.maxY - lowerCorner * 0.24),
-            control2: CGPoint(x: rect.maxX - lowerCorner * 0.24, y: rect.maxY)
-        )
-        path.addLine(to: CGPoint(x: bubbleMinX + lowerCorner + 8, y: rect.maxY))
-        path.addCurve(
-            to: CGPoint(x: bubbleMinX + 7, y: rect.maxY - 1.4),
-            control1: CGPoint(x: bubbleMinX + 21, y: rect.maxY),
-            control2: CGPoint(x: bubbleMinX + 12, y: rect.maxY + 0.1)
-        )
-        path.addCurve(
-            to: tailTip,
-            control1: CGPoint(x: bubbleMinX + 4.3, y: rect.maxY + 0.2),
-            control2: CGPoint(x: rect.minX + 2.6, y: rect.maxY - 0.3)
-        )
-        path.addCurve(
-            to: tailJoin,
-            control1: CGPoint(x: rect.minX + 5.8, y: rect.maxY - 8.4),
-            control2: CGPoint(x: bubbleMinX + 2.8, y: rect.maxY - 15.6)
-        )
-        path.addCurve(
-            to: CGPoint(x: bubbleMinX, y: rect.maxY - lowerCorner),
-            control1: CGPoint(x: bubbleMinX + 1.8, y: rect.maxY - 23.6),
-            control2: CGPoint(x: bubbleMinX, y: rect.maxY - lowerCorner + 7)
-        )
-        path.addLine(to: CGPoint(x: bubbleMinX, y: rect.minY + corner))
-        path.addCurve(
-            to: CGPoint(x: bubbleMinX + corner, y: rect.minY),
-            control1: CGPoint(x: bubbleMinX, y: rect.minY + corner * 0.24),
-            control2: CGPoint(x: bubbleMinX + corner * 0.24, y: rect.minY)
-        )
-        path.closeSubpath()
-        return path
     }
 }
