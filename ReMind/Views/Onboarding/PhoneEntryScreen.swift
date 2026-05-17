@@ -77,7 +77,6 @@ struct PhoneEntryScreen: View {
         .background(OnboardingBackgroundView().ignoresSafeArea())
         .onAppear {
             didAppear = true
-            hasConsented = true
             logoIsFloating = true
             waveIsDrifting = true
         }
@@ -88,15 +87,16 @@ struct PhoneEntryScreen: View {
             animatedLogo
                 .padding(.bottom, 4)
 
-            Text("Welcome in!")
+            Text("Welcome in.")
                 .font(.title2.weight(.semibold))
                 .multilineTextAlignment(.center)
 
-            Text("Please enter your phone number to start sending yourself reminders.")
+            Text("Your number is only used for verification and your BrainMail texts.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
+                .lineSpacing(2)
+                .frame(maxWidth: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 330 : 300)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .opacity(didAppear ? 1 : 0)
@@ -165,52 +165,75 @@ struct PhoneEntryScreen: View {
             .disabled(!canContinue || isSending)
             .padding(.horizontal, 4)
 
-            Text("We'll only use your number for verification and reminders.")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 320)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.figmaBlue.opacity(0.07))
-            )
-
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 4) {
-                    termsLink
-                    Text("·")
-                    privacyLink
+            VStack(alignment: .leading, spacing: 9) {
+                Toggle(isOn: $hasConsented) {
+                    Text("I agree to receive reminder text messages from BrainMail.")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .toggleStyle(BrainMailCheckboxToggleStyle())
 
-                VStack(spacing: 4) {
-                    termsLink
-                    privacyLink
-                }
+                Text("Reply STOP to opt out, HELP for support.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 34)
             }
-            .font(.footnote)
-            .foregroundStyle(Color.figmaBlue)
-            .tint(.figmaBlue)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: 4) {
+                termsLink
+                Text("•")
+                    .foregroundStyle(Color.figmaBlue.opacity(0.52))
+                privacyLink
+            }
             .frame(maxWidth: .infinity, alignment: .center)
         }
     }
 
     private var termsLink: some View {
-        Link("Terms & Conditions", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
-            .underline()
+        Link("Terms", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(Color.figmaBlue.opacity(0.78))
+            .tint(Color.figmaBlue.opacity(0.78))
             .lineLimit(1)
-            .minimumScaleFactor(0.82)
+            .minimumScaleFactor(0.9)
     }
 
     private var privacyLink: some View {
         Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
-            .underline()
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(Color.figmaBlue.opacity(0.78))
+            .tint(Color.figmaBlue.opacity(0.78))
             .lineLimit(1)
-            .minimumScaleFactor(0.82)
+            .minimumScaleFactor(0.9)
+    }
+}
+
+private struct BrainMailCheckboxToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button {
+            configuration.isOn.toggle()
+        } label: {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundStyle(configuration.isOn ? Color.figmaBlue : Color.secondary)
+                    .frame(width: 24, height: 20, alignment: .top)
+                    .padding(.top, 1)
+                    .accessibilityHidden(true)
+
+                configuration.label
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(configuration.isOn ? "Checked" : "Unchecked")
     }
 }
 
@@ -222,8 +245,12 @@ struct OnboardingPrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .frame(maxWidth: .infinity, minHeight: 54)
-            .background(isEnabled ? accentColor : Color.gray.opacity(0.3))
-            .foregroundColor(.white)
+            .background(isEnabled ? accentColor : accentColor.opacity(0.15))
+            .foregroundColor(isEnabled ? .white : accentColor.opacity(0.64))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(isEnabled ? Color.clear : accentColor.opacity(0.16), lineWidth: 1)
+            )
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.easeOut(duration: 0.16), value: configuration.isPressed)

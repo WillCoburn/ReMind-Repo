@@ -174,6 +174,8 @@ struct RootView: View {
             NavigationStack {
                 RightPanelPlaceholderView()
             }
+        case .onboarding:
+            OnboardingView(onReturnToFeatureTour: {})
         }
     }
 #endif
@@ -185,6 +187,7 @@ private enum BrainMailDebugLaunchScreen: String {
     case main
     case community
     case settings
+    case onboarding
 }
 
 private enum BrainMailDebugLaunchRoute {

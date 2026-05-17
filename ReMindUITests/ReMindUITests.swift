@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import UIKit
 
 final class ReMindUITests: XCTestCase {
 
@@ -101,6 +102,44 @@ final class ReMindUITests: XCTestCase {
         XCTAssertTrue(app.frame.intersects(supportTitle.frame))
         XCTAssertGreaterThanOrEqual(supportTitle.frame.minX, app.frame.minX - 1)
         XCTAssertLessThanOrEqual(supportTitle.frame.maxX, app.frame.maxX + 1)
+    }
+
+    func testPhoneSignupConsentGatingWithLargeDynamicType() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-BrainMailDebugScreen", "onboarding",
+            "-UIPreferredContentSizeCategoryName", UIContentSizeCategory.accessibilityExtraExtraLarge.rawValue
+        ]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Welcome in."].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Your number is only used for verification and your BrainMail texts."].exists)
+
+        let continueButton = app.buttons["Continue"]
+        XCTAssertTrue(continueButton.exists)
+        XCTAssertFalse(continueButton.isEnabled)
+
+        let phoneField = app.textFields.firstMatch
+        XCTAssertTrue(phoneField.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.frame.intersects(phoneField.frame))
+        phoneField.tap()
+        phoneField.typeText("4155551234")
+        XCTAssertFalse(continueButton.isEnabled)
+
+        let scrollView = app.scrollViews.firstMatch
+        let consentButton = app.buttons["I agree to receive reminder text messages from BrainMail."]
+        XCTAssertTrue(consentButton.waitForExistence(timeout: 5))
+        scrollUntilHittable(consentButton, in: scrollView)
+        XCTAssertTrue(consentButton.isHittable)
+        consentButton.tap()
+
+        let enabled = NSPredicate(format: "isEnabled == true")
+        expectation(for: enabled, evaluatedWith: continueButton)
+        waitForExpectations(timeout: 5)
+
+        XCTAssertTrue(app.staticTexts["Reply STOP to opt out, HELP for support."].exists)
+        XCTAssertTrue(app.links["Terms"].exists)
+        XCTAssertTrue(app.links["Privacy"].exists)
     }
 
     private enum ScrollDirection {
