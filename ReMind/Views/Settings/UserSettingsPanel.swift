@@ -190,7 +190,7 @@ struct UserSettingsForm: View {
 
         .sheet(isPresented: $showMailSheet) {
             MailView(
-                recipients: ["remindapphelp@gmail.com"],
+                recipients: ["brainmailhelp@gmail.com"],
                 subject: "Re[Mind] Feedback"
             )
         }
@@ -202,7 +202,7 @@ struct UserSettingsForm: View {
                 .environmentObject(appVM)
         }
         .sheet(isPresented: $showCommunityGuidelines) {
-            SafariView(url: URL(string: "https://re-mind-app.github.io/remind-site/")!)
+            SafariView(url: URL(string: "https://re-mind-app.github.io/BrainMail-site/")!)
         }
         .onAppear {
             //no RC calls

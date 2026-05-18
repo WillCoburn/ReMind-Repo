@@ -6,6 +6,8 @@ struct CommunityPostRow: View {
     let post: CommunityPost
     let isLiked: Bool
     let isReported: Bool
+    var isLikePending: Bool = false
+    var isReportPending: Bool = false
 
     var onLike: (() -> Void)? = nil
     var onReport: (() -> Void)? = nil
@@ -118,6 +120,8 @@ struct CommunityPostRow: View {
                     metaLabel("\(post.likeCount)", systemImage: isLiked ? "heart.fill" : "heart")
                 }
                 .buttonStyle(PlainButtonStyle())
+                .disabled(isLikePending)
+                .opacity(isLikePending ? 0.58 : 1)
             }
 
             if showsActions {
@@ -127,6 +131,8 @@ struct CommunityPostRow: View {
                     metaLabel("\(post.reportCount)", systemImage: isReported ? "flag.fill" : "flag")
                 }
                 .buttonStyle(PlainButtonStyle())
+                .disabled(isReportPending)
+                .opacity(isReportPending ? 0.58 : 1)
             }
 
             if showsThreadAction {

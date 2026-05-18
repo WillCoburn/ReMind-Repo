@@ -36,7 +36,7 @@ struct ExportSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: isCompact ? 18 : 24) {
-                        Spacer(minLength: isCompact ? 12 : 28)
+                        Spacer(minLength: isCompact ? 30 : 44)
 
                         ExportPDFIllustration(
                             isExporting: isExporting,
@@ -135,8 +135,13 @@ struct ExportSheet: View {
                     .frame(minHeight: proxy.size.height)
                 }
             }
+
+            VStack {
+                ExportDismissChevron { dismiss() }
+                Spacer()
+            }
         }
-        .navigationTitle("Export")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .tint(.figmaBlue)
         .onAppear { restartIllustration() }
@@ -179,6 +184,23 @@ struct ExportSheet: View {
         DispatchQueue.main.async {
             animateIllustration = true
         }
+    }
+}
+
+private struct ExportDismissChevron: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.down")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(Color.black.opacity(0.36))
+                .frame(width: 44, height: 38)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Dismiss")
+        .padding(.top, 8)
     }
 }
 

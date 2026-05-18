@@ -142,18 +142,7 @@ final class ReMindUITests: XCTestCase {
             XCTAssertTrue(app.buttons["inspiration.category.\(categoryID)"].exists)
         }
 
-        let firstEasternSource = app.staticTexts["inspiration.source.eastern-philosophy-1"]
-        XCTAssertTrue(firstEasternSource.waitForExistence(timeout: 5))
-        XCTAssertEqual(firstEasternSource.label, "Lao Tzu, Tao Te Ching, attributed")
-
-        let developerFavorites = app.buttons["inspiration.category.Developer's favorites"]
-        scrollHorizontallyUntilHittable(developerFavorites, in: categoryTabs)
-        XCTAssertTrue(developerFavorites.isHittable)
-        developerFavorites.tap()
-
-        let firstDeveloperFavorite = app.staticTexts["Be cockier"]
-        XCTAssertTrue(firstDeveloperFavorite.waitForExistence(timeout: 5))
-        XCTAssertFalse(app.staticTexts["inspiration.source.developer-favorites-1"].exists)
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "inspiration.add.eastern-philosophy-")).firstMatch.waitForExistence(timeout: 5))
     }
 
     func testPhoneSignupConsentGatingWithLargeDynamicType() throws {

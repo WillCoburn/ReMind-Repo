@@ -33,7 +33,7 @@ struct SendNowSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: isCompact ? 18 : 24) {
-                        Spacer(minLength: isCompact ? 10 : 24)
+                        Spacer(minLength: isCompact ? 30 : 44)
 
                         SendNowIllustration(isSending: isSending, animate: animateIllustration)
                             .frame(height: isCompact ? 180 : 232)
@@ -115,8 +115,13 @@ struct SendNowSheet: View {
                     .frame(minHeight: proxy.size.height)
                 }
             }
+
+            VStack {
+                SendNowDismissChevron { dismiss() }
+                Spacer()
+            }
         }
-        .navigationTitle("Send One Now")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .tint(.figmaBlue)
         .onAppear { restartIllustration() }
@@ -153,6 +158,23 @@ struct SendNowSheet: View {
         DispatchQueue.main.async {
             animateIllustration = true
         }
+    }
+}
+
+private struct SendNowDismissChevron: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.down")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(Color.black.opacity(0.36))
+                .frame(width: 44, height: 38)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Dismiss")
+        .padding(.top, 8)
     }
 }
 

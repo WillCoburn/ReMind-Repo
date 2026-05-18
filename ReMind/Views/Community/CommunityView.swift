@@ -18,6 +18,8 @@ struct CommunityView: View {
 
     @State private var likedPostIds: Set<String> = []
     @State private var reportedPostIds: Set<String> = []
+    @State private var pendingPostLikeIds: Set<String> = []
+    @State private var pendingPostReportIds: Set<String> = []
     @State private var blockedAuthorIds: Set<String> = []
 
     @State private var listener: ListenerRegistration?
@@ -25,6 +27,7 @@ struct CommunityView: View {
     @State private var isAtTop = true
     @State private var isStartingListener = false
     @State private var selectedPostForThread: CommunityPost?
+    @State private var updateFailureToastMessage: String?
 
     private var isUserActive: Bool { true }
 
@@ -107,6 +110,14 @@ struct CommunityView: View {
                 secondaryButton: .cancel()
             )
         }
+        .overlay(alignment: .top) {
+            if let updateFailureToastMessage {
+                CommunityUpdateToast(message: updateFailureToastMessage)
+                    .padding(.top, 14)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: updateFailureToastMessage)
         // Hide the nav bar so the custom header/background fill the safe areas.
         .toolbar(.hidden, for: .navigationBar)
         .brainMailDynamicTypeRange()
@@ -189,6 +200,8 @@ struct CommunityView: View {
                                     post: post,
                                     isLiked: isLiked(post),
                                     isReported: isReported(post),
+                                    isLikePending: pendingPostLikeIds.contains(post.id),
+                                    isReportPending: pendingPostReportIds.contains(post.id),
                                     onLike: { handleLike(post) },
                                     onReport: { pendingPostReport = post },
                                     onOpenThread: {
@@ -291,60 +304,69 @@ struct CommunityView: View {
     // MARK: - Actions
 
     private func handleLike(_ post: CommunityPost) {
+        guard !pendingPostLikeIds.contains(post.id),
+              posts.contains(where: { $0.id == post.id }) else { return }
+
         let godModeEnabled = appVM.isGodModeUser
         let previouslyLiked = likedPostIds.contains(post.id)
+        let previousPost = posts.first(where: { $0.id == post.id })
 
+        pendingPostLikeIds.insert(post.id)
         if !godModeEnabled {
-            // Optimistically update UI so the heart fills immediately
-            Task { await MainActor.run { applyLikeState(for: post, isLiked: !previouslyLiked) } }
+            applyLikeState(for: post, isLiked: !previouslyLiked)
         }
 
-        
         Task {
             do {
                 try await CommunityAPI.shared.toggleLike(postId: post.id)
-                if godModeEnabled {
-                    await refreshFeed()
-
+                await MainActor.run { () -> Void in
+                    _ = pendingPostLikeIds.remove(post.id)
                 }
+                await refreshFeed()
             } catch {
-                if !godModeEnabled {
-                    // Roll back optimistic update
-                    await MainActor.run { applyLikeState(for: post, isLiked: previouslyLiked) }
-                }
                 await MainActor.run {
-                    actionErrorMessage = "Unable to like post. Please try again."
+                    pendingPostLikeIds.remove(post.id)
+                    if !godModeEnabled {
+                        setLikeState(for: post.id, isLiked: previouslyLiked)
+                        if let previousPost { replacePost(previousPost) }
+                    }
+                    showUpdateFailureToast()
                 }
             }
         }
     }
 
     private func handleReport(_ post: CommunityPost) {
+        guard !pendingPostReportIds.contains(post.id),
+              posts.contains(where: { $0.id == post.id }) else { return }
+
         let godModeEnabled = appVM.isGodModeUser
         let previouslyReported = reportedPostIds.contains(post.id)
+        let previousPost = posts.first(where: { $0.id == post.id })
 
+        pendingPostReportIds.insert(post.id)
         if !godModeEnabled {
-            // Optimistically update UI so the flag fills immediately
-            Task { await MainActor.run { applyReportState(for: post, isReported: !previouslyReported) } }
+            applyReportState(for: post, isReported: !previouslyReported)
         }
 
         Task {
             do {
                 try await CommunityAPI.shared.toggleReport(postId: post.id)
-                if godModeEnabled {
-                    await refreshFeed()
-
+                await MainActor.run { () -> Void in
+                    _ = pendingPostReportIds.remove(post.id)
                 }
+                await refreshFeed()
             } catch {
                 await MainActor.run {
+                    pendingPostReportIds.remove(post.id)
                     if !godModeEnabled {
-                        // Roll back optimistic update
-                        applyReportState(for: post, isReported: previouslyReported)
+                        setReportState(for: post.id, isReported: previouslyReported)
+                        if let previousPost { replacePost(previousPost) }
                     }
                     if let limitMessage = reportLimitAlertMessage(for: error) {
                         reportLimitMessage = limitMessage
                     } else {
-                        actionErrorMessage = "Unable to report post. Please try again."
+                        showUpdateFailureToast()
                     }
                 }
             }
@@ -368,7 +390,7 @@ struct CommunityView: View {
         do {
             let latest = try await CommunityAPI.shared.fetchLatest()
             await MainActor.run {
-                posts = filteredPosts(latest)
+                posts = overlayPendingPosts(on: filteredPosts(latest))
                 isLoading = false
                 errorMessage = nil
             }
@@ -431,12 +453,49 @@ struct CommunityView: View {
         }
     }
 
+    @MainActor
+    private func replacePost(_ replacement: CommunityPost) {
+        posts = posts.map { post in
+            post.id == replacement.id ? replacement : post
+        }
+    }
+
+    @MainActor
+    private func setLikeState(for postId: String, isLiked: Bool) {
+        if isLiked {
+            likedPostIds.insert(postId)
+        } else {
+            likedPostIds.remove(postId)
+        }
+    }
+
+    @MainActor
+    private func setReportState(for postId: String, isReported: Bool) {
+        if isReported {
+            reportedPostIds.insert(postId)
+        } else {
+            reportedPostIds.remove(postId)
+        }
+    }
+
+    @MainActor
+    private func showUpdateFailureToast() {
+        updateFailureToastMessage = "Couldn’t update. Try again."
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_200_000_000)
+            updateFailureToastMessage = nil
+        }
+    }
+
     private func startFeedListener() {
         listener = CommunityAPI.shared.observeFeed { newPosts in
-            let filtered = filteredPosts(newPosts)
-            self.posts = filtered
-            self.isLoading = false
-            self.errorMessage = nil
+            Task { @MainActor in
+                let filtered = filteredPosts(newPosts)
+                self.posts = overlayPendingPosts(on: filtered)
+                self.isLoading = false
+                self.errorMessage = nil
+                self.syncPostInteractionState(for: filtered)
+            }
         }
     }
 
@@ -452,6 +511,87 @@ struct CommunityView: View {
     private func filteredPosts(_ posts: [CommunityPost]) -> [CommunityPost] {
         posts.filter { post in
             !post.isHidden && !blockedAuthorIds.contains(post.authorId)
+        }
+    }
+
+    private func overlayPendingPosts(on serverPosts: [CommunityPost]) -> [CommunityPost] {
+        serverPosts.map { serverPost in
+            guard pendingPostLikeIds.contains(serverPost.id) || pendingPostReportIds.contains(serverPost.id),
+                  let current = posts.first(where: { $0.id == serverPost.id }) else {
+                return serverPost
+            }
+
+            return CommunityPost(
+                id: serverPost.id,
+                authorId: serverPost.authorId,
+                text: serverPost.text,
+                createdAt: serverPost.createdAt,
+                likeCount: pendingPostLikeIds.contains(serverPost.id) ? current.likeCount : serverPost.likeCount,
+                reportCount: pendingPostReportIds.contains(serverPost.id) ? current.reportCount : serverPost.reportCount,
+                commentCount: serverPost.commentCount,
+                isHidden: serverPost.isHidden,
+                expiresAt: serverPost.expiresAt
+            )
+        }
+    }
+
+    private func syncPostInteractionState(for posts: [CommunityPost]) {
+        guard !appVM.isGodModeUser else {
+            likedPostIds = []
+            reportedPostIds = []
+            return
+        }
+
+        guard let uid = Auth.auth().currentUser?.uid else {
+            likedPostIds = []
+            reportedPostIds = []
+            return
+        }
+
+        let postIds = posts.map(\.id)
+        guard !postIds.isEmpty else {
+            likedPostIds = []
+            reportedPostIds = []
+            return
+        }
+
+        let currentLikedPostIds = likedPostIds
+        let currentReportedPostIds = reportedPostIds
+
+        Task {
+            let db = Firestore.firestore()
+            var likedIds = Set<String>()
+            var reportedIds = Set<String>()
+
+            await withTaskGroup(of: (String, Bool, Bool).self) { group in
+                for postId in postIds {
+                    group.addTask {
+                        do {
+                            let postRef = db.collection("communityPosts").document(postId)
+                            async let likeSnap = postRef.collection("likes").document(uid).getDocument()
+                            async let reportSnap = postRef.collection("reports").document(uid).getDocument()
+                            let (resolvedLikeSnap, resolvedReportSnap) = try await (likeSnap, reportSnap)
+                            return (postId, resolvedLikeSnap.exists, resolvedReportSnap.exists)
+                        } catch {
+                            return (
+                                postId,
+                                currentLikedPostIds.contains(postId),
+                                currentReportedPostIds.contains(postId)
+                            )
+                        }
+                    }
+                }
+
+                for await (postId, isLiked, isReported) in group {
+                    if isLiked { likedIds.insert(postId) }
+                    if isReported { reportedIds.insert(postId) }
+                }
+            }
+
+            await MainActor.run {
+                likedPostIds = likedIds.union(likedPostIds.intersection(pendingPostLikeIds))
+                reportedPostIds = reportedIds.union(reportedPostIds.intersection(pendingPostReportIds))
+            }
         }
     }
 
@@ -512,7 +652,10 @@ private struct CommunityThreadView: View {
     @State private var isSending = false
     @State private var likedCommentIds: Set<String> = []
     @State private var reportedCommentIds: Set<String> = []
+    @State private var pendingCommentLikeIds: Set<String> = []
+    @State private var pendingCommentReportIds: Set<String> = []
     @State private var pendingCommentReport: CommunityComment?
+    @State private var updateFailureToastMessage: String?
 
     var body: some View {
         ZStack {
@@ -543,6 +686,8 @@ private struct CommunityThreadView: View {
                                     comment: comment,
                                     isLiked: isCommentLiked(comment.id),
                                     isReported: isCommentReported(comment.id),
+                                    isLikePending: pendingCommentLikeIds.contains(comment.id),
+                                    isReportPending: pendingCommentReportIds.contains(comment.id),
                                     canBlock: canBlock(authorId: comment.authorId),
                                     onLike: { handleCommentLike(comment) },
                                     onReport: { pendingCommentReport = comment },
@@ -647,6 +792,14 @@ private struct CommunityThreadView: View {
                 secondaryButton: .cancel()
             )
         }
+        .overlay(alignment: .top) {
+            if let updateFailureToastMessage {
+                CommunityUpdateToast(message: updateFailureToastMessage)
+                    .padding(.top, 14)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: updateFailureToastMessage)
         .brainMailDynamicTypeRange()
     }
 
@@ -660,7 +813,7 @@ private struct CommunityThreadView: View {
                 Task { @MainActor in
                     hasLoadedInitialCommentsSnapshot = true
                     allComments = newComments
-                    comments = filteredComments(from: newComments)
+                    comments = overlayPendingComments(on: filteredComments(from: newComments))
                     syncCommentInteractionState(for: comments)
                     if post.commentCount > 0 && newComments.isEmpty {
                         print(
@@ -680,7 +833,7 @@ private struct CommunityThreadView: View {
         blockedListener = blockService.listenBlockedAuthorIds { ids in
             Task { @MainActor in
                 blockedAuthorIds = ids
-                comments = filteredComments(from: allComments)
+                comments = overlayPendingComments(on: filteredComments(from: allComments))
                 syncCommentInteractionState(for: comments)
             }
         }
@@ -727,40 +880,68 @@ private struct CommunityThreadView: View {
     }
 
     private func handleCommentLike(_ comment: CommunityComment) {
+        guard !pendingCommentLikeIds.contains(comment.id),
+              comments.contains(where: { $0.id == comment.id }) else { return }
+
         let godModeEnabled = appVM.isGodModeUser
+        let previouslyLiked = likedCommentIds.contains(comment.id)
+        let previousComment = comments.first(where: { $0.id == comment.id })
+
+        pendingCommentLikeIds.insert(comment.id)
+        if !godModeEnabled {
+            applyCommentLikeState(for: comment, isLiked: !previouslyLiked)
+        }
+
         Task {
             do {
                 try await CommunityAPI.shared.toggleCommentLike(postId: post.id, commentId: comment.id)
-                if godModeEnabled {
-                    await MainActor.run {
-                        syncCommentInteractionState(for: comments)
-                    }
+                await MainActor.run { () -> Void in
+                    _ = pendingCommentLikeIds.remove(comment.id)
                 }
             } catch {
                 let nsError = error as NSError
                 print("[CommunityThreadView] like failed post=\(post.id) comment=\(comment.id) domain=\(nsError.domain) code=\(nsError.code) message=\(nsError.localizedDescription)")
                 await MainActor.run {
-                    sendError = "Couldn't update like right now. Please try again."
+                    pendingCommentLikeIds.remove(comment.id)
+                    if !godModeEnabled {
+                        setCommentLikeState(for: comment.id, isLiked: previouslyLiked)
+                        if let previousComment { replaceComment(previousComment) }
+                    }
+                    showCommentUpdateFailureToast()
                 }
             }
         }
     }
 
     private func handleCommentReport(_ comment: CommunityComment) {
+        guard !pendingCommentReportIds.contains(comment.id),
+              comments.contains(where: { $0.id == comment.id }) else { return }
+
         let godModeEnabled = appVM.isGodModeUser
+        let previouslyReported = reportedCommentIds.contains(comment.id)
+        let previousComment = comments.first(where: { $0.id == comment.id })
+
+        pendingCommentReportIds.insert(comment.id)
+        if !godModeEnabled {
+            applyCommentReportState(for: comment, isReported: !previouslyReported)
+        }
+
         Task {
             do {
                 try await CommunityAPI.shared.toggleCommentReport(postId: post.id, commentId: comment.id)
-                if godModeEnabled {
-                    await MainActor.run {
-                        syncCommentInteractionState(for: comments)
-                    }
+                await MainActor.run { () -> Void in
+                    _ = pendingCommentReportIds.remove(comment.id)
                 }
             } catch {
                 let nsError = error as NSError
                 print("[CommunityThreadView] flag failed post=\(post.id) comment=\(comment.id) domain=\(nsError.domain) code=\(nsError.code) message=\(nsError.localizedDescription)")
                 await MainActor.run {
-                    sendError = "Couldn't update flag right now. Please try again."
+                    pendingCommentReportIds.remove(comment.id)
+                    if !godModeEnabled {
+                        setCommentReportState(for: comment.id, isReported: previouslyReported)
+                        if let previousComment { replaceComment(previousComment) }
+                    }
+                    showCommentUpdateFailureToast()
                 }
             }
         }
@@ -787,7 +968,7 @@ private struct CommunityThreadView: View {
 
         await MainActor.run {
             blockedAuthorIds.insert(authorId)
-            comments = filteredComments(from: allComments)
+            comments = overlayPendingComments(on: filteredComments(from: allComments))
         }
 
         do {
@@ -830,6 +1011,9 @@ private struct CommunityThreadView: View {
             return
         }
 
+        let currentLikedCommentIds = likedCommentIds
+        let currentReportedCommentIds = reportedCommentIds
+
         Task {
             let db = Firestore.firestore()
             var likedIds = Set<String>()
@@ -848,7 +1032,11 @@ private struct CommunityThreadView: View {
                             let (resolvedLikeSnap, resolvedFlagSnap) = try await (likeSnap, flagSnap)
                             return (commentId, resolvedLikeSnap.exists, resolvedFlagSnap.exists)
                         } catch {
-                            return (commentId, false, false)
+                            return (
+                                commentId,
+                                currentLikedCommentIds.contains(commentId),
+                                currentReportedCommentIds.contains(commentId)
+                            )
                         }
                     }
                 }
@@ -860,9 +1048,86 @@ private struct CommunityThreadView: View {
             }
 
             await MainActor.run {
-                likedCommentIds = likedIds
-                reportedCommentIds = flaggedIds
+                likedCommentIds = likedIds.union(likedCommentIds.intersection(pendingCommentLikeIds))
+                reportedCommentIds = flaggedIds.union(reportedCommentIds.intersection(pendingCommentReportIds))
             }
+        }
+    }
+
+    @MainActor
+    private func applyCommentLikeState(for comment: CommunityComment, isLiked: Bool) {
+        setCommentLikeState(for: comment.id, isLiked: isLiked)
+        updateComments(for: comment.id) { current in
+            current.withUpdatedCounts(likeDelta: isLiked ? 1 : -1)
+        }
+    }
+
+    @MainActor
+    private func applyCommentReportState(for comment: CommunityComment, isReported: Bool) {
+        setCommentReportState(for: comment.id, isReported: isReported)
+        updateComments(for: comment.id) { current in
+            current.withUpdatedCounts(reportDelta: isReported ? 1 : -1)
+        }
+    }
+
+    @MainActor
+    private func setCommentLikeState(for commentId: String, isLiked: Bool) {
+        if isLiked {
+            likedCommentIds.insert(commentId)
+        } else {
+            likedCommentIds.remove(commentId)
+        }
+    }
+
+    @MainActor
+    private func setCommentReportState(for commentId: String, isReported: Bool) {
+        if isReported {
+            reportedCommentIds.insert(commentId)
+        } else {
+            reportedCommentIds.remove(commentId)
+        }
+    }
+
+    @MainActor
+    private func updateComments(for commentId: String, transform: (CommunityComment) -> CommunityComment) {
+        comments = comments.map { comment in
+            guard comment.id == commentId else { return comment }
+            return transform(comment)
+        }
+    }
+
+    @MainActor
+    private func replaceComment(_ replacement: CommunityComment) {
+        comments = comments.map { comment in
+            comment.id == replacement.id ? replacement : comment
+        }
+    }
+
+    private func overlayPendingComments(on serverComments: [CommunityComment]) -> [CommunityComment] {
+        serverComments.map { serverComment in
+            guard pendingCommentLikeIds.contains(serverComment.id) || pendingCommentReportIds.contains(serverComment.id),
+                  let current = comments.first(where: { $0.id == serverComment.id }) else {
+                return serverComment
+            }
+
+            return CommunityComment(
+                id: serverComment.id,
+                authorId: serverComment.authorId,
+                text: serverComment.text,
+                createdAt: serverComment.createdAt,
+                likeCount: pendingCommentLikeIds.contains(serverComment.id) ? current.likeCount : serverComment.likeCount,
+                reportCount: pendingCommentReportIds.contains(serverComment.id) ? current.reportCount : serverComment.reportCount,
+                isHidden: serverComment.isHidden
+            )
+        }
+    }
+
+    @MainActor
+    private func showCommentUpdateFailureToast() {
+        updateFailureToastMessage = "Couldn’t update. Try again."
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_200_000_000)
+            updateFailureToastMessage = nil
         }
     }
 
@@ -881,6 +1146,8 @@ private struct CommunityCommentRow: View {
     let comment: CommunityComment
     let isLiked: Bool
     let isReported: Bool
+    let isLikePending: Bool
+    let isReportPending: Bool
     let canBlock: Bool
     let onLike: () -> Void
     let onReport: () -> Void
@@ -978,6 +1245,8 @@ private struct CommunityCommentRow: View {
                 )
             }
             .buttonStyle(.plain)
+            .disabled(isLikePending)
+            .opacity(isLikePending ? 0.58 : 1)
 
             Button(action: onReport) {
                 CommunityCountActionLabel(
@@ -986,6 +1255,8 @@ private struct CommunityCommentRow: View {
                 )
             }
             .buttonStyle(.plain)
+            .disabled(isReportPending)
+            .opacity(isReportPending ? 0.58 : 1)
         }
     }
 
@@ -1003,6 +1274,35 @@ private struct CommunityCommentRow: View {
         if interval < 3600 { return "\(Int(interval / 60))m ago" }
         if interval < 86_400 { return "\(Int(interval / 3600))h ago" }
         return "\(Int(interval / 86_400))d ago"
+    }
+}
+
+private extension CommunityComment {
+    func withUpdatedCounts(likeDelta: Int = 0, reportDelta: Int = 0) -> CommunityComment {
+        CommunityComment(
+            id: id,
+            authorId: authorId,
+            text: text,
+            createdAt: createdAt,
+            likeCount: max(0, likeCount + likeDelta),
+            reportCount: max(0, reportCount + reportDelta),
+            isHidden: isHidden
+        )
+    }
+}
+
+private struct CommunityUpdateToast: View {
+    let message: String
+
+    var body: some View {
+        Label(message, systemImage: "exclamationmark.circle.fill")
+            .font(.footnote.weight(.semibold))
+            .foregroundColor(Color.black.opacity(0.78))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(.ultraThinMaterial, in: Capsule())
+            .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 5)
+            .padding(.horizontal, 16)
     }
 }
 

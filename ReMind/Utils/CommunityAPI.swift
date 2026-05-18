@@ -68,6 +68,24 @@ struct CommunityComment: Identifiable, Hashable {
     let reportCount: Int
     let isHidden: Bool
 
+    init(
+        id: String,
+        authorId: String,
+        text: String,
+        createdAt: Date,
+        likeCount: Int,
+        reportCount: Int,
+        isHidden: Bool
+    ) {
+        self.id = id
+        self.authorId = authorId
+        self.text = text
+        self.createdAt = createdAt
+        self.likeCount = max(0, likeCount)
+        self.reportCount = max(0, reportCount)
+        self.isHidden = isHidden
+    }
+
     init?(from doc: DocumentSnapshot) {
         guard let data = doc.data() else {
             return nil

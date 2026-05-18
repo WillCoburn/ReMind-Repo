@@ -983,6 +983,7 @@ private struct HomePlaceholderScreen: View {
 }
 
 private struct HelpGuideSheet: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var animateHero = false
 
@@ -1007,6 +1008,9 @@ private struct HelpGuideSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: usesAccessibilityLayout ? 22 : 18) {
+                        HelpDismissChevron { dismiss() }
+                            .padding(.top, 8)
+
                         VStack(spacing: usesAccessibilityLayout ? 8 : 10) {
                             HelpHeroIllustration(animate: animateHero)
                                 .frame(width: contentWidth, height: heroHeight)
@@ -1021,7 +1025,6 @@ private struct HelpGuideSheet: View {
                         }
                         .frame(maxWidth: min(430, contentWidth))
                         .frame(width: contentWidth)
-                        .padding(.top, usesAccessibilityLayout ? 10 : 18)
 
                         HelpSectionCard(title: "What is this app?", systemImage: "sparkles") {
                             VStack(alignment: .leading, spacing: 10) {
@@ -1093,7 +1096,7 @@ private struct HelpGuideSheet: View {
                 .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
             }
         }
-        .navigationTitle("Help")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .tint(.figmaBlue)
         .onAppear { restartHeroAnimation() }
@@ -1109,6 +1112,22 @@ private struct HelpGuideSheet: View {
         DispatchQueue.main.async {
             animateHero = true
         }
+    }
+}
+
+private struct HelpDismissChevron: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.down")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(Color.black.opacity(0.36))
+                .frame(width: 44, height: 38)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Dismiss")
     }
 }
 

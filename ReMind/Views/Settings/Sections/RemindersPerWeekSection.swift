@@ -27,16 +27,18 @@ struct RemindersPerWeekSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ViewThatFits(in: .horizontal) {
-                HStack {
+                HStack(spacing: 0) {
                     remindersTitle
-                    Spacer(minLength: 12)
                     remindersValue
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
 
-                VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 0) {
                     remindersTitle
                     remindersValue
                 }
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
 
             if isProUser {
@@ -113,15 +115,15 @@ struct RemindersPerWeekSection: View {
     }
 
     private var remindersTitle: some View {
-        Text("Automated ReMinders Per Week")
+        Text("Reminders per Week: ")
             .font(.subheadline.weight(.semibold))
             .fixedSize(horizontal: false, vertical: true)
     }
 
     private var remindersValue: some View {
-        Text("\(SettingsHelpers.remindersDisplay(remindersPerWeek)) / week")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+        Text(SettingsHelpers.remindersDisplay(remindersPerWeek))
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Color.figmaBlue)
             .lineLimit(1)
             .minimumScaleFactor(0.82)
     }

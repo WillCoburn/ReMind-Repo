@@ -35,7 +35,7 @@ struct FeedbackSupportSection: View {
             showMailSheet = true
             return
         }
-        let addr = "remindapphelp@gmail.com"
+        let addr = "brainmailhelp@gmail.com"
         let subject = "Re[Mind] Feedback"
         let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "Feedback"
         if let url = URL(string: "mailto:\(addr)?subject=\(encodedSubject)") {

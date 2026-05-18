@@ -5,10 +5,12 @@ import SwiftUI
 
 @MainActor
 struct InspirationBankSheet: View {
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appVM: AppViewModel
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var selectedCategory: InspirationCategory = .easternPhilosophy
+    @State private var shuffledRemindersByCategory: [InspirationCategory: [InspirationReminder]] = [:]
     @State private var pendingReminder: InspirationReminder?
     @State private var showAddConfirmation = false
     @State private var addedReminderIDs: Set<String> = []
@@ -34,15 +36,17 @@ struct InspirationBankSheet: View {
                 let contentWidth = max(1, min(560, proxy.size.width - horizontalPadding * 2))
 
                 VStack(spacing: usesAccessibilityLayout ? 14 : 18) {
+                    InspirationBankDismissChevron { dismiss() }
+                        .padding(.top, 8)
+
                     InspirationBankHeader(usesAccessibilityLayout: usesAccessibilityLayout)
                         .frame(width: contentWidth)
-                        .padding(.top, usesAccessibilityLayout ? 10 : 18)
 
                     categoryTabs
 
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: usesAccessibilityLayout ? 14 : 12) {
-                            ForEach(InspirationBankRepository.items(in: selectedCategory)) { reminder in
+                            ForEach(shuffledItems(in: selectedCategory)) { reminder in
                                 InspirationReminderCard(
                                     reminder: reminder,
                                     isAdded: isReminderAlreadyInBank(reminder),
@@ -92,10 +96,15 @@ struct InspirationBankSheet: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .navigationTitle("Inspiration Bank")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .tint(.figmaBlue)
         .brainMailDynamicTypeRange()
+        .onAppear {
+            if shuffledRemindersByCategory.isEmpty {
+                shuffleReminders()
+            }
+        }
     }
 
     private var categoryTabs: some View {
@@ -122,6 +131,18 @@ struct InspirationBankSheet: View {
 
     private func isReminderAlreadyInBank(_ reminder: InspirationReminder) -> Bool {
         addedReminderIDs.contains(reminder.id) || appVM.hasActiveEntryMatching(reminder.text)
+    }
+
+    private func shuffledItems(in category: InspirationCategory) -> [InspirationReminder] {
+        shuffledRemindersByCategory[category] ?? InspirationBankRepository.items(in: category)
+    }
+
+    private func shuffleReminders() {
+        shuffledRemindersByCategory = Dictionary(
+            uniqueKeysWithValues: InspirationCategory.allCases.map { category in
+                (category, InspirationBankRepository.items(in: category).shuffled())
+            }
+        )
     }
 
     private func cancelAdd() {
@@ -260,6 +281,22 @@ private struct InspirationBankHeader: View {
         DispatchQueue.main.async {
             animateLight = true
         }
+    }
+}
+
+private struct InspirationBankDismissChevron: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.down")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(Color.black.opacity(0.36))
+                .frame(width: 44, height: 38)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Dismiss")
     }
 }
 

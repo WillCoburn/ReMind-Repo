@@ -213,7 +213,7 @@ struct RightPanelPlaceholderView: View {
             SubscriptionSheet()
         }
         .sheet(isPresented: $showCommunityGuidelines) {
-            SafariView(url: URL(string: "https://re-mind-app.github.io/remind-site/")!)
+            SafariView(url: URL(string: "https://re-mind-app.github.io/BrainMail-site/")!)
         }
         .alert(
             "Mail Error",
@@ -271,18 +271,16 @@ struct RightPanelPlaceholderView: View {
     // MARK: - Settings list
 
     private var settingsList: some View {
-        VStack(spacing: 12) {
-            automaticSettingsSection
+        VStack(spacing: usesAccessibilityLayout ? 16 : 12) {
+            remindersPerWeekInlineCard
+            myExperienceSection
             accountSection
         }
     }
 
     private var remindersPerWeekInlineCard: some View {
-        VStack(alignment: .center, spacing: usesAccessibilityLayout ? 16 : 13) {
-            VStack(alignment: .center, spacing: usesAccessibilityLayout ? 9 : 7) {
-                remindersPerWeekHeaderTitle
-                remindersPerWeekValueText
-            }
+        VStack(alignment: .center, spacing: usesAccessibilityLayout ? 14 : 9) {
+            remindersPerWeekHeaderTitle
             .frame(maxWidth: .infinity, alignment: .center)
 
             RemindersPerWeekSliderSection(
@@ -302,8 +300,8 @@ struct RightPanelPlaceholderView: View {
             )
             .environmentObject(appVM)
         }
-        .padding(.horizontal, usesAccessibilityLayout ? 16 : 18)
-        .padding(.vertical, usesAccessibilityLayout ? 16 : 14)
+        .padding(.horizontal, usesAccessibilityLayout ? 16 : 16)
+        .padding(.vertical, usesAccessibilityLayout ? 15 : 11)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -319,33 +317,27 @@ struct RightPanelPlaceholderView: View {
     private var remindersPerWeekHeaderTitle: some View {
         HStack(alignment: .center, spacing: 10) {
             Image(systemName: "bell.badge.fill")
-                .font(.headline.weight(.semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundColor(.figmaBlue)
-                .frame(width: 28, height: 28)
+                .frame(width: 24, height: 24)
                 .background(Color.figmaBlue.opacity(0.08), in: Circle())
                 .dynamicTypeSize(.xSmall ... (usesAccessibilityLayout ? .accessibility1 : .large))
                 .accessibilityHidden(true)
 
-            Text("Reminders per Week")
-                .statsSettingsText(.settingsRowTitle)
-                .foregroundColor(.black)
-                .multilineTextAlignment(.center)
-                .lineLimit(usesAccessibilityLayout ? 2 : 1)
-                .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.88)
+            (
+                Text("Reminders per Week: ")
+                    .foregroundColor(.black)
+                + Text(SettingsHelpers.remindersDisplay(effectiveRemindersPerWeek))
+                    .foregroundColor(.figmaBlue)
+            )
+            .statsSettingsText(.settingsRowTitle)
+            .multilineTextAlignment(.center)
+            .lineLimit(usesAccessibilityLayout ? 2 : 1)
+            .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.86)
+            .accessibilityLabel("Reminders per Week: \(SettingsHelpers.remindersDisplay(effectiveRemindersPerWeek))")
         }
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .center)
-    }
-
-    private var remindersPerWeekValueText: some View {
-        Text(SettingsHelpers.remindersDisplay(effectiveRemindersPerWeek))
-            .statsSettingsText(.statCardValue)
-            .foregroundColor(.figmaBlue)
-            .monospacedDigit()
-            .lineLimit(1)
-            .minimumScaleFactor(0.92)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .accessibilityLabel("\(SettingsHelpers.remindersDisplay(effectiveRemindersPerWeek)) reminders per week")
     }
 
     private var effectiveRemindersPerWeek: Double {
@@ -364,11 +356,9 @@ struct RightPanelPlaceholderView: View {
             .padding(.top, usesAccessibilityLayout ? 8 : 4)
     }
 
-    private var automaticSettingsSection: some View {
+    private var myExperienceSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            settingsSectionHeader("Automatic Reminder Settings")
-
-            remindersPerWeekInlineCard
+            settingsSectionHeader("My Experience")
 
             VStack(spacing: 0) {
                 SettingsRow(
@@ -384,6 +374,13 @@ struct RightPanelPlaceholderView: View {
                     isDestructive: false,
                     action: { activeSheet = .timeZone }
                 )
+
+                SettingsRow(
+                    title: "Subscription",
+                    value: nil,
+                    isDestructive: false,
+                    action: { activeSheet = .subscription }
+                )
             }
             .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -395,13 +392,6 @@ struct RightPanelPlaceholderView: View {
             settingsSectionHeader("Account")
 
             VStack(spacing: 0) {
-                SettingsRow(
-                    title: "Subscription",
-                    value: nil,
-                    isDestructive: false,
-                    action: { activeSheet = .subscription }
-                )
-
                 SettingsRow(
                     title: "Contact Us",
                     value: nil,
@@ -449,7 +439,7 @@ struct RightPanelPlaceholderView: View {
             return
         }
 
-        let addr = "remindapphelp@gmail.com"
+        let addr = "brainmailhelp@gmail.com"
         let subject = "Re[Mind] Feedback"
         let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "Feedback"
 
@@ -960,7 +950,7 @@ private struct RemindersPerWeekSliderSection: View {
     private let stepReminders: Double = 1
 
     var body: some View {
-        VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 16 : 14) {
+        VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 14 : 8) {
             if showsCenteredValue {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(SettingsHelpers.remindersDisplay(displayedReminders))
@@ -1010,20 +1000,20 @@ private struct RemindersPerWeekSliderSection: View {
     private var upgradeLimitBanner: some View {
         Group {
             if usesAccessibilityLayout {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 9) {
                     upgradeLimitMessage
                     upgradeLimitButtons
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             } else {
                 ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .center, spacing: 10) {
+                    HStack(alignment: .center, spacing: 8) {
                         upgradeLimitMessage
                             .layoutPriority(1)
                         upgradeLimitButtons
                     }
 
-                    VStack(alignment: .trailing, spacing: 9) {
+                    VStack(alignment: .trailing, spacing: 7) {
                         upgradeLimitMessage
                         upgradeLimitButtons
                     }
@@ -1032,8 +1022,8 @@ private struct RemindersPerWeekSliderSection: View {
             }
         }
         .foregroundColor(Color.black.opacity(0.62))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, usesAccessibilityLayout ? 12 : 10)
+        .padding(.vertical, usesAccessibilityLayout ? 10 : 7)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -1166,7 +1156,7 @@ private struct FreeLimitsWhyOverlay: View {
                                     .multilineTextAlignment(.center)
                                     .fixedSize(horizontal: false, vertical: true)
 
-                                Text("SMS costs money each time BrainMail sends a text. Free limits keep the app sustainable while still letting people try reminders before upgrading.")
+                                Text("I’m sorry it can’t be unlimited! Unfortunately, it costs money on the backend to send toll-free SMS, so I had to put up loss guardrails for free users.")
                                     .font(.subheadline)
                                     .foregroundStyle(Color.black.opacity(0.60))
                                     .multilineTextAlignment(.center)
@@ -1245,9 +1235,10 @@ struct SendWindowSheet: View {
                         SettingsSubpageHeader(
                             systemImage: "moon.zzz.fill",
                             title: "Message Window",
-                            subtitle: "Pick the hours when a reminder text would feel welcome.",
+                            subtitle: "Choose the hours a reminder text would be welcome.",
                             animate: animateHeader
                         )
+                        .padding(.horizontal, 24)
 
                         SettingsSubpageCard {
                             VStack(spacing: 6) {
@@ -1406,11 +1397,14 @@ struct TimeZoneSheet: View {
 }
 
 struct SubscriptionOptionsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var appVM: AppViewModel
     @ObservedObject var revenueCat: RevenueCatManager = .shared
 
     var onStartSubscription: () -> Void
     @Binding var restoreMessage: String?
+    @State private var animateHeader = false
 
     init(appVM: AppViewModel, onStartSubscription: @escaping () -> Void, restoreMessage: Binding<String?>) {
         self.appVM = appVM
@@ -1419,36 +1413,100 @@ struct SubscriptionOptionsSheet: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            Capsule()
-                .fill(Color.secondary.opacity(0.3))
-                .frame(width: 44, height: 6)
-                .padding(.top, 8)
-            
-            Text("Subscription Status: \(revenueCat.entitlementActive ? "Subscribed" : "Unsubscribed")")
-                .font(.headline)
-                .frame(maxWidth: .infinity)
+        ZStack {
+            SettingsSubpageBackground()
 
-            SubscriptionSection(
-                appVM: appVM,
-                revenueCat: revenueCat,
-                onStartSubscription: onStartSubscription,
-                restoreMessage: $restoreMessage
-            )
-            .frame(maxWidth: .infinity)
+            GeometryReader { proxy in
+                let isCompact = proxy.size.height < 650
 
-            Spacer(minLength: 8)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: isCompact ? 18 : 24) {
+                        SettingsSubpageHandle()
+
+                        SettingsSubpageHeader(
+                            systemImage: revenueCat.entitlementActive ? "checkmark.seal.fill" : "sparkles",
+                            title: "Subscription",
+                            subtitle: revenueCat.entitlementActive
+                                ? "Your BrainMail Pro access is active."
+                                : "Unlock roomier reminder limits and unlimited instant sends.",
+                            animate: animateHeader
+                        )
+                        .padding(.horizontal, 24)
+
+                        SettingsSubpageCard {
+                            subscriptionStatusCard
+
+                            SubscriptionSection(
+                                appVM: appVM,
+                                revenueCat: revenueCat,
+                                onStartSubscription: onStartSubscription,
+                                restoreMessage: $restoreMessage
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                        .padding(.horizontal, 24)
+
+                        Spacer(minLength: isCompact ? 8 : 16)
+
+                        Button("Done") { dismiss() }
+                            .buttonStyle(SettingsSubpageDoneButtonStyle())
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, max(proxy.safeAreaInsets.bottom + 16, 24))
+                    }
+                    .frame(width: proxy.size.width)
+                    .frame(minHeight: proxy.size.height)
+                }
+            }
         }
-        .padding()
         .multilineTextAlignment(.center)
-                .presentationDetents([.medium])
+        .onAppear { animateHeader = true }
+        .onDisappear { animateHeader = false }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.hidden)
+        .brainMailDynamicTypeRange()
+    }
+
+    private var subscriptionStatusCard: some View {
+        HStack(alignment: .center, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.figmaBlue.opacity(0.10))
+                    .frame(width: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 42,
+                           height: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 42)
+
+                Image(systemName: revenueCat.entitlementActive ? "checkmark.circle.fill" : "circle")
+                    .font(.title3.weight(.semibold))
+                    .foregroundColor(.figmaBlue)
+            }
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(revenueCat.entitlementActive ? "Pro is active" : "Free plan")
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(Color.black.opacity(0.80))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(revenueCat.entitlementActive ? "Thanks for supporting BrainMail." : "Upgrade whenever you want more room.")
+                    .font(.footnote)
+                    .foregroundColor(Color.black.opacity(0.56))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.figmaBlue.opacity(0.07))
+        )
     }
 }
 
 struct ContactUsMailSheet: View {
     var body: some View {
         MailView(
-            recipients: ["remindapphelp@gmail.com"],
+            recipients: ["brainmailhelp@gmail.com"],
             subject: "Re[Mind] Feedback"
         )
     }
