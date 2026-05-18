@@ -36,7 +36,7 @@ struct FeedbackSupportSection: View {
             return
         }
         let addr = "brainmailhelp@gmail.com"
-        let subject = "Re[Mind] Feedback"
+        let subject = "BrainMail Support"
         let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "Feedback"
         if let url = URL(string: "mailto:\(addr)?subject=\(encodedSubject)") {
             UIApplication.shared.open(url) { success in

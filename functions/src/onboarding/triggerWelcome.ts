@@ -87,7 +87,13 @@ export const triggerWelcome = onCall(
     const msid = TWILIO_MSID.value();
     const client = getTwilioClient(sid, token);
 
-    await db.doc(`users/${targetUid}`).set({ active: true, smsOptOut: false, plan: "free" }, { merge: true });
+    const userRef = db.doc(`users/${targetUid}`);
+    const existingUser = await userRef.get();
+    const userSeed: Record<string, unknown> = { active: true, smsOptOut: false };
+    if (!existingUser.exists || existingUser.get("plan") == null) {
+      userSeed.plan = "free";
+    }
+    await userRef.set(userSeed, { merge: true });
     const settingsRef = db.doc(`users/${targetUid}/meta/settings`);
     const settingsSnap = await settingsRef.get();
     if (!settingsSnap.exists) {

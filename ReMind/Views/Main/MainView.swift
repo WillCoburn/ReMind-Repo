@@ -1104,7 +1104,7 @@ private struct HelpGuideSheet: View {
     }
 
     private var supportURL: URL {
-        URL(string: "mailto:brainmailhelp@gmail.com?subject=BrainMail%20Feedback")!
+        URL(string: "mailto:brainmailhelp@gmail.com?subject=BrainMail%20Support")!
     }
 
     private func restartHeroAnimation() {

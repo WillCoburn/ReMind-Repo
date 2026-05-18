@@ -309,13 +309,28 @@ function computeActive(user: FirebaseFirestore.DocumentSnapshot, now = new Date(
   return user.get("active") !== false;
 }
 
+function timestampSeconds(raw: unknown): number | null {
+  if (raw == null) return null;
+  if (raw instanceof admin.firestore.Timestamp) {
+    return raw.seconds + raw.nanoseconds / 1_000_000_000;
+  }
+  if (raw instanceof Date) {
+    return raw.getTime() / 1000;
+  }
+  const asNumber = typeof raw === "string" ? Number(raw) : (raw as number);
+  return Number.isFinite(asNumber) ? asNumber : null;
+}
+
 function resolvePlan(user: FirebaseFirestore.DocumentSnapshot): "free" | "pro" {
   const explicit = String(user.get("plan") ?? "").toLowerCase();
-  if (explicit === "pro") return "pro";
-  if (explicit === "free") return "free";
-
   const rcActive = user.get("rc.entitlementActive") === true;
-  return rcActive ? "pro" : "free";
+  const rcExpiresAtSeconds = timestampSeconds(user.get("rc.expiresAt"));
+  const rcExpired = rcExpiresAtSeconds != null && rcExpiresAtSeconds < Date.now() / 1000;
+
+  if (rcActive && !rcExpired) return "pro";
+  if (rcExpired) return "free";
+  if (explicit === "pro") return "pro";
+  return "free";
 }
 
 

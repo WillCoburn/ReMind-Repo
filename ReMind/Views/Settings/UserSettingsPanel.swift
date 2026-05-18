@@ -72,7 +72,7 @@ struct UserSettingsForm: View {
 
   var body: some View {
       VStack(alignment: .leading, spacing: 20) {
-          if !appVM.isProUser {
+          if appVM.shouldShowUpgradeMessaging {
               Text("Free users limited to 3 auto, 1 instant messages/week")
                   .font(.footnote.weight(.semibold))
                   .foregroundStyle(.secondary)
@@ -90,7 +90,12 @@ struct UserSettingsForm: View {
               .font(.subheadline)
               .foregroundColor(Color.figmaBlue)
 
-          RemindersPerWeekSection(remindersPerWeek: $remindersPerWeek, isProUser: appVM.isProUser)
+          RemindersPerWeekSection(
+              remindersPerWeek: $remindersPerWeek,
+              subscriptionState: appVM.subscriptionState,
+              usesProRange: appVM.shouldUseProReminderRange,
+              showsUpgradeMessaging: appVM.shouldShowUpgradeMessaging
+          )
               .onChange(of: remindersPerWeek) { _ in handleSettingChange() }
 
           Divider()
@@ -123,7 +128,7 @@ struct UserSettingsForm: View {
               appVM: appVM,
               revenueCat: revenueCat,
               onStartSubscription: {
-                  RevenueCatManager.shared.forceIdentify {
+                  RevenueCatManager.shared.forceIdentify(reason: "settingsStartSubscription") {
                       showPaywall = true
                   }
               },
@@ -191,7 +196,7 @@ struct UserSettingsForm: View {
         .sheet(isPresented: $showMailSheet) {
             MailView(
                 recipients: ["brainmailhelp@gmail.com"],
-                subject: "Re[Mind] Feedback"
+                subject: "BrainMail Support"
             )
         }
         .sheet(isPresented: $showPaywall) {
@@ -205,9 +210,10 @@ struct UserSettingsForm: View {
             SafariView(url: URL(string: "https://re-mind-app.github.io/BrainMail-site/")!)
         }
         .onAppear {
-            //no RC calls
+            appVM.refreshRevenueCatEntitlement(reason: "settingsAppear")
 
             // Optional SK2 sanity check
+#if DEBUG
             Task {
                 do {
                     let products = try await Product.products(for: ["remind.monthly.099.us"])
@@ -216,6 +222,7 @@ struct UserSettingsForm: View {
                     print("🧪 SK2 fetch error:", error.localizedDescription)
                 }
             }
+#endif
         }
     }
     

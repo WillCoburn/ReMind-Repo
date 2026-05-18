@@ -15,7 +15,11 @@ struct SubscriptionSection: View {
             let willRenew = revenueCat.entitlementWillRenew
             let expiration = revenueCat.entitlementExpirationDate
 
-            if appVM.isSubscribed {
+            if appVM.subscriptionState == .loading {
+                ProgressView()
+                    .tint(.figmaBlue)
+                    .frame(minHeight: 48)
+            } else if appVM.isProUser {
                 if let expiration {
                     let dateString = DateFormatter.localizedString(
                         from: expiration,
@@ -40,7 +44,7 @@ struct SubscriptionSection: View {
                 .buttonStyle(SubscriptionPrimaryButtonStyle())
             }
 
-            if appVM.isSubscribed {
+            if appVM.isProUser {
                 Button("Manage Subscription") {
                      if let url = RevenueCatManager.shared.managementURL {
                          UIApplication.shared.open(url)

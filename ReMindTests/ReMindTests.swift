@@ -58,4 +58,80 @@ final class ReMindTests: XCTestCase {
 
         XCTAssertEqual(StreakCalculator.compute(entries: entries, calendar: calendar).count, 1)
     }
+
+    func testLoadingSubscriptionDoesNotUseFreeLimits() {
+        XCTAssertFalse(
+            SubscriptionLimits.shouldShowUpgradeMessaging(
+                state: .loading,
+                lastKnownSubscribed: false
+            )
+        )
+        XCTAssertFalse(
+            SubscriptionLimits.shouldApplyFreeUsageLimits(
+                state: .loading,
+                lastKnownSubscribed: false
+            )
+        )
+        XCTAssertEqual(
+            SubscriptionLimits.maxRemindersPerWeek(
+                state: .loading,
+                lastKnownSubscribed: false
+            ),
+            SubscriptionLimits.proMaxRemindersPerWeek
+        )
+    }
+
+    func testFreeSubscriptionUsesFreeLimits() {
+        XCTAssertTrue(
+            SubscriptionLimits.shouldShowUpgradeMessaging(
+                state: .free,
+                lastKnownSubscribed: false
+            )
+        )
+        XCTAssertTrue(
+            SubscriptionLimits.shouldApplyFreeUsageLimits(
+                state: .free,
+                lastKnownSubscribed: false
+            )
+        )
+        XCTAssertEqual(
+            SubscriptionLimits.maxRemindersPerWeek(
+                state: .free,
+                lastKnownSubscribed: false
+            ),
+            SubscriptionLimits.freeMaxRemindersPerWeek
+        )
+    }
+
+    func testSubscribedSubscriptionUsesProLimits() {
+        XCTAssertFalse(
+            SubscriptionLimits.shouldShowUpgradeMessaging(
+                state: .subscribed,
+                lastKnownSubscribed: false
+            )
+        )
+        XCTAssertEqual(
+            SubscriptionLimits.maxRemindersPerWeek(
+                state: .subscribed,
+                lastKnownSubscribed: false
+            ),
+            SubscriptionLimits.proMaxRemindersPerWeek
+        )
+    }
+
+    func testRefreshErrorPreservesLastKnownSubscribedState() {
+        XCTAssertFalse(
+            SubscriptionLimits.shouldShowUpgradeMessaging(
+                state: .error,
+                lastKnownSubscribed: true
+            )
+        )
+        XCTAssertEqual(
+            SubscriptionLimits.maxRemindersPerWeek(
+                state: .error,
+                lastKnownSubscribed: true
+            ),
+            SubscriptionLimits.proMaxRemindersPerWeek
+        )
+    }
 }

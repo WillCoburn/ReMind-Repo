@@ -6,6 +6,7 @@ import Combine
 import FirebaseAuth
 import FirebaseFirestore
 import FirebaseFunctions
+import RevenueCat
 
 @MainActor
 final class AppViewModel: ObservableObject {
@@ -15,7 +16,7 @@ final class AppViewModel: ObservableObject {
     @Published private(set) var latestSentReminder: LastReminder?
     @Published var isLoading = false
     @Published var hasLoadedInitialProfile = false
-    enum EntitlementSource { case unknown, cached, revenueCat }
+    enum EntitlementSource { case unknown, cached, revenueCat, error }
 
     @Published private(set) var isEntitled = false
     @Published var isSubscribed = false
@@ -24,6 +25,9 @@ final class AppViewModel: ObservableObject {
     @Published private(set) var entitlementResolved = false
     @Published private(set) var hasRevenueCatCustomerInfo = false
     @Published private(set) var entitlementSource: EntitlementSource = .unknown
+    @Published private(set) var subscriptionState: SubscriptionState = .loading
+    @Published private(set) var lastKnownSubscriptionWasPro = false
+    @Published private(set) var subscriptionResolutionReason: String = "initial"
     
     /// True once Firebase auth state + user profile have been resolved at least once
     var isAuthInitialized: Bool {
@@ -64,6 +68,7 @@ final class AppViewModel: ObservableObject {
     private var lastServerNow: Date?
     private var uptimeAtLastServerNow: TimeInterval?
     private var lastEntitlementActive = false
+    private var latestRevenueCatCustomerInfo: CustomerInfo?
     var isSeedingUserProfile = false
 
     let revenueCat: RevenueCatManager = .shared
@@ -74,15 +79,48 @@ final class AppViewModel: ObservableObject {
     /// New source-of-truth tier signal.
     /// Defaults to `.free` when missing for backward compatibility.
     var effectivePlan: UserPlan {
-        if let explicit = user?.plan { return explicit }
-        if isSubscribed { return .pro }
-        return .free
+        isProUser ? .pro : .free
     }
 
-    var isProUser: Bool { effectivePlan == .pro }
+    var isProUser: Bool {
+        subscriptionState == .subscribed
+            || ((subscriptionState == .loading || subscriptionState == .error) && lastKnownSubscriptionWasPro)
+    }
+
+    var shouldUseProReminderRange: Bool {
+        SubscriptionLimits.allowsProRange(
+            state: subscriptionState,
+            lastKnownSubscribed: lastKnownSubscriptionWasPro
+        )
+    }
+
+    var shouldShowUpgradeMessaging: Bool {
+        SubscriptionLimits.shouldShowUpgradeMessaging(
+            state: subscriptionState,
+            lastKnownSubscribed: lastKnownSubscriptionWasPro
+        )
+    }
+
+    var shouldApplyFreeUsageLimits: Bool {
+        SubscriptionLimits.shouldApplyFreeUsageLimits(
+            state: subscriptionState,
+            lastKnownSubscribed: lastKnownSubscriptionWasPro
+        )
+    }
+
+    var isSubscriptionLoading: Bool {
+        subscriptionState == .loading
+    }
+
+    var maxRemindersPerWeekForCurrentSubscription: Double {
+        SubscriptionLimits.maxRemindersPerWeek(
+            state: subscriptionState,
+            lastKnownSubscribed: lastKnownSubscriptionWasPro
+        )
+    }
 
     var hasUsedFreeInstantSendThisWeek: Bool {
-        guard effectivePlan == .free else { return false }
+        guard shouldApplyFreeUsageLimits else { return false }
         guard let usage = user?.usage else { return false }
         let tzIdentifier = UserDefaults.standard.string(forKey: "tzIdentifier") ?? TimeZone.current.identifier
         let weekKey = Self.instantWeekKey(now: Date(), tzIdentifier: tzIdentifier)
@@ -142,6 +180,9 @@ final class AppViewModel: ObservableObject {
         authHandle = Auth.auth().addStateDidChangeListener { [weak self] _, authUser in
             guard let self = self else { return }
             Task {
+                await MainActor.run {
+                    self.resetSubscriptionStateForAuthChange()
+                }
                 await self.waitForProfileSeedIfNeeded()
                 // Load user profile and entries for this auth state.
                 await self.loadUserAndEntries(authUser?.uid)
@@ -160,21 +201,21 @@ final class AppViewModel: ObservableObject {
     }
 
     private func observeEntitlementSources() {
-        revenueCat.$entitlementActive
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                guard let self else { return }
-                self.isSubscribed = self.revenueCat.entitlementActive
-                self.applyEntitlementState(
-                    entitlementActive: self.revenueCat.entitlementActive,
-                    source: .revenueCat
-                )
-            }
-            .store(in: &entitlementCancellables)
         revenueCat.$lastCustomerInfo
             .receive(on: DispatchQueue.main)
             .sink { [weak self] info in
-                self?.hasRevenueCatCustomerInfo = (info != nil)
+                guard let self else { return }
+                self.hasRevenueCatCustomerInfo = (info != nil)
+                self.latestRevenueCatCustomerInfo = info
+                guard let info else { return }
+                self.applyRevenueCatSubscriptionState(from: info, reason: "customerInfo")
+            }
+            .store(in: &entitlementCancellables)
+        revenueCat.$lastRefreshError
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] error in
+                guard let self, let error else { return }
+                self.applySubscriptionState(.error, source: .error, reason: "revenueCatError:\(error)")
             }
             .store(in: &entitlementCancellables)
         
@@ -205,10 +246,15 @@ final class AppViewModel: ObservableObject {
         scheduleTrialExpiryTimer()
 
         guard let profile else {
+            subscriptionState = .loading
+            subscriptionResolutionReason = "signedOut"
             entitlementResolved = false
             entitlementSource = .unknown
             lastEntitlementActive = false
+            latestRevenueCatCustomerInfo = nil
+            lastKnownSubscriptionWasPro = false
             isEntitled = false
+            isSubscribed = false
             isTrialActive = false
             hasExpiredTrial = false
             hasRevenueCatCustomerInfo = false
@@ -216,41 +262,87 @@ final class AppViewModel: ObservableObject {
         }
 
         let cachedPaid = profile.plan == .pro
-        applyEntitlementState(entitlementActive: cachedPaid, source: .cached)
+        lastKnownSubscriptionWasPro = cachedPaid
+        if hasRevenueCatCustomerInfo {
+            applyRevenueCatSubscriptionState(reason: "profileChangedWithCustomerInfo")
+        } else {
+            applySubscriptionState(.loading, source: .cached, reason: cachedPaid ? "cachedProWhileLoading" : "cachedFreeWhileLoading")
+        }
     }
 
     func applyEntitlementState(entitlementActive: Bool, source: EntitlementSource) {
-        let resolvedSource: EntitlementSource
-        let resolvedActive: Bool
-
-        if entitlementSource == .revenueCat && source == .cached {
-            resolvedSource = entitlementSource
-            resolvedActive = lastEntitlementActive
-        } else {
-            resolvedSource = source
-            resolvedActive = entitlementActive
+        if source == .cached {
+            lastKnownSubscriptionWasPro = entitlementActive
+            applySubscriptionState(.loading, source: source, reason: entitlementActive ? "cachedPro" : "cachedFree")
+            return
         }
 
-        let onTrial = computeTrialActive()
-        // Tier source of truth is now `plan`; keep this boolean for legacy UI wiring.
-        // CLEANUP AFTER: remove trial-derived entitlement flags once old UX is fully deleted.
-        let plan = user?.plan ?? (resolvedActive ? .pro : .free)
-        let newValue = (plan == .pro)
-        let expiredTrial = (!resolvedActive && !onTrial && user?.trialEndsAt != nil)
+        let state: SubscriptionState = entitlementActive ? .subscribed : .free
+        applySubscriptionState(state, source: source, reason: entitlementActive ? "legacyActive" : "legacyInactive")
+    }
 
-        guard newValue != isEntitled
+    private func applyRevenueCatSubscriptionState(reason: String) {
+        let state = resolveRevenueCatSubscriptionState(from: latestRevenueCatCustomerInfo ?? revenueCat.lastCustomerInfo)
+        applySubscriptionState(state, source: .revenueCat, reason: reason)
+    }
+
+    private func applyRevenueCatSubscriptionState(from info: CustomerInfo, reason: String) {
+        let state = resolveRevenueCatSubscriptionState(from: info)
+        applySubscriptionState(state, source: .revenueCat, reason: reason)
+    }
+
+    private func resolveRevenueCatSubscriptionState(from info: CustomerInfo?) -> SubscriptionState {
+        guard let info else { return .loading }
+
+        let entitlement = info.entitlements[PaywallConfig.entitlementId]
+        if entitlement?.isActive == true {
+            return .subscribed
+        }
+
+        if let expiration = entitlement?.expirationDate,
+           expiration < referenceNow() {
+            return .expired
+        }
+
+        return .free
+    }
+
+    private func applySubscriptionState(
+        _ state: SubscriptionState,
+        source: EntitlementSource,
+        reason: String
+    ) {
+        let onTrial = computeTrialActive()
+        let expiredTrial = (state == .expired) || (state != .subscribed && !onTrial && user?.trialEndsAt != nil)
+        let entitled = state == .subscribed || ((state == .loading || state == .error) && lastKnownSubscriptionWasPro)
+        let resolved = state.isResolved
+
+        if state == .subscribed {
+            lastKnownSubscriptionWasPro = true
+        } else if state == .free || state == .expired {
+            lastKnownSubscriptionWasPro = false
+        }
+
+        guard state != subscriptionState
+                || entitled != isEntitled
+                || (state == .subscribed) != isSubscribed
                 || onTrial != isTrialActive
                 || expiredTrial != hasExpiredTrial
-                || !entitlementResolved
-                || entitlementSource != resolvedSource
-                || lastEntitlementActive != resolvedActive else { return }
+                || resolved != entitlementResolved
+                || entitlementSource != source
+                || lastEntitlementActive != (state == .subscribed)
+                || subscriptionResolutionReason != reason else { return }
 
-        isEntitled = newValue
+        subscriptionState = state
+        subscriptionResolutionReason = reason
+        isEntitled = entitled
+        isSubscribed = state == .subscribed
         isTrialActive = onTrial
         hasExpiredTrial = expiredTrial
-        entitlementResolved = true
-        entitlementSource = resolvedSource
-        lastEntitlementActive = resolvedActive
+        entitlementResolved = resolved
+        entitlementSource = source
+        lastEntitlementActive = state == .subscribed
+        logSubscriptionResolution(reason: reason)
     }
 
     private func computeTrialActive() -> Bool {
@@ -277,14 +369,41 @@ final class AppViewModel: ObservableObject {
 
     func refreshEntitlementState() {
         guard entitlementSource != .unknown else { return }
-        applyEntitlementState(entitlementActive: lastEntitlementActive, source: entitlementSource)
+        if hasRevenueCatCustomerInfo {
+            applyRevenueCatSubscriptionState(reason: "refreshDerivedState")
+        } else {
+            applySubscriptionState(.loading, source: entitlementSource, reason: "refreshWhileLoading")
+        }
         scheduleTrialExpiryTimer()
     }
 
-    func refreshRevenueCatEntitlement() {
-        revenueCat.forceIdentify { [weak self] in
-            self?.revenueCat.refreshEntitlementState()
+    func refreshRevenueCatEntitlement(reason: String = "app") {
+        revenueCat.forceIdentify(reason: reason) { [weak self] in
+            self?.revenueCat.refreshEntitlementState(reason: reason)
         }
+    }
+
+    func resetSubscriptionStateForAuthChange() {
+        subscriptionState = .loading
+        subscriptionResolutionReason = "authChange"
+        entitlementResolved = false
+        entitlementSource = .unknown
+        lastEntitlementActive = false
+        lastKnownSubscriptionWasPro = false
+        isEntitled = false
+        isSubscribed = false
+        isTrialActive = false
+        hasExpiredTrial = false
+        hasRevenueCatCustomerInfo = false
+        latestRevenueCatCustomerInfo = nil
+    }
+
+    private func logSubscriptionResolution(reason: String) {
+#if DEBUG
+        print(
+            "🔐 [Subscription][AppVM] state=\(subscriptionState.rawValue) isPro=\(isProUser) lastKnownPro=\(lastKnownSubscriptionWasPro) source=\(entitlementSource) reason=\(reason)"
+        )
+#endif
     }
 
     func parseLastReminder(from data: [String: Any]) -> LastReminder? {

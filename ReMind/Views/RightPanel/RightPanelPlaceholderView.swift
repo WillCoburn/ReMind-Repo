@@ -197,7 +197,7 @@ struct RightPanelPlaceholderView: View {
                     appVM: appVM,
                     onStartSubscription: {
                         activeSheet = nil
-                        RevenueCatManager.shared.forceIdentify { showPaywall = true }
+                        RevenueCatManager.shared.forceIdentify(reason: "statsSubscriptionSheetStart") { showPaywall = true }
                     },
                     restoreMessage: $restoreMessage
                 )
@@ -240,8 +240,10 @@ struct RightPanelPlaceholderView: View {
         }
         .animation(.easeInOut(duration: 0.18), value: showFreeLimitsWhy)
         .onAppear {
-            //no rc calls
+            appVM.refreshRevenueCatEntitlement(reason: "statsSettingsAppear")
+            logSubscriptionUIResolution()
 
+#if DEBUG
             Task {
                 do {
                     let products = try await Product.products(for: ["remind.monthly.099.us"])
@@ -250,6 +252,10 @@ struct RightPanelPlaceholderView: View {
                     print("🧪 SK2 fetch error:", error.localizedDescription)
                 }
             }
+#endif
+        }
+        .onChange(of: appVM.subscriptionState) { _ in
+            logSubscriptionUIResolution()
         }
         // Hide the nav bar so the custom layout can use the full vertical space.
         .toolbar(.hidden, for: .navigationBar)
@@ -293,7 +299,7 @@ struct RightPanelPlaceholderView: View {
                     }
                 },
                 onUpgrade: {
-                    RevenueCatManager.shared.forceIdentify {
+                    RevenueCatManager.shared.forceIdentify(reason: "statsReminderUpgrade") {
                         showPaywall = true
                     }
                 }
@@ -324,13 +330,16 @@ struct RightPanelPlaceholderView: View {
                 .dynamicTypeSize(.xSmall ... (usesAccessibilityLayout ? .accessibility1 : .large))
                 .accessibilityHidden(true)
 
-            (
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
                 Text("Reminders per Week: ")
                     .foregroundColor(.black)
-                + Text(SettingsHelpers.remindersDisplay(effectiveRemindersPerWeek))
+                    .statsSettingsText(.settingsRowTitle)
+                Text(SettingsHelpers.remindersDisplay(effectiveRemindersPerWeek))
                     .foregroundColor(.figmaBlue)
-            )
-            .statsSettingsText(.settingsRowTitle)
+                    .statsSettingsText(.settingsRowTitle)
+                    .fontWeight(.bold)
+                    .monospacedDigit()
+            }
             .multilineTextAlignment(.center)
             .lineLimit(usesAccessibilityLayout ? 2 : 1)
             .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.86)
@@ -342,8 +351,16 @@ struct RightPanelPlaceholderView: View {
 
     private var effectiveRemindersPerWeek: Double {
         let minReminders: Double = 1
-        let maxReminders = appVM.isProUser ? 20.0 : 3.0
+        let maxReminders = appVM.maxRemindersPerWeekForCurrentSubscription
         return min(max(remindersPerWeek, minReminders), maxReminders)
+    }
+
+    private func logSubscriptionUIResolution() {
+#if DEBUG
+        print(
+            "🔐 [Subscription][StatsUI] state=\(appVM.subscriptionState.rawValue) upgradeBanner=\(appVM.shouldShowUpgradeMessaging) sliderMax=\(appVM.maxRemindersPerWeekForCurrentSubscription) reason=\(appVM.subscriptionResolutionReason)"
+        )
+#endif
     }
 
     private func settingsSectionHeader(_ title: String) -> some View {
@@ -440,7 +457,7 @@ struct RightPanelPlaceholderView: View {
         }
 
         let addr = "brainmailhelp@gmail.com"
-        let subject = "Re[Mind] Feedback"
+        let subject = "BrainMail Support"
         let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "Feedback"
 
         if let url = URL(string: "mailto:\(addr)?subject=\(encodedSubject)") {
@@ -896,9 +913,11 @@ struct RemindersPerWeekSheet: View {
                         SettingsSubpageHeader(
                             systemImage: "bell.badge.fill",
                             title: "Reminders per Week",
-                            subtitle: appVM.isProUser
-                                ? "Choose how many automatic reminders feel supportive."
-                                : "Free plans can receive up to 3 random reminders each week.",
+                            subtitle: appVM.shouldShowUpgradeMessaging
+                                ? "Free plans can receive up to 3 random reminders each week."
+                                : appVM.subscriptionState == .loading
+                                ? "Checking your subscription access."
+                                : "Choose how many automatic reminders feel supportive.",
                             animate: animateHeader
                         )
 
@@ -972,13 +991,24 @@ private struct RemindersPerWeekSliderSection: View {
                 .accessibilityElement(children: .combine)
             }
 
-            Slider(
-                value: remindersBinding,
-                in: minReminders...availableMaxReminders,
-                step: stepReminders
-            )
-            .tint(.figmaBlue)
-            .onChange(of: remindersPerWeek) { _ in onChange() }
+            if appVM.subscriptionState == .loading {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .tint(.figmaBlue)
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(Color.gray.opacity(0.16))
+                        .frame(height: 8)
+                }
+                .frame(height: 44)
+            } else {
+                Slider(
+                    value: remindersBinding,
+                    in: minReminders...availableMaxReminders,
+                    step: stepReminders
+                )
+                .tint(.figmaBlue)
+                .onChange(of: remindersPerWeek) { _ in onChange() }
+            }
 
             HStack {
                 Text("\(SettingsHelpers.remindersDisplay(minReminders))")
@@ -991,7 +1021,7 @@ private struct RemindersPerWeekSliderSection: View {
             .minimumScaleFactor(0.9)
             .dynamicTypeSize(.xSmall ... (usesAccessibilityLayout ? .accessibility3 : .large))
 
-            if !appVM.isProUser {
+            if appVM.shouldShowUpgradeMessaging {
                 upgradeLimitBanner
             }
         }
@@ -1106,11 +1136,11 @@ private struct RemindersPerWeekSliderSection: View {
     }
 
     private var availableMaxReminders: Double {
-        appVM.isProUser ? maxReminders : freeMaxReminders
+        min(maxReminders, max(freeMaxReminders, appVM.maxRemindersPerWeekForCurrentSubscription))
     }
 
     private var remindersBinding: Binding<Double> {
-        if appVM.isProUser {
+        if appVM.shouldUseProReminderRange {
             return $remindersPerWeek
         }
 
@@ -1424,10 +1454,12 @@ struct SubscriptionOptionsSheet: View {
                         SettingsSubpageHandle()
 
                         SettingsSubpageHeader(
-                            systemImage: revenueCat.entitlementActive ? "checkmark.seal.fill" : "sparkles",
+                            systemImage: appVM.isProUser ? "checkmark.seal.fill" : "sparkles",
                             title: "Subscription",
-                            subtitle: revenueCat.entitlementActive
+                            subtitle: appVM.isProUser
                                 ? "Your BrainMail Pro access is active."
+                                : appVM.subscriptionState == .loading
+                                ? "Checking your subscription access."
                                 : "Unlock roomier reminder limits and unlimited instant sends.",
                             animate: animateHeader
                         )
@@ -1474,19 +1506,19 @@ struct SubscriptionOptionsSheet: View {
                     .frame(width: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 42,
                            height: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 42)
 
-                Image(systemName: revenueCat.entitlementActive ? "checkmark.circle.fill" : "circle")
+                Image(systemName: appVM.isProUser ? "checkmark.circle.fill" : (appVM.subscriptionState == .loading ? "clock.fill" : "circle"))
                     .font(.title3.weight(.semibold))
                     .foregroundColor(.figmaBlue)
             }
             .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(revenueCat.entitlementActive ? "Pro is active" : "Free plan")
+                Text(subscriptionStatusTitle)
                     .font(.headline.weight(.semibold))
                     .foregroundColor(Color.black.opacity(0.80))
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text(revenueCat.entitlementActive ? "Thanks for supporting BrainMail." : "Upgrade whenever you want more room.")
+                Text(subscriptionStatusSubtitle)
                     .font(.footnote)
                     .foregroundColor(Color.black.opacity(0.56))
                     .fixedSize(horizontal: false, vertical: true)
@@ -1501,13 +1533,47 @@ struct SubscriptionOptionsSheet: View {
                 .fill(Color.figmaBlue.opacity(0.07))
         )
     }
+
+    private var subscriptionStatusTitle: String {
+        switch appVM.subscriptionState {
+        case .subscribed:
+            return "Subscribed"
+        case .loading:
+            return appVM.lastKnownSubscriptionWasPro ? "Subscribed" : "Checking status"
+        case .expired:
+            return "Subscription expired"
+        case .error:
+            return appVM.lastKnownSubscriptionWasPro ? "Subscribed" : "Status unavailable"
+        case .free:
+            return "Free plan"
+        }
+    }
+
+    private var subscriptionStatusSubtitle: String {
+        switch appVM.subscriptionState {
+        case .subscribed:
+            return "Thanks for supporting BrainMail."
+        case .loading:
+            return appVM.lastKnownSubscriptionWasPro
+                ? "Keeping your Pro access while we refresh."
+                : "We’re refreshing RevenueCat."
+        case .expired:
+            return "Upgrade whenever you want more room."
+        case .error:
+            return appVM.lastKnownSubscriptionWasPro
+                ? "Keeping your last known Pro access for now."
+                : "We couldn’t refresh purchases just now."
+        case .free:
+            return "Upgrade whenever you want more room."
+        }
+    }
 }
 
 struct ContactUsMailSheet: View {
     var body: some View {
         MailView(
             recipients: ["brainmailhelp@gmail.com"],
-            subject: "Re[Mind] Feedback"
+            subject: "BrainMail Support"
         )
     }
 }

@@ -2,11 +2,13 @@ import SwiftUI
 
 struct RemindersPerWeekSection: View {
     @Binding var remindersPerWeek: Double
-    let isProUser: Bool
+    let subscriptionState: SubscriptionState
+    let usesProRange: Bool
+    let showsUpgradeMessaging: Bool
 
-    private let minReminders: Double = 1
-    private let maxReminders: Double = 20
-    private let freeMaxReminders: Double = 3
+    private let minReminders: Double = SubscriptionLimits.minRemindersPerWeek
+    private let maxReminders: Double = SubscriptionLimits.proMaxRemindersPerWeek
+    private let freeMaxReminders: Double = SubscriptionLimits.freeMaxRemindersPerWeek
     private let stepReminders: Double = 1
 
     private var freeSliderBinding: Binding<Double> {
@@ -41,13 +43,22 @@ struct RemindersPerWeekSection: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
 
-            if isProUser {
+            if subscriptionState == .loading {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .tint(.figmaBlue)
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(Color.gray.opacity(0.16))
+                        .frame(height: 8)
+                }
+                .frame(height: 40)
+            } else if usesProRange {
                 Slider(
                     value: $remindersPerWeek,
                     in: minReminders...maxReminders,
                     step: stepReminders
                 )
-            } else {
+            } else if showsUpgradeMessaging {
                 VStack(alignment: .leading, spacing: 10) {
                     Slider(
                         value: freeSliderBinding,
@@ -107,7 +118,7 @@ struct RemindersPerWeekSection: View {
             }
         }
         .onAppear {
-            guard !isProUser else { return }
+            guard showsUpgradeMessaging else { return }
             if remindersPerWeek > freeMaxReminders || remindersPerWeek < minReminders {
                 remindersPerWeek = min(max(remindersPerWeek, minReminders), freeMaxReminders)
             }
@@ -122,7 +133,7 @@ struct RemindersPerWeekSection: View {
 
     private var remindersValue: some View {
         Text(SettingsHelpers.remindersDisplay(remindersPerWeek))
-            .font(.subheadline.weight(.semibold))
+            .font(.subheadline.weight(.bold))
             .foregroundStyle(Color.figmaBlue)
             .lineLimit(1)
             .minimumScaleFactor(0.82)

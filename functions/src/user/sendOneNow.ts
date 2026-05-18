@@ -63,6 +63,7 @@ export const sendOneNow = onCall(
       if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
 
       const plan = resolvePlan(userSnap);
+      logger.info("[sendOneNow] resolved plan", { uid, plan });
 
       // Pro behavior remains unchanged, including the hidden monthly cap.
       if (plan === "pro") {

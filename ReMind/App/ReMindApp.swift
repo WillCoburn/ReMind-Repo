@@ -31,7 +31,7 @@ struct ReMindApp: App {
 
             if appVM.isAuthInitialized {
                 RevenueCatManager.shared.recomputeAndPersistActive()
-                appVM.refreshRevenueCatEntitlement()
+                appVM.refreshRevenueCatEntitlement(reason: "sceneForeground")
                 appVM.refreshEntitlementState()
             }
         }

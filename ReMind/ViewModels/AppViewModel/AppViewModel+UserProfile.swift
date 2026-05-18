@@ -46,9 +46,13 @@ extension AppViewModel {
                     mergePayload["createdAt"] = FieldValue.serverTimestamp()
                 }
 
-                // Tier source-of-truth: default to free when missing.
+                // Tier source-of-truth: default to free when missing unless legacy paid fields exist.
                 if existingData["plan"] == nil {
-                    mergePayload["plan"] = UserPlan.free.rawValue
+                    let rc = existingData["rc"] as? [String: Any] ?? [:]
+                    let rcEntitled = rc["entitlementActive"] as? Bool
+                    let status = (existingData["subscriptionStatus"] as? String)?.lowercased()
+                    let inferredPlan: UserPlan = (rcEntitled == true || status == "subscribed" || status == "cancelled") ? .pro : .free
+                    mergePayload["plan"] = inferredPlan.rawValue
                 }
 
                 // Keep operational active=true by default for scheduler compatibility (except STOP).
@@ -85,6 +89,7 @@ extension AppViewModel {
             // Ensure paid-state fields are synced from RevenueCat without trial dependence.
             // CLEANUP AFTER: consolidate all plan writes into a single server-authoritative path.
             RevenueCatManager.shared.recomputeAndPersistActive(uid: uid)
+            refreshRevenueCatEntitlement(reason: "setPhoneProfile")
 
             // Load the rest of app state
             await refreshAll()
@@ -110,6 +115,8 @@ extension AppViewModel {
         self.hasSeenFeatureTour = false
         self.featureTourStep = .settings
         self.showFeatureTour = false
+        self.resetSubscriptionStateForAuthChange()
+        RevenueCatManager.shared.clearForLogout()
     }
     // MARK: - Delete account
     func deleteAccount() async throws {

@@ -144,7 +144,10 @@ struct ExportSheet: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .tint(.figmaBlue)
-        .onAppear { restartIllustration() }
+        .onAppear {
+            appVM.refreshRevenueCatEntitlement(reason: "exportSheetAppear")
+            restartIllustration()
+        }
         .brainMailDynamicTypeRange()
         .toast(isPresented: $showToast) {
             HStack {

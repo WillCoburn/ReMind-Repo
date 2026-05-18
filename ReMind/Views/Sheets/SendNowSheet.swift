@@ -124,7 +124,10 @@ struct SendNowSheet: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .tint(.figmaBlue)
-        .onAppear { restartIllustration() }
+        .onAppear {
+            appVM.refreshRevenueCatEntitlement(reason: "sendNowSheetAppear")
+            restartIllustration()
+        }
         .onDisappear { animateIllustration = false }
         .brainMailDynamicTypeRange()
         .alert("Weekly Instant Send Used", isPresented: $showWeeklyLimitAlert) {

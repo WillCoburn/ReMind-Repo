@@ -18,6 +18,9 @@ final class RevenueCatManager: NSObject, ObservableObject {
     @Published var entitlementExpirationDate: Date?
     @Published var managementURL: URL?
     @Published var lastCustomerInfo: CustomerInfo?
+    @Published var isCustomerInfoLoading: Bool = false
+    @Published var lastRefreshError: String?
+    @Published var identifiedAppUserID: String?
     @MainActor private var lastActiveRecomputeAt: Date? = nil
     private let activeRecomputeCooldownSec: TimeInterval = 10
 
@@ -26,6 +29,11 @@ final class RevenueCatManager: NSObject, ObservableObject {
     private let db = Firestore.firestore()
     private var isConfigured = false
     private var trialExpiryTimer: Timer?
+    private var identifyInFlight = false
+    private var pendingIdentifyCompletions: [() -> Void] = []
+    private var refreshInFlight = false
+    private var lastRefreshStartedAt: Date?
+    private let refreshCooldownSec: TimeInterval = 5
 
     // MARK: - Configuration
 
@@ -34,35 +42,111 @@ final class RevenueCatManager: NSObject, ObservableObject {
         Purchases.configure(withAPIKey: PaywallConfig.rcPublicSDKKey)
         Purchases.shared.delegate = self
         isConfigured = true
+        debugLog("configured RevenueCat")
     }
 
     // MARK: - Force identity
 
-    func forceIdentify(completion: (() -> Void)? = nil) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+    func forceIdentify(reason: String = "manual", completion: (() -> Void)? = nil) {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            completion?()
+            return
+        }
         ensureConfigured()
+
+        if identifiedAppUserID == uid {
+            debugLog("identify skipped; already identified", uid: uid, reason: reason)
+            completion?()
+            return
+        }
+
+        if identifyInFlight {
+            debugLog("identify skipped; already in flight", uid: uid, reason: reason)
+            if let completion {
+                pendingIdentifyCompletions.append(completion)
+            }
+            return
+        }
+
+        identifyInFlight = true
+        DispatchQueue.main.async {
+            self.isCustomerInfoLoading = true
+            self.lastRefreshError = nil
+        }
+        debugLog("identify start", uid: uid, reason: reason)
 
         Purchases.shared.logIn(uid) { [weak self] info, _, error in
             guard let self else { return }
+            self.identifyInFlight = false
+            let completions = self.pendingIdentifyCompletions
+            self.pendingIdentifyCompletions = []
             if let error {
-                print("❌ RevenueCat logIn failed:", error.localizedDescription)
+                self.applyRefreshError(error, context: "logIn", uid: uid, reason: reason)
+                completion?()
+                completions.forEach { $0() }
                 return
             }
+            DispatchQueue.main.async {
+                self.identifiedAppUserID = uid
+            }
             if let info { self.apply(info) }
+            self.debugLog("identify complete", uid: uid, reason: reason)
             completion?()
+            completions.forEach { $0() }
         }
     }
 
     // MARK: - Refresh
 
-    func refreshEntitlementState() {
+    func refreshEntitlementState(reason: String = "manual", force: Bool = false) {
         ensureConfigured()
+        if refreshInFlight {
+            debugLog("refresh skipped; already in flight", uid: Auth.auth().currentUser?.uid, reason: reason)
+            return
+        }
+        if !force,
+           let lastRefreshStartedAt,
+           Date().timeIntervalSince(lastRefreshStartedAt) < refreshCooldownSec {
+            debugLog("refresh skipped; cooldown", uid: Auth.auth().currentUser?.uid, reason: reason)
+            return
+        }
+
+        refreshInFlight = true
+        lastRefreshStartedAt = Date()
+        DispatchQueue.main.async {
+            self.isCustomerInfoLoading = true
+            self.lastRefreshError = nil
+        }
+        debugLog("refresh start", uid: Auth.auth().currentUser?.uid, reason: reason)
+
         Purchases.shared.getCustomerInfo { [weak self] info, error in
             guard let self else { return }
+            self.refreshInFlight = false
             if let info {
                 self.apply(info)
             } else if let error {
-                print("⚠️ RevenueCat refresh error:", error.localizedDescription)
+                self.applyRefreshError(error, context: "getCustomerInfo", uid: Auth.auth().currentUser?.uid, reason: reason)
+            }
+        }
+    }
+
+    func clearForLogout() {
+        DispatchQueue.main.async {
+            self.entitlementActive = false
+            self.entitlementWillRenew = false
+            self.entitlementExpirationDate = nil
+            self.managementURL = nil
+            self.lastCustomerInfo = nil
+            self.lastRefreshError = nil
+            self.isCustomerInfoLoading = false
+            self.identifiedAppUserID = nil
+        }
+        ensureConfigured()
+        Purchases.shared.logOut { [weak self] _, error in
+            if let error {
+                self?.debugLog("logOut error: \(error.localizedDescription)")
+            } else {
+                self?.debugLog("logOut complete")
             }
         }
     }
@@ -73,12 +157,18 @@ final class RevenueCatManager: NSObject, ObservableObject {
         let entitlement = info.entitlements[PaywallConfig.entitlementId]
 
         DispatchQueue.main.async {
-            self.lastCustomerInfo = info
-            self.managementURL = info.managementURL
             self.entitlementActive = entitlement?.isActive == true
             self.entitlementWillRenew = entitlement?.willRenew ?? false
             self.entitlementExpirationDate = entitlement?.expirationDate
+            self.managementURL = info.managementURL
+            self.isCustomerInfoLoading = false
+            self.lastRefreshError = nil
+            self.lastCustomerInfo = info
         }
+        debugLog(
+            "apply customerInfo entitlementActive=\(entitlement?.isActive == true) willRenew=\(entitlement?.willRenew ?? false) expiresAt=\(entitlement?.expirationDate?.description ?? "nil")",
+            uid: Auth.auth().currentUser?.uid
+        )
 
         guard let uid = Auth.auth().currentUser?.uid else { return }
         syncToFirestore(info: info, uid: uid)
@@ -89,14 +179,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
     private func syncToFirestore(info: CustomerInfo, uid: String) {
         let ent = info.entitlements[PaywallConfig.entitlementId]
 
-        let rcStable: [String: Any] = [
-            "entitlementActive": ent?.isActive ?? false,
-            "willRenew": ent?.willRenew ?? false,
-            "productId": ent?.productIdentifier as Any,
-            "expiresAt": ent?.expirationDate?.timeIntervalSince1970 as Any,
-            "latestPurchaseAt": ent?.latestPurchaseDate?.timeIntervalSince1970 as Any,
-            "store": "app_store"
-        ]
+        let rcStable = stableRCMirror(from: ent)
 
         let userRef = db.collection("users").document(uid)
 
@@ -107,8 +190,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
                 guard snap.exists, let data = snap.data() else { return }
 
                 let existingRC = (data["rc"] as? [String: Any]) ?? [:]
-                var existingStable = existingRC
-                existingStable.removeValue(forKey: "lastSyncedAt")
+                let existingStable = comparableRCMirror(from: existingRC)
 
                 guard NSDictionary(dictionary: existingStable).isEqual(to: rcStable) == false else {
                     return
@@ -174,8 +256,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
             let rc = data["rc"] as? [String: Any] ?? [:]
             let entitled = entitlement ?? (rc["entitlementActive"] as? Bool ?? false)
             let willRenew = rc["willRenew"] as? Bool ?? false
-            let expiresAt = (rc["expiresAt"] as? TimeInterval)
-                .map { Date(timeIntervalSince1970: $0) }
+            let expiresAt = dateFromFirestoreValue(rc["expiresAt"])
 
             let now = Date()
             let inPaidPeriod = entitled && ((expiresAt ?? now) >= now)
@@ -219,6 +300,67 @@ final class RevenueCatManager: NSObject, ObservableObject {
         } catch {
             print("❌ recomputeAndPersistActive error:", error.localizedDescription)
         }
+    }
+
+    private func stableRCMirror(from ent: EntitlementInfo?) -> [String: Any] {
+        var rcStable: [String: Any] = [
+            "entitlementActive": ent?.isActive ?? false,
+            "willRenew": ent?.willRenew ?? false,
+            "store": "app_store"
+        ]
+
+        rcStable["productId"] = ent?.productIdentifier ?? NSNull()
+        if let expirationDate = ent?.expirationDate {
+            rcStable["expiresAt"] = Timestamp(date: expirationDate)
+        } else {
+            rcStable["expiresAt"] = NSNull()
+        }
+
+        if let latestPurchaseDate = ent?.latestPurchaseDate {
+            rcStable["latestPurchaseAt"] = Timestamp(date: latestPurchaseDate)
+        } else {
+            rcStable["latestPurchaseAt"] = NSNull()
+        }
+
+        return rcStable
+    }
+
+    private func comparableRCMirror(from rc: [String: Any]) -> [String: Any] {
+        [
+            "entitlementActive": rc["entitlementActive"] ?? NSNull(),
+            "willRenew": rc["willRenew"] ?? NSNull(),
+            "store": rc["store"] ?? NSNull(),
+            "productId": rc["productId"] ?? NSNull(),
+            "expiresAt": rc["expiresAt"] ?? NSNull(),
+            "latestPurchaseAt": rc["latestPurchaseAt"] ?? NSNull()
+        ]
+    }
+
+    private func dateFromFirestoreValue(_ raw: Any?) -> Date? {
+        if let timestamp = raw as? Timestamp { return timestamp.dateValue() }
+        if let date = raw as? Date { return date }
+        if let number = raw as? NSNumber { return Date(timeIntervalSince1970: number.doubleValue) }
+        if let seconds = raw as? TimeInterval { return Date(timeIntervalSince1970: seconds) }
+        if let string = raw as? String, let seconds = TimeInterval(string) {
+            return Date(timeIntervalSince1970: seconds)
+        }
+        return nil
+    }
+
+    private func applyRefreshError(_ error: Error, context: String, uid: String?, reason: String) {
+        DispatchQueue.main.async {
+            self.isCustomerInfoLoading = false
+            self.lastRefreshError = error.localizedDescription
+        }
+        debugLog("\(context) error: \(error.localizedDescription)", uid: uid, reason: reason)
+    }
+
+    private func debugLog(_ message: String, uid: String? = nil, reason: String? = nil) {
+#if DEBUG
+        let uidPart = uid.map { " uid=\($0)" } ?? ""
+        let reasonPart = reason.map { " reason=\($0)" } ?? ""
+        print("🔐 [Subscription][RC]\(uidPart)\(reasonPart) \(message)")
+#endif
     }
 
     // MARK: - Trial timer
@@ -280,7 +422,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
                     return
                 }
 
-                // Update local entitlement state ONLY (no Firestore writes)
+                // Apply and mirror the restored RevenueCat snapshot.
                 self.apply(info)
 
                 completion(true, nil)

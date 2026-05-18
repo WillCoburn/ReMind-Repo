@@ -20,6 +20,7 @@ extension AppViewModel {
             self.hasSeenFeatureTour = false
             self.featureTourStep = .settings
             self.showFeatureTour = false
+            self.resetSubscriptionStateForAuthChange()
             self.hasLoadedInitialProfile = true
             return
         }
@@ -123,7 +124,7 @@ extension AppViewModel {
         attachUserListener(uid)
         attachEntriesListener(uid)
 
-        refreshRevenueCatEntitlement()
+        refreshRevenueCatEntitlement(reason: "loadUserAndEntries")
 
         await refreshAll()
         await refreshLatestSentReminder()

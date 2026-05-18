@@ -9,6 +9,74 @@ public enum UserPlan: String, Codable, Sendable {
     case pro
 }
 
+public enum SubscriptionState: String, Codable, Sendable, Equatable {
+    case loading
+    case free
+    case subscribed
+    case expired
+    case error
+
+    public var isResolved: Bool {
+        self != .loading
+    }
+
+    public var isSubscribed: Bool {
+        self == .subscribed
+    }
+}
+
+public enum SubscriptionLimits {
+    public static let minRemindersPerWeek: Double = 1
+    public static let freeMaxRemindersPerWeek: Double = 3
+    public static let proMaxRemindersPerWeek: Double = 20
+
+    public static func allowsProRange(
+        state: SubscriptionState,
+        lastKnownSubscribed: Bool
+    ) -> Bool {
+        switch state {
+        case .subscribed:
+            return true
+        case .loading:
+            return true
+        case .error:
+            return lastKnownSubscribed
+        case .free, .expired:
+            return false
+        }
+    }
+
+    public static func maxRemindersPerWeek(
+        state: SubscriptionState,
+        lastKnownSubscribed: Bool
+    ) -> Double {
+        allowsProRange(state: state, lastKnownSubscribed: lastKnownSubscribed)
+            ? proMaxRemindersPerWeek
+            : freeMaxRemindersPerWeek
+    }
+
+    public static func shouldShowUpgradeMessaging(
+        state: SubscriptionState,
+        lastKnownSubscribed: Bool
+    ) -> Bool {
+        switch state {
+        case .free, .expired:
+            return true
+        case .error:
+            return !lastKnownSubscribed
+        case .loading, .subscribed:
+            return false
+        }
+    }
+
+    public static func shouldApplyFreeUsageLimits(
+        state: SubscriptionState,
+        lastKnownSubscribed: Bool
+    ) -> Bool {
+        shouldShowUpgradeMessaging(state: state, lastKnownSubscribed: lastKnownSubscribed)
+    }
+}
+
 public struct InstantUsage: Codable, Sendable, Equatable {
     public var instantWeekKey: String?
     public var instantSendsThisWeek: Int
