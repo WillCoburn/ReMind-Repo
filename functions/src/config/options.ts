@@ -5,6 +5,9 @@ import * as admin from "firebase-admin";
 import { setGlobalOptions } from "firebase-functions/v2";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
+import { smsDeliveryBlockReason } from "../sms/eligibility";
+import { resolveServerPlan } from "../entitlements/capabilities";
+import { normalizeReminderSettings } from "../settings/reminders";
 
 // ----- Global options (region) -----
 setGlobalOptions({ region: "us-central1" });
@@ -18,6 +21,7 @@ export const TWILIO_SID = defineSecret("TWILIO_SID");   // ACxxxxxxxx...
 export const TWILIO_AUTH = defineSecret("TWILIO_AUTH"); // token
 export const TWILIO_FROM = defineSecret("TWILIO_FROM"); // +1XXXXXXXXXX
 export const TWILIO_MSID = defineSecret("TWILIO_MSID"); // optional
+export const REVENUECAT_WEBHOOK_AUTH = defineSecret("REVENUECAT_WEBHOOK_AUTH");
 
 // ----- Shared helpers & scheduling logic -----
 const clampWeeklyRate = (r: number) => Math.min(20, Math.max(1, r));
@@ -76,27 +80,40 @@ async function loadSettings(uid: string) {
   const snap = await db.doc(`users/${uid}/meta/settings`).get();
   const d = snap.exists ? snap.data()! : {};
   const userSnap = await db.doc(`users/${uid}`).get();
-  const plan = (String(userSnap.get("plan") ?? "free").toLowerCase() === "pro") ? "pro" : "free";
-  const rawWeekly = Number(d?.remindersPerWeek ?? (Number(d?.remindersPerDay ?? 1) * 7));
-  let remindersPerWeek = clampWeeklyRate(rawWeekly);
+  const plan = resolvePlan(userSnap);
+  const normalized = normalizeReminderSettings(d, {
+    plan,
+    maxRemindersPerWeek: plan === "pro" ? 20 : 3,
+  });
 
-  if (plan === "free" && remindersPerWeek > 3) {
-    // Defensive backend cap for mixed/legacy data. Scheduler always uses <=3 for free.
-    remindersPerWeek = 3;
-    // CLEANUP AFTER: remove write-back once all clients enforce free 1...3 in settings.
-    await db.doc(`users/${uid}/meta/settings`).set({ remindersPerWeek: 3 }, { merge: true });
-    logger.warn("[loadSettings] capped remindersPerWeek for free user", { uid, rawWeekly });
+  if (normalized.wasClamped) {
+    const { wasClamped: _wasClamped, ...settingsWrite } = normalized;
+    await db.doc(`users/${uid}/meta/settings`).set(settingsWrite, { merge: true });
+    logger.warn("[loadSettings] normalized reminder settings", { uid, plan, raw: d, normalized });
   }
 
   return {
-    remindersPerWeek,
-    tzIdentifier: String(d?.tzIdentifier ?? "UTC"),
-    quietStartHour: Number(d?.quietStartHour ?? 9),
-    quietEndHour: Number(d?.quietEndHour ?? 22),
+    remindersPerWeek: normalized.remindersPerWeek,
+    tzIdentifier: normalized.tzIdentifier,
+    quietStartHour: normalized.quietStartHour,
+    quietEndHour: normalized.quietEndHour,
   };
 }
 
 async function scheduleNext(uid: string, fromUtc = new Date()) {
+  const userSnap = await db.doc(`users/${uid}`).get();
+  if (!userSnap.exists) {
+    logger.info("[scheduleNext] user missing; skipping", { uid });
+    return;
+  }
+
+  const blockReason = smsDeliveryBlockReason(userSnap);
+  if (blockReason) {
+    await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
+    logger.info("[scheduleNext] SMS blocked; nextSendAt=null", { uid, blockReason });
+    return;
+  }
+
   if (!(await hasAtLeastEntries(uid, MIN_ENTRIES_FOR_SCHEDULING))) {
     await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
     logger.info("[scheduleNext] threshold not met; nextSendAt=null", { uid });
@@ -309,28 +326,8 @@ function computeActive(user: FirebaseFirestore.DocumentSnapshot, now = new Date(
   return user.get("active") !== false;
 }
 
-function timestampSeconds(raw: unknown): number | null {
-  if (raw == null) return null;
-  if (raw instanceof admin.firestore.Timestamp) {
-    return raw.seconds + raw.nanoseconds / 1_000_000_000;
-  }
-  if (raw instanceof Date) {
-    return raw.getTime() / 1000;
-  }
-  const asNumber = typeof raw === "string" ? Number(raw) : (raw as number);
-  return Number.isFinite(asNumber) ? asNumber : null;
-}
-
 function resolvePlan(user: FirebaseFirestore.DocumentSnapshot): "free" | "pro" {
-  const explicit = String(user.get("plan") ?? "").toLowerCase();
-  const rcActive = user.get("rc.entitlementActive") === true;
-  const rcExpiresAtSeconds = timestampSeconds(user.get("rc.expiresAt"));
-  const rcExpired = rcExpiresAtSeconds != null && rcExpiresAtSeconds < Date.now() / 1000;
-
-  if (rcActive && !rcExpired) return "pro";
-  if (rcExpired) return "free";
-  if (explicit === "pro") return "pro";
-  return "free";
+  return resolveServerPlan(user);
 }
 
 

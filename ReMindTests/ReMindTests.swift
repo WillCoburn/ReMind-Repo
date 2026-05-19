@@ -59,79 +59,193 @@ final class ReMindTests: XCTestCase {
         XCTAssertEqual(StreakCalculator.compute(entries: entries, calendar: calendar).count, 1)
     }
 
-    func testLoadingSubscriptionDoesNotUseFreeLimits() {
+    func testLoadingSubscriptionDoesNotUnlockProControls() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            state: .loading,
+            lastKnownSubscribed: false
+        )
+
+        XCTAssertFalse(capabilities.isProUser)
+        XCTAssertFalse(capabilities.canUseProReminderRange)
+        XCTAssertTrue(capabilities.shouldApplyFreeUsageLimits)
         XCTAssertFalse(
-            SubscriptionLimits.shouldShowUpgradeMessaging(
-                state: .loading,
-                lastKnownSubscribed: false
-            )
+            capabilities.shouldShowUpgradeMessaging
         )
-        XCTAssertFalse(
-            SubscriptionLimits.shouldApplyFreeUsageLimits(
-                state: .loading,
-                lastKnownSubscribed: false
-            )
+        XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.freeMaxRemindersPerWeek)
+    }
+
+    func testLoadingKnownSubscribedAvoidsPaywallFlickerWithoutUnlockingControls() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            state: .loading,
+            lastKnownSubscribed: true
         )
-        XCTAssertEqual(
-            SubscriptionLimits.maxRemindersPerWeek(
-                state: .loading,
-                lastKnownSubscribed: false
-            ),
-            SubscriptionLimits.proMaxRemindersPerWeek
-        )
+
+        XCTAssertFalse(capabilities.isProUser)
+        XCTAssertFalse(capabilities.canUseProReminderRange)
+        XCTAssertTrue(capabilities.shouldApplyFreeUsageLimits)
+        XCTAssertFalse(capabilities.shouldShowUpgradeMessaging)
+        XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.freeMaxRemindersPerWeek)
     }
 
     func testFreeSubscriptionUsesFreeLimits() {
-        XCTAssertTrue(
-            SubscriptionLimits.shouldShowUpgradeMessaging(
-                state: .free,
-                lastKnownSubscribed: false
-            )
+        let capabilities = SubscriptionCapabilities.resolve(
+            state: .free,
+            lastKnownSubscribed: false
         )
-        XCTAssertTrue(
-            SubscriptionLimits.shouldApplyFreeUsageLimits(
-                state: .free,
-                lastKnownSubscribed: false
-            )
-        )
-        XCTAssertEqual(
-            SubscriptionLimits.maxRemindersPerWeek(
-                state: .free,
-                lastKnownSubscribed: false
-            ),
-            SubscriptionLimits.freeMaxRemindersPerWeek
-        )
+
+        XCTAssertFalse(capabilities.isProUser)
+        XCTAssertTrue(capabilities.shouldShowUpgradeMessaging)
+        XCTAssertTrue(capabilities.shouldApplyFreeUsageLimits)
+        XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.freeMaxRemindersPerWeek)
     }
 
     func testSubscribedSubscriptionUsesProLimits() {
-        XCTAssertFalse(
-            SubscriptionLimits.shouldShowUpgradeMessaging(
-                state: .subscribed,
-                lastKnownSubscribed: false
-            )
+        let capabilities = SubscriptionCapabilities.resolve(
+            state: .subscribed,
+            lastKnownSubscribed: false
         )
-        XCTAssertEqual(
-            SubscriptionLimits.maxRemindersPerWeek(
-                state: .subscribed,
-                lastKnownSubscribed: false
-            ),
-            SubscriptionLimits.proMaxRemindersPerWeek
-        )
+
+        XCTAssertTrue(capabilities.isProUser)
+        XCTAssertFalse(capabilities.shouldShowUpgradeMessaging)
+        XCTAssertFalse(capabilities.shouldApplyFreeUsageLimits)
+        XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.proMaxRemindersPerWeek)
     }
 
-    func testRefreshErrorPreservesLastKnownSubscribedState() {
-        XCTAssertFalse(
-            SubscriptionLimits.shouldShowUpgradeMessaging(
-                state: .error,
-                lastKnownSubscribed: true
-            )
+    func testRevenueCatErrorDoesNotUnlockProControls() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            state: .error,
+            lastKnownSubscribed: true
         )
-        XCTAssertEqual(
-            SubscriptionLimits.maxRemindersPerWeek(
-                state: .error,
-                lastKnownSubscribed: true
-            ),
-            SubscriptionLimits.proMaxRemindersPerWeek
+
+        XCTAssertFalse(capabilities.isProUser)
+        XCTAssertFalse(capabilities.canUseProReminderRange)
+        XCTAssertTrue(capabilities.shouldApplyFreeUsageLimits)
+        XCTAssertFalse(capabilities.shouldShowUpgradeMessaging)
+        XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.freeMaxRemindersPerWeek)
+    }
+
+    func testExpiredSubscriptionUsesFreeLimits() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            state: .expired,
+            lastKnownSubscribed: true
         )
+
+        XCTAssertFalse(capabilities.isProUser)
+        XCTAssertTrue(capabilities.shouldShowUpgradeMessaging)
+        XCTAssertTrue(capabilities.shouldApplyFreeUsageLimits)
+        XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.freeMaxRemindersPerWeek)
+    }
+
+    func testCancelledServerPlanRemainsProUntilBackendExpiresIt() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            serverPlan: .pro,
+            subscriptionStatus: "cancelled",
+            profileLoaded: true,
+            lastKnownSubscribed: false
+        )
+
+        XCTAssertEqual(capabilities.state, .subscribed)
+        XCTAssertTrue(capabilities.isProUser)
+        XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.proMaxRemindersPerWeek)
+    }
+
+    func testExpiredRevenueCatMirrorOverridesLegacyProPlan() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            serverPlan: .pro,
+            subscriptionStatus: "cancelled",
+            profileLoaded: true,
+            lastKnownSubscribed: true,
+            rcEntitlementActive: true,
+            rcExpiresAt: Date(timeIntervalSince1970: 1_000),
+            referenceDate: Date(timeIntervalSince1970: 2_000)
+        )
+
+        XCTAssertEqual(capabilities.state, .expired)
+        XCTAssertFalse(capabilities.isProUser)
+        XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.freeMaxRemindersPerWeek)
+    }
+
+    func testActiveRevenueCatMirrorUnlocksProEvenDuringWebhookPlanDelay() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            serverPlan: .free,
+            subscriptionStatus: nil,
+            profileLoaded: true,
+            lastKnownSubscribed: false,
+            rcEntitlementActive: true,
+            rcExpiresAt: Date(timeIntervalSince1970: 2_000),
+            referenceDate: Date(timeIntervalSince1970: 1_000)
+        )
+
+        XCTAssertEqual(capabilities.state, .subscribed)
+        XCTAssertTrue(capabilities.isProUser)
+        XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.proMaxRemindersPerWeek)
+    }
+
+    func testServerProfileProDoesNotShowUpgradeMessaging() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            serverPlan: .pro,
+            subscriptionStatus: "subscribed",
+            profileLoaded: true,
+            lastKnownSubscribed: false
+        )
+
+        XCTAssertEqual(capabilities.state, .subscribed)
+        XCTAssertTrue(capabilities.isProUser)
+        XCTAssertFalse(capabilities.shouldShowUpgradeMessaging)
+        XCTAssertFalse(capabilities.shouldApplyFreeUsageLimits)
+    }
+
+    func testWebhookRefreshDelayFallsBackToFreeCapabilities() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            serverPlan: .free,
+            subscriptionStatus: nil,
+            profileLoaded: true,
+            lastKnownSubscribed: false
+        )
+
+        XCTAssertEqual(capabilities.state, .free)
+        XCTAssertFalse(capabilities.isProUser)
+        XCTAssertTrue(capabilities.shouldApplyFreeUsageLimits)
+    }
+
+    func testOfflineStaleFreeProfileDoesNotUseLastKnownProAccess() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            serverPlan: .free,
+            subscriptionStatus: nil,
+            profileLoaded: true,
+            lastKnownSubscribed: true
+        )
+
+        XCTAssertEqual(capabilities.state, .free)
+        XCTAssertFalse(capabilities.isProUser)
+        XCTAssertTrue(capabilities.shouldApplyFreeUsageLimits)
+        XCTAssertTrue(capabilities.shouldShowUpgradeMessaging)
+    }
+
+    func testColdLaunchBeforeProfileLoadIsSafeLoading() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            serverPlan: nil,
+            subscriptionStatus: nil,
+            profileLoaded: false,
+            lastKnownSubscribed: false
+        )
+
+        XCTAssertEqual(capabilities.state, .loading)
+        XCTAssertFalse(capabilities.isProUser)
+        XCTAssertTrue(capabilities.shouldApplyFreeUsageLimits)
+    }
+
+    func testAuthTransitionLoadingDoesNotCarryPreviousProAccess() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            serverPlan: nil,
+            subscriptionStatus: nil,
+            profileLoaded: false,
+            lastKnownSubscribed: true
+        )
+
+        XCTAssertEqual(capabilities.state, .loading)
+        XCTAssertFalse(capabilities.isProUser)
+        XCTAssertFalse(capabilities.canUseProReminderRange)
+        XCTAssertFalse(capabilities.shouldShowUpgradeMessaging)
     }
 }

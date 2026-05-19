@@ -52,17 +52,26 @@ extension AppViewModel {
           entriesListener = nil
       }
     
-    func submit(text: String) async {
+    @discardableResult
+    func submit(text: String) async throws -> Entry {
         print("🧪 submit tapped")
 
         guard NetworkMonitor.shared.isConnected else {
             print("❌ submit blocked: offline")
-            return
+            throw NSError(
+                domain: "ReMindEntries",
+                code: -1009,
+                userInfo: [NSLocalizedDescriptionKey: "Please reconnect to the internet to save this reminder."]
+            )
         }
 
         guard let uid = Auth.auth().currentUser?.uid else {
             print("❌ submit blocked: no auth uid")
-            return
+            throw NSError(
+                domain: "ReMindEntries",
+                code: 401,
+                userInfo: [NSLocalizedDescriptionKey: "Sign in required."]
+            )
         }
 
         print("🧪 submit uid:", uid)
@@ -70,16 +79,17 @@ extension AppViewModel {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             print("❌ submit blocked: empty text")
-            return
+            throw NSError(
+                domain: "ReMindEntries",
+                code: 400,
+                userInfo: [NSLocalizedDescriptionKey: "Reminder text cannot be empty."]
+            )
         }
 
-        do {
-            _ = try await addEntryToBank(text: trimmed)
-            print("✅ submit write success")
-            Haptics.success()
-        } catch {
-            print("❌ submit write failed:", error.localizedDescription)
-        }
+        let entry = try await addEntryToBank(text: trimmed)
+        print("✅ submit write success")
+        Haptics.success()
+        return entry
     }
 
     @discardableResult

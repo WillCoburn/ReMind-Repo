@@ -3,7 +3,6 @@
 // ============================
 import SwiftUI
 import FirebaseAuth
-import FirebaseFunctions
 
 struct OnboardingView: View {
     @EnvironmentObject private var appVM: AppViewModel
@@ -28,8 +27,6 @@ struct OnboardingView: View {
     
     // Track whether we're moving forward (entering code) or backward (editing phone)
       @State private var isAdvancing = true
-
-    private let functions = Functions.functions(region: "us-central1")
 
     private var isValidPhone: Bool { phoneDigits.count == 10 }
     private var canContinueBase: Bool { isValidPhone && hasConsented }
@@ -172,18 +169,23 @@ struct OnboardingView: View {
         let credential = PhoneAuthProvider.provider()
             .credential(withVerificationID: verID, verificationCode: code)
 
+        appVM.beginOnboardingAuthTransition()
+
         do {
             _ = try await Auth.auth().signIn(with: credential)
-            await appVM.setPhoneProfileAndLoad(phoneDigits)
-
-            do {
-                _ = try await functions.httpsCallable("triggerWelcome").call([:])
-            } catch {
-                print("triggerWelcome error:", error.localizedDescription)
-            }
         } catch {
+            appVM.finishOnboardingAuthTransition()
             self.errorText = "Invalid or expired code. Please try again."
             print("signIn error:", error)
+            return
+        }
+
+        do {
+            try await appVM.completeOnboardingAfterSignIn(phoneDigits: phoneDigits)
+        } catch {
+            appVM.finishOnboardingAuthTransition()
+            self.errorText = "We signed you in, but couldn't finish setup. Please try again."
+            print("onboarding completion error:", error)
         }
     }
 }

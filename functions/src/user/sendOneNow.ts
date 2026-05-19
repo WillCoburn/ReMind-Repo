@@ -2,6 +2,7 @@
 // File: functions/src/user/sendOneNow.ts
 // ============================
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { randomUUID } from "node:crypto";
 import {
   admin,
   db,
@@ -19,6 +20,11 @@ import {
 } from "../config/options";
 import { getTwilioClient, buildMsgParams, sendSMS } from "../twilio/client";
 import { enforceMonthlyLimit } from "../usageLimits";
+import { assertSmsDeliveryAllowed } from "../sms/eligibility";
+import {
+  markFreeInstantSendReservation,
+  reserveFreeInstantSendQuota,
+} from "../usage/instantSendQuota";
 
 function startOfWeekKeyInTimeZone(now: Date, tzIdentifier: string): string {
   // Monday-start calendar week in user's local timezone.
@@ -59,6 +65,8 @@ export const sendOneNow = onCall(
       // Get recipient phone
       const userSnap = await db.doc(`users/${uid}`).get();
       if (!userSnap.exists) throw new HttpsError("not-found", "User not found.");
+      assertSmsDeliveryAllowed(userSnap);
+
       const to = userSnap.get("phoneE164") as string | undefined;
       if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
 
@@ -74,23 +82,17 @@ export const sendOneNow = onCall(
       const tzIdentifier = String(settingsSnap.get("tzIdentifier") ?? "UTC");
       const weekKey = startOfWeekKeyInTimeZone(new Date(), tzIdentifier);
 
-      if (plan === "free") {
-        const usage = (userSnap.get("usage") as Record<string, unknown> | undefined) ?? {};
-        const existingWeekKey = String(usage.instantWeekKey ?? "");
-        const existingSends = Number(usage.instantSendsThisWeek ?? 0);
-        const sendsThisWeek = existingWeekKey === weekKey ? existingSends : 0;
-        if (sendsThisWeek >= 1) {
-          throw new HttpsError(
-            "resource-exhausted",
-            "You already used your weekly instant send, upgrade for unlimited!"
-          );
-        }
-      }
-
       // Pick entry
       const picked = await pickEntry(uid);
       const body = picked?.body;
       if (!body) throw new HttpsError("failed-precondition", "No entries available.");
+
+      const reservationId = randomUUID();
+      if (plan === "free") {
+        // Reserve before Twilio. A failed/ambiguous provider response keeps the quota consumed
+        // so retries cannot accidentally create duplicate free SMS sends.
+        await reserveFreeInstantSendQuota(uid, weekKey, reservationId);
+      }
 
       // Send via Twilio
       const sid = TWILIO_SID.value();
@@ -100,8 +102,20 @@ export const sendOneNow = onCall(
       const client = getTwilioClient(sid, token);
 
       const params = buildMsgParams({ to, body, from, msid });
-      const res = await sendSMS(client, params);
+      let res: any;
+      try {
+        res = await sendSMS(client, params);
+      } catch (sendErr: any) {
+        if (plan === "free") {
+          await markFreeInstantSendReservation(uid, weekKey, reservationId, "failed");
+        }
+        throw sendErr;
+      }
       logger.info("[sendOneNow] sent", { messageSid: res.sid });
+
+      if (plan === "free") {
+        await markFreeInstantSendReservation(uid, weekKey, reservationId, "sent", res.sid);
+      }
 
       try {
         await recordLastReminder(uid, body, {
@@ -141,29 +155,6 @@ export const sendOneNow = onCall(
         logger.warn("[sendOneNow] failed to increment receivedCount", {
           uid,
           message: metricErr?.message,
-        });
-      }
-
-      if (plan === "free") {
-        // Increment ONLY after successful Twilio send.
-        await db.runTransaction(async (tx) => {
-          const fresh = await tx.get(db.doc(`users/${uid}`));
-          const usage = (fresh.get("usage") as Record<string, unknown> | undefined) ?? {};
-          const existingWeekKey = String(usage.instantWeekKey ?? "");
-          const existingSends = Number(usage.instantSendsThisWeek ?? 0);
-          const sendsThisWeek = existingWeekKey === weekKey ? existingSends : 0;
-
-          tx.set(
-            db.doc(`users/${uid}`),
-            {
-              usage: {
-                ...usage,
-                instantWeekKey: weekKey,
-                instantSendsThisWeek: sendsThisWeek + 1,
-              },
-            },
-            { merge: true }
-          );
         });
       }
 

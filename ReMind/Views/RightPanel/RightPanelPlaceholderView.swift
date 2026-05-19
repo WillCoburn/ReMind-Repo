@@ -131,20 +131,16 @@ struct RightPanelPlaceholderView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject private var revenueCat = RevenueCatManager.shared
 
-    @State private var showPaywall = false
-
     @AppStorage("remindersPerWeek") private var remindersPerWeek: Double = 3.0 // 1...20
     @AppStorage("tzIdentifier")    private var tzIdentifier: String = TimeZone.current.identifier
     @AppStorage("quietStartHour")  private var quietStartHour: Double = 9     // 0...24
     @AppStorage("quietEndHour")    private var quietEndHour: Double = 22      // 0...24
 
-    @State private var pendingSaveWorkItem: DispatchWorkItem?
     @State private var activeSheet: ActiveSettingsSheet?
-    @State private var showDeleteSheet = false
     @State private var restoreMessage: String?
     @State private var mailError: String?
-    @State private var showCommunityGuidelines = false
     @State private var showFreeLimitsWhy = false
+    @State private var settingsSaveSequence: Int64 = 0
 
     var body: some View {
         ZStack {
@@ -196,24 +192,29 @@ struct RightPanelPlaceholderView: View {
                 SubscriptionOptionsSheet(
                     appVM: appVM,
                     onStartSubscription: {
-                        activeSheet = nil
-                        RevenueCatManager.shared.forceIdentify(reason: "statsSubscriptionSheetStart") { showPaywall = true }
+                        RevenueCatManager.shared.forceIdentify(reason: "statsSubscriptionSheetStart") {
+                            DispatchQueue.main.async {
+                                activeSheet = .paywall
+                            }
+                        }
                     },
                     restoreMessage: $restoreMessage
                 )
             case .contactUs:
                 ContactUsMailSheet()
-            }
-        }
-        .sheet(isPresented: $showDeleteSheet) {
-            DeleteAccountSheet(isPresented: $showDeleteSheet)
+            case .deleteAccount:
+                DeleteAccountSheet(
+                    isPresented: Binding(
+                        get: { activeSheet == .deleteAccount },
+                        set: { if !$0 { activeSheet = nil } }
+                    )
+                )
                 .environmentObject(appVM)
-        }
-        .sheet(isPresented: $showPaywall) {
-            SubscriptionSheet()
-        }
-        .sheet(isPresented: $showCommunityGuidelines) {
-            SafariView(url: URL(string: "https://re-mind-app.github.io/BrainMail-site/")!)
+            case .paywall:
+                SubscriptionSheet()
+            case .communityGuidelines:
+                SafariView(url: URL(string: "https://re-mind-app.github.io/BrainMail-site/")!)
+            }
         }
         .alert(
             "Mail Error",
@@ -241,6 +242,7 @@ struct RightPanelPlaceholderView: View {
         .animation(.easeInOut(duration: 0.18), value: showFreeLimitsWhy)
         .onAppear {
             appVM.refreshRevenueCatEntitlement(reason: "statsSettingsAppear")
+            clampReminderSelectionIfNeeded()
             logSubscriptionUIResolution()
 
 #if DEBUG
@@ -255,7 +257,11 @@ struct RightPanelPlaceholderView: View {
 #endif
         }
         .onChange(of: appVM.subscriptionState) { _ in
+            clampReminderSelectionIfNeeded()
             logSubscriptionUIResolution()
+        }
+        .onDisappear {
+            saveTask?.cancel()
         }
         // Hide the nav bar so the custom layout can use the full vertical space.
         .toolbar(.hidden, for: .navigationBar)
@@ -300,7 +306,9 @@ struct RightPanelPlaceholderView: View {
                 },
                 onUpgrade: {
                     RevenueCatManager.shared.forceIdentify(reason: "statsReminderUpgrade") {
-                        showPaywall = true
+                        DispatchQueue.main.async {
+                            activeSheet = .paywall
+                        }
                     }
                 }
             )
@@ -420,7 +428,7 @@ struct RightPanelPlaceholderView: View {
                     title: "Community Guidelines",
                     value: nil,
                     isDestructive: false,
-                    action: { showCommunityGuidelines = true }
+                    action: { activeSheet = .communityGuidelines }
                 )
 
                 SettingsRow(
@@ -428,7 +436,10 @@ struct RightPanelPlaceholderView: View {
                     value: nil,
                     isDestructive: true,
                     showsChevron: false,
-                    action: { appVM.logout() }
+                    action: {
+                        saveTask?.cancel()
+                        appVM.logout()
+                    }
                 )
 
                 Color.clear.frame(height: 6)
@@ -438,7 +449,7 @@ struct RightPanelPlaceholderView: View {
                     value: nil,
                     isDestructive: true,
                     showsChevron: false,
-                    action: { showDeleteSheet = true }
+                    action: { activeSheet = .deleteAccount }
                 )
             }
             .background(Color.white)
@@ -477,29 +488,55 @@ struct RightPanelPlaceholderView: View {
 
     private func persistSettingsDebounced() {
         saveTask?.cancel()
+        settingsSaveSequence += 1
+        let sequence = settingsSaveSequence
+        let settings = UserSettingsSync.currentFromAppStorage()
+        let expectedUid = appVM.user?.uid
+        let revision = Int64(Date().timeIntervalSince1970 * 1000)
 
-        saveTask = Task.detached(priority: .userInitiated) {
-            try? await Task.sleep(nanoseconds: 600_000_000) // 0.6s debounce
-
+        saveTask = Task { @MainActor in
             do {
+                try await Task.sleep(nanoseconds: 600_000_000) // 0.6s debounce
+                try Task.checkCancellation()
+                guard sequence == settingsSaveSequence else { return }
+                guard expectedUid == appVM.user?.uid else { return }
+
                 print("🧪 committing settings batch")
-                try await UserSettingsSync.pushAndApply()
+                try await UserSettingsSync.pushAndApply(
+                    settings: settings,
+                    expectedUid: expectedUid,
+                    clientRevision: revision
+                )
                 print("✅ pushAndApply (right panel) OK")
+            } catch is CancellationError {
+                print("⚠️ pushAndApply (right panel) cancelled")
             } catch {
                 print("❌ pushAndApply (right panel) failed:", error.localizedDescription)
             }
         }
     }
 
+    private func clampReminderSelectionIfNeeded() {
+        guard appVM.subscriptionState == .free || appVM.subscriptionState == .expired else { return }
+        let maxReminders = appVM.maxRemindersPerWeekForCurrentSubscription
+        let clamped = min(max(remindersPerWeek, SubscriptionLimits.minRemindersPerWeek), maxReminders)
+        guard clamped != remindersPerWeek else { return }
+        remindersPerWeek = clamped
+        persistSettingsDebounced()
+    }
+
 }
 
 // MARK: - Active sheet enum
 
-enum ActiveSettingsSheet: Identifiable {
+enum ActiveSettingsSheet: Hashable, Identifiable {
     case sendWindow
     case timeZone
     case subscription
     case contactUs
+    case deleteAccount
+    case paywall
+    case communityGuidelines
 
     var id: Int { hashValue }
 }

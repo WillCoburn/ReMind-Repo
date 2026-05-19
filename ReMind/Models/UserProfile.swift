@@ -34,46 +34,110 @@ public enum SubscriptionLimits {
         state: SubscriptionState,
         lastKnownSubscribed: Bool
     ) -> Bool {
-        switch state {
-        case .subscribed:
-            return true
-        case .loading:
-            return true
-        case .error:
-            return lastKnownSubscribed
-        case .free, .expired:
-            return false
-        }
+        SubscriptionCapabilities.resolve(
+            state: state,
+            lastKnownSubscribed: lastKnownSubscribed
+        ).canUseProReminderRange
     }
 
     public static func maxRemindersPerWeek(
         state: SubscriptionState,
         lastKnownSubscribed: Bool
     ) -> Double {
-        allowsProRange(state: state, lastKnownSubscribed: lastKnownSubscribed)
-            ? proMaxRemindersPerWeek
-            : freeMaxRemindersPerWeek
+        SubscriptionCapabilities.resolve(
+            state: state,
+            lastKnownSubscribed: lastKnownSubscribed
+        ).maxRemindersPerWeek
     }
 
     public static func shouldShowUpgradeMessaging(
         state: SubscriptionState,
         lastKnownSubscribed: Bool
     ) -> Bool {
-        switch state {
-        case .free, .expired:
-            return true
-        case .error:
-            return !lastKnownSubscribed
-        case .loading, .subscribed:
-            return false
-        }
+        SubscriptionCapabilities.resolve(
+            state: state,
+            lastKnownSubscribed: lastKnownSubscribed
+        ).shouldShowUpgradeMessaging
     }
 
     public static func shouldApplyFreeUsageLimits(
         state: SubscriptionState,
         lastKnownSubscribed: Bool
     ) -> Bool {
-        shouldShowUpgradeMessaging(state: state, lastKnownSubscribed: lastKnownSubscribed)
+        SubscriptionCapabilities.resolve(
+            state: state,
+            lastKnownSubscribed: lastKnownSubscribed
+        ).shouldApplyFreeUsageLimits
+    }
+}
+
+public struct SubscriptionCapabilities: Codable, Sendable, Equatable {
+    public let state: SubscriptionState
+    public let effectivePlan: UserPlan
+    public let canUseProReminderRange: Bool
+    public let maxRemindersPerWeek: Double
+    public let shouldShowUpgradeMessaging: Bool
+    public let shouldApplyFreeUsageLimits: Bool
+
+    public var isProUser: Bool {
+        effectivePlan == .pro
+    }
+
+    public static func resolve(
+        state: SubscriptionState,
+        lastKnownSubscribed: Bool
+    ) -> SubscriptionCapabilities {
+        let proUnlocked = state == .subscribed
+        let showUpgrade: Bool
+        switch state {
+        case .free, .expired:
+            showUpgrade = true
+        case .error:
+            showUpgrade = !lastKnownSubscribed
+        case .loading, .subscribed:
+            showUpgrade = false
+        }
+
+        return SubscriptionCapabilities(
+            state: state,
+            effectivePlan: proUnlocked ? .pro : .free,
+            canUseProReminderRange: proUnlocked,
+            maxRemindersPerWeek: proUnlocked
+                ? SubscriptionLimits.proMaxRemindersPerWeek
+                : SubscriptionLimits.freeMaxRemindersPerWeek,
+            shouldShowUpgradeMessaging: showUpgrade,
+            shouldApplyFreeUsageLimits: !proUnlocked
+        )
+    }
+
+    public static func resolve(
+        serverPlan: UserPlan?,
+        subscriptionStatus: String?,
+        profileLoaded: Bool,
+        lastKnownSubscribed: Bool,
+        rcEntitlementActive: Bool? = nil,
+        rcExpiresAt: Date? = nil,
+        referenceDate: Date = Date()
+    ) -> SubscriptionCapabilities {
+        guard profileLoaded else {
+            return resolve(state: .loading, lastKnownSubscribed: lastKnownSubscribed)
+        }
+
+        let normalizedStatus = subscriptionStatus?.lowercased()
+        let state: SubscriptionState
+        if let rcExpiresAt, rcExpiresAt < referenceDate {
+            state = .expired
+        } else if rcEntitlementActive == true {
+            state = .subscribed
+        } else if serverPlan == .pro && rcEntitlementActive == nil && rcExpiresAt == nil {
+            state = .subscribed
+        } else if normalizedStatus == "expired" {
+            state = .expired
+        } else {
+            state = .free
+        }
+
+        return resolve(state: state, lastKnownSubscribed: lastKnownSubscribed)
     }
 }
 
@@ -119,6 +183,9 @@ public struct UserProfile: Codable, Sendable, Equatable {
     public var trialEndsAt: Date?   // End of in-app 30-day free period
     public var active: Bool?        // Operational scheduler flag (STOP/START + send safety)
     public var plan: UserPlan?
+    public var subscriptionStatus: String?
+    public var rcEntitlementActive: Bool?
+    public var rcExpiresAt: Date?
     public var receivedCount: Int?  // Total ReMinds delivered (auto/manual/PDF)
     public var usage: InstantUsage?
     public var lastReminder: LastReminder?
@@ -131,6 +198,9 @@ public struct UserProfile: Codable, Sendable, Equatable {
         trialEndsAt: Date? = nil,
         active: Bool? = nil,
         plan: UserPlan? = nil,
+        subscriptionStatus: String? = nil,
+        rcEntitlementActive: Bool? = nil,
+        rcExpiresAt: Date? = nil,
         receivedCount: Int? = nil,
         usage: InstantUsage? = nil,
         lastReminder: LastReminder? = nil
@@ -142,6 +212,9 @@ public struct UserProfile: Codable, Sendable, Equatable {
         self.trialEndsAt = trialEndsAt
         self.active = active
         self.plan = plan
+        self.subscriptionStatus = subscriptionStatus
+        self.rcEntitlementActive = rcEntitlementActive
+        self.rcExpiresAt = rcExpiresAt
         self.receivedCount = receivedCount
         self.usage = usage
         self.lastReminder = lastReminder

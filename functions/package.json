@@ -8,6 +8,8 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "test:rules": "firebase emulators:exec --config ../firebase.json --only firestore --project demo-remind \"node --test test/firestore-rules.emulator.mjs\"",
     "serve": "npm run build && firebase emulators:start --only functions",
     "deploy": "npm run build && firebase deploy --only functions",
     "godmode": "node scripts/godMode.js"
@@ -18,7 +20,8 @@
     "twilio": "^4.21.0"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
-    "@types/node": "^20.11.0"
+    "@firebase/rules-unit-testing": "^5.0.1",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
   }
 }

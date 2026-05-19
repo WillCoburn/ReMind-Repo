@@ -33,7 +33,6 @@ extension AppViewModel {
         // One-time fetch so UI has something immediately
         do {
             let snap = try await db.collection("users").document(uid).getDocument()
-            let documentExists = snap.exists
             let serverRead = (snap.get("updatedAt") as? Timestamp
                             ?? snap.get("createdAt") as? Timestamp)?.dateValue()
                         updateServerTime(readAt: serverRead)
@@ -46,7 +45,12 @@ extension AppViewModel {
             let updatedAtTS = snap.get("updatedAt") as? Timestamp
             let trialEndsAtTS = snap.get("trialEndsAt") as? Timestamp
             let planRaw = (snap.get("plan") as? String)?.lowercased()
+            // Plan is server-owned. Missing legacy plan fields are treated as
+            // free in the client until the backend entitlement mirror fills in.
             let plan = UserPlan(rawValue: planRaw ?? "")
+            let subscriptionStatus = snap.get("subscriptionStatus") as? String
+            let rcEntitlementActive = snap.get("rc.entitlementActive") as? Bool
+            let rcExpiresAt = parseFirestoreDate(snap.get("rc.expiresAt"))
 
             // Active flag (backend gating)
             let active = snap.get("active") as? Bool
@@ -79,6 +83,9 @@ extension AppViewModel {
                 trialEndsAt: trialEndsAtTS?.dateValue(),
                 active: active,
                 plan: plan,
+                subscriptionStatus: subscriptionStatus,
+                rcEntitlementActive: rcEntitlementActive,
+                rcExpiresAt: rcExpiresAt,
                 receivedCount: receivedCount,
                 usage: instantUsage,
                 lastReminder: lastReminder
@@ -86,32 +93,13 @@ extension AppViewModel {
 
             self.user = profile
             applyLatestSentReminder(lastReminder)
-
-            let cachedActive = (profile.plan == .pro)
-                || ((snap.get("rc.entitlementActive") as? Bool) == true)
-                || (((snap.get("subscriptionStatus") as? String)?.lowercased() == "subscribed")
-                    || ((snap.get("subscriptionStatus") as? String)?.lowercased() == "cancelled"))
-            applyEntitlementState(
-                entitlementActive: cachedActive,
-                source: EntitlementSource.cached
-            )
+            refreshEntitlementState()
 
 
             // Ancillary flags
             self.smsOptOut = snap.get("smsOptOut") as? Bool ?? false
             let hasSeenTour = snap.get("hasSeenFeatureTour") as? Bool ?? false
             applyFeatureTourFlag(hasSeenTour)
-
-            if documentExists && plan == nil {
-                // Backward-compatible default: users missing `plan` behave as free.
-                // If paid state is explicitly known, we infer pro; otherwise default free.
-                let status = (snap.get("subscriptionStatus") as? String)?.lowercased()
-                let rcEntitled = snap.get("rc.entitlementActive") as? Bool
-                let inferredPlan: UserPlan = (rcEntitled == true || status == "subscribed" || status == "cancelled") ? .pro : .free
-                try? await db.collection("users").document(uid).setData([
-                    "plan": inferredPlan.rawValue
-                ], merge: true)
-            }
         } catch {
             print("❌ load user error:", error.localizedDescription)
             if self.user == nil { self.user = UserProfile(uid: uid, phoneE164: "") }
@@ -144,7 +132,11 @@ extension AppViewModel {
             let defaults = UserDefaults.standard
 
             if let weekly = settingsSnap.get("remindersPerWeek") as? Double {
-                defaults.set(weekly, forKey: "remindersPerWeek")
+                let clampedWeekly = min(
+                    max(weekly, SubscriptionLimits.minRemindersPerWeek),
+                    maxRemindersPerWeekForCurrentSubscription
+                )
+                defaults.set(clampedWeekly, forKey: "remindersPerWeek")
             }
 
             if let tzIdentifier = settingsSnap.get("tzIdentifier") as? String {

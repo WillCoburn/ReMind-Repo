@@ -8,7 +8,6 @@ import UIKit
 struct SendNowSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appVM: AppViewModel
-    @ObservedObject private var revenueCat: RevenueCatManager = .shared
 
     @State private var isSending = false
     @State private var errorMessage: String? = nil
@@ -16,7 +15,6 @@ struct SendNowSheet: View {
     @State private var animateIllustration = false
 
     var body: some View {
-        let _ = revenueCat.entitlementActive
         ZStack {
             LinearGradient(
                 colors: [

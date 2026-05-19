@@ -6,7 +6,6 @@ import FirebaseAuth
 struct CommunityView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @ObservedObject private var revenueCat: RevenueCatManager = .shared
     private let blockService: BlockService = FirestoreBlockService()
     @State private var posts: [CommunityPost] = []
     @State private var isLoading = true
@@ -32,8 +31,6 @@ struct CommunityView: View {
     private var isUserActive: Bool { true }
 
     var body: some View {
-        // Observe RevenueCat directly so entitlement changes update interaction instantly.
-        let _ = revenueCat.entitlementActive
         ZStack(alignment: .bottomTrailing) {
             content
 

@@ -20,6 +20,10 @@ extension AppViewModel {
                 let trialEndsAt = (data["trialEndsAt"] as? Timestamp)?.dateValue()
                 let active = data["active"] as? Bool
                 let plan = UserPlan(rawValue: ((data["plan"] as? String) ?? "").lowercased())
+                let subscriptionStatus = data["subscriptionStatus"] as? String
+                let rc = data["rc"] as? [String: Any]
+                let rcEntitlementActive = rc?["entitlementActive"] as? Bool
+                let rcExpiresAt = self.parseFirestoreDate(rc?["expiresAt"])
                 let receivedCount = (data["receivedCount"] as? Int)
                     ?? (data["receivedCount"] as? NSNumber)?.intValue
                     ?? self.user?.receivedCount
@@ -41,6 +45,9 @@ extension AppViewModel {
                     trialEndsAt: trialEndsAt,
                     active: active,
                     plan: plan,
+                    subscriptionStatus: subscriptionStatus,
+                    rcEntitlementActive: rcEntitlementActive,
+                    rcExpiresAt: rcExpiresAt,
                     receivedCount: receivedCount,
                     usage: instantUsage,
                     lastReminder: lastReminder

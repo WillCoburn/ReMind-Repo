@@ -21,6 +21,7 @@ import {
 } from "../config/options";
 import { getTwilioClient, buildMsgParams, sendSMS } from "../twilio/client";
 import { parseRcExpiresAt } from "../revenuecat/state";
+import { smsDeliveryBlockReason } from "../sms/eligibility";
 
 export const minuteCron = onSchedule(
   {
@@ -54,6 +55,19 @@ export const minuteCron = onSchedule(
     for (const doc of dueSnap.docs) {
       const uid = doc.id;
       const to = doc.get("phoneE164") as string | undefined;
+      const blockReason = smsDeliveryBlockReason(doc);
+
+      if (blockReason) {
+        logger.warn("[minuteCron] skipping SMS-blocked user", { uid, blockReason });
+        await db.doc(`users/${uid}`).set(
+          {
+            active: false,
+            nextSendAt: null,
+          },
+          { merge: true }
+        );
+        continue;
+      }
 
       if (!to) {
         await scheduleNext(uid, new Date());
@@ -82,6 +96,20 @@ export const minuteCron = onSchedule(
             },
             { merge: true }
           );
+        }
+
+        const freshUserSnap = await db.doc(`users/${uid}`).get();
+        const freshBlockReason = smsDeliveryBlockReason(freshUserSnap);
+        if (freshBlockReason) {
+          logger.warn("[minuteCron] skipping freshly SMS-blocked user", { uid, freshBlockReason });
+          await db.doc(`users/${uid}`).set(
+            {
+              active: false,
+              nextSendAt: null,
+            },
+            { merge: true }
+          );
+          continue;
         }
 
         if (doc.get("welcomed") !== true) {
@@ -145,16 +173,6 @@ export const minuteCron = onSchedule(
         if (resFailed) {
           await applyOptOut(uid);
           continue;
-        }
-
-         const isActive = doc.get("active") === true;
-         const isOptedOut = doc.get("smsOptOut") === true;
-
-        if (!isActive || isOptedOut) {
-          await db.doc(`users/${uid}`).set(
-            { active: true, smsOptOut: false },
-            { merge: true }
-          );
         }
 
         try {

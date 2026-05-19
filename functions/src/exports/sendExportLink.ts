@@ -18,6 +18,7 @@ import {
 } from "../config/options";
 import { getTwilioClient, buildMsgParams, sendSMS } from "../twilio/client";
 import { enforceMonthlyLimit } from "../usageLimits";
+import { assertSmsDeliveryAllowed } from "../sms/eligibility";
 
 export const sendExportLink = onCall(
   { secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID] },
@@ -33,8 +34,19 @@ export const sendExportLink = onCall(
         throw new HttpsError("invalid-argument", "Invalid or unauthorized path.");
       }
 
-      // 🔒 Enforce 20 PDF exports per 30-day window
-      await enforceMonthlyLimit(uid, "pdfExportsThisMonth", 20);
+      const userSnap = await db.doc(`users/${uid}`).get();
+      if (!userSnap.exists) {
+        throw new HttpsError("not-found", "User not found.");
+      }
+      assertSmsDeliveryAllowed(userSnap);
+
+      const to = (userSnap.get("phoneE164") as string | undefined) || null;
+      if (!to) {
+        throw new HttpsError(
+          "failed-precondition",
+          "No phone number on file for user."
+        );
+      }
 
       // 1) Ensure the file exists in the default bucket
       const bucket = admin.storage().bucket();
@@ -84,15 +96,9 @@ export const sendExportLink = onCall(
         logger.info("[sendExportLink] generated token-based download URL");
       }
 
-      // 4) Lookup recipient phone
-      const userSnap = await db.doc(`users/${uid}`).get();
-      const to = (userSnap.get("phoneE164") as string | undefined) || null;
-      if (!to) {
-        throw new HttpsError(
-          "failed-precondition",
-          "No phone number on file for user."
-        );
-      }
+      // Reserve quota only after upload/link generation is known-good. Twilio failures
+      // still consume the slot to avoid duplicate export-link SMS sends on retry.
+      await enforceMonthlyLimit(uid, "pdfExportsThisMonth", 20);
 
       // 5) Send SMS via Twilio
       const sid = TWILIO_SID.value();

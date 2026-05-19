@@ -177,41 +177,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
     // MARK: - Firestore sync
 
     private func syncToFirestore(info: CustomerInfo, uid: String) {
-        let ent = info.entitlements[PaywallConfig.entitlementId]
-
-        let rcStable = stableRCMirror(from: ent)
-
-        let userRef = db.collection("users").document(uid)
-
-        Task { [weak self] in
-            guard let self else { return }
-            do {
-                let snap = try await userRef.getDocument()
-                guard snap.exists, let data = snap.data() else { return }
-
-                let existingRC = (data["rc"] as? [String: Any]) ?? [:]
-                let existingStable = comparableRCMirror(from: existingRC)
-
-                guard NSDictionary(dictionary: existingStable).isEqual(to: rcStable) == false else {
-                    return
-                }
-
-                
-                try await userRef.setData(
-                    ["rc": rcStable.merging(["lastSyncedAt": Date().timeIntervalSince1970]) { _, new in new }],
-                    merge: true
-                )
-               
-
-                await self._recomputeAndPersistActiveAsync(
-                    uid: uid,
-                    entitlement: ent?.isActive ?? false
-                )
-
-            } catch {
-                print("⚠️ syncToFirestore error:", error.localizedDescription)
-            }
-        }
+        debugLog("skipping client Firestore entitlement mirror; RevenueCat webhook is authoritative", uid: uid)
     }
 
     // MARK: - Derived state
@@ -220,16 +186,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
 
     @MainActor
     func recomputeAndPersistActive(uid: String? = nil, entitlement: Bool? = nil) {
-        let now = Date()
-        if let last = lastActiveRecomputeAt,
-           now.timeIntervalSince(last) < activeRecomputeCooldownSec {
-            return
-        }
-        lastActiveRecomputeAt = now
-
-        Task { [weak self] in
-            await self?._recomputeAndPersistActiveAsync(uid: uid, entitlement: entitlement)
-        }
+        debugLog("skipping client plan/active recompute; server-owned fields are webhook controlled", uid: uid ?? Auth.auth().currentUser?.uid)
     }
 
     @MainActor

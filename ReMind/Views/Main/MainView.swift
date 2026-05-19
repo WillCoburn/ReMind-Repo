@@ -4,18 +4,24 @@
 import SwiftUI
 import Foundation
 
+private enum ActiveHomeSheet: String, Equatable, Identifiable {
+    case sendNow
+    case export
+    case inspiration
+    case help
+
+    var id: String { rawValue }
+}
+
 struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var net: NetworkMonitor
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @ObservedObject private var revenueCat: RevenueCatManager = .shared
     var isPageActive: Bool = true
 
     @State private var input: String = ""
-    @State private var showExportSheet = false
-    @State private var showSendNowSheet = false
-    @State private var showInspirationSheet = false
-    @State private var showHelpSheet = false
+    @State private var activeHomeSheet: ActiveHomeSheet?
+    @State private var guardedActionTask: Task<Void, Never>?
     @State private var showDeleteReminderConfirmation = false
     @State private var pendingDeleteReminder: LastReminder?
     @State private var showSuccessMessage = false
@@ -32,8 +38,6 @@ struct MainView: View {
     private let goal: Int = 3
 
     var body: some View {
-        // Observe RevenueCat updates so entitlement changes redraw instantly.
-        let _ = revenueCat.entitlementActive
         let count = appVM.activeEntries.count
 
         let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -149,24 +153,18 @@ struct MainView: View {
                     .accessibilityLabel("Dismiss keyboard")
                 }
             }
-            .sheet(isPresented: $showSendNowSheet) {
+            .sheet(item: $activeHomeSheet) { sheet in
                 NavigationStack {
-                    SendNowSheet()
-                }
-            }
-            .sheet(isPresented: $showExportSheet) {
-                NavigationStack {
-                    ExportSheet()
-                }
-            }
-            .sheet(isPresented: $showInspirationSheet) {
-                NavigationStack {
-                    InspirationBankSheet()
-                }
-            }
-            .sheet(isPresented: $showHelpSheet) {
-                NavigationStack {
-                    HelpGuideSheet()
+                    switch sheet {
+                    case .sendNow:
+                        SendNowSheet()
+                    case .export:
+                        ExportSheet()
+                    case .inspiration:
+                        InspirationBankSheet()
+                    case .help:
+                        HelpGuideSheet()
+                    }
                 }
             }
             .alert(alertTitle, isPresented: $showAlert) {
@@ -178,14 +176,22 @@ struct MainView: View {
             }
             .onChange(of: isPageActive) { active in
                 guard active else {
+                    guardedActionTask?.cancel()
                     dismissEntryKeyboard()
                     return
                 }
                 refreshMainViewData()
             }
-            .onChange(of: showSendNowSheet) { showing in
-                guard !showing, isPageActive else { return }
+            .onChange(of: activeHomeSheet) { showing in
+                guard showing == nil, isPageActive else { return }
                 refreshMainViewData()
+            }
+            .onDisappear {
+                guardedActionTask?.cancel()
+            }
+            .onChange(of: appVM.user?.uid) { _ in
+                guardedActionTask?.cancel()
+                activeHomeSheet = nil
             }
             .tint(.figmaBlue)
             .toolbar(.hidden, for: .navigationBar)
@@ -406,7 +412,7 @@ struct MainView: View {
                         systemImage: "lightbulb.fill",
                         isEnabled: true,
                         style: .compact,
-                        action: { showInspirationSheet = true }
+                        action: { activeHomeSheet = .inspiration }
                     )
 
                     actionIconButton(
@@ -414,7 +420,7 @@ struct MainView: View {
                         systemImage: "questionmark.circle.fill",
                         isEnabled: true,
                         style: .compact,
-                        action: { showHelpSheet = true }
+                        action: { activeHomeSheet = .help }
                     )
                 }
                 .padding(.horizontal, sidePadding)
@@ -467,7 +473,7 @@ struct MainView: View {
                 systemImage: "lightbulb.fill",
                 isEnabled: true,
                 style: .accessibilityGrid,
-                action: { showInspirationSheet = true }
+                action: { activeHomeSheet = .inspiration }
             )
 
             actionIconButton(
@@ -475,7 +481,7 @@ struct MainView: View {
                 systemImage: "questionmark.circle.fill",
                 isEnabled: true,
                 style: .accessibilityGrid,
-                action: { showHelpSheet = true }
+                action: { activeHomeSheet = .help }
             )
         }
         .frame(width: gridWidth)
@@ -568,18 +574,24 @@ struct MainView: View {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
-        await appVM.submit(text: text)
-        input = ""
-        dismissEntryKeyboard()
+        do {
+            try await appVM.submit(text: text)
+            input = ""
+            dismissEntryKeyboard()
 
-        withAnimation(.easeInOut(duration: 0.5)) { pulseEditor = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            withAnimation(.easeInOut(duration: 0.5)) { pulseEditor = false }
-        }
+            withAnimation(.easeInOut(duration: 0.5)) { pulseEditor = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.easeInOut(duration: 0.5)) { pulseEditor = false }
+            }
 
-        withAnimation(.easeInOut(duration: 0.5)) { showSuccessMessage = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation(.easeInOut(duration: 0.5)) { showSuccessMessage = false }
+            withAnimation(.easeInOut(duration: 0.5)) { showSuccessMessage = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeInOut(duration: 0.5)) { showSuccessMessage = false }
+            }
+        } catch {
+            alertTitle = "Couldn't save reminder"
+            alertMessage = error.localizedDescription
+            showAlert = true
         }
     }
 
@@ -587,10 +599,12 @@ struct MainView: View {
         let count = appVM.activeEntries.count
         guard net.isConnected else { presentOfflineAlert(); return }
         if count < goal { presentLockedAlert(feature: "Export PDF"); return }
-        Task {
+        guardedActionTask?.cancel()
+        guardedActionTask = Task { @MainActor in
             let freshOptOut = await appVM.reloadSmsOptOut()
+            guard !Task.isCancelled, isPageActive else { return }
             if freshOptOut { presentOptOutAlert(); return }
-            showExportSheet = true
+            activeHomeSheet = .export
         }
     }
 
@@ -598,10 +612,12 @@ struct MainView: View {
         let count = appVM.activeEntries.count
         guard net.isConnected else { presentOfflineAlert(); return }
         if count < goal { presentLockedAlert(feature: "Send One Now"); return }
-        Task {
+        guardedActionTask?.cancel()
+        guardedActionTask = Task { @MainActor in
             let freshOptOut = await appVM.reloadSmsOptOut()
+            guard !Task.isCancelled, isPageActive else { return }
             if freshOptOut { presentOptOutAlert(); return }
-            showSendNowSheet = true
+            activeHomeSheet = .sendNow
         }
     }
 

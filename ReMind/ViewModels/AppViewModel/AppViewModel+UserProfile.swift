@@ -13,88 +13,80 @@ extension AppViewModel {
     // MARK: - User Profile (create or merge on sign-in)
     /// Creates/merges the Firestore user document and seeds baseline freemium fields,
     /// THEN identifies RevenueCat so RC writes happen **after** the base doc exists.
-    func setPhoneProfileAndLoad(_ phoneDigits: String) async {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+    func setPhoneProfileAndLoad(_ phoneDigits: String) async throws {
+        guard let uid = Auth.auth().currentUser?.uid else {
+            throw NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "Sign in required."])
+        }
         let e164 = "+1\(phoneDigits)"
 
         // Seed local model immediately so UI has identity
         let profile = UserProfile(uid: uid, phoneE164: e164)
         self.user = profile
 
+        let shouldFinishSeed = !isSeedingUserProfile
         isSeedingUserProfile = true
-        defer { isSeedingUserProfile = false }
+        defer {
+            if shouldFinishSeed {
+                isSeedingUserProfile = false
+            }
+        }
         
-        do {
-            let docRef = db.collection("users").document(uid)
+        let docRef = db.collection("users").document(uid)
 
-            let existingSnapshot = try await docRef.getDocument()
-            let serverRead = (existingSnapshot.get("updatedAt") as? Timestamp
-                ?? existingSnapshot.get("createdAt") as? Timestamp)?.dateValue()
-            updateServerTime(readAt: serverRead)
+        let existingSnapshot = try await docRef.getDocument()
+        let serverRead = (existingSnapshot.get("updatedAt") as? Timestamp
+            ?? existingSnapshot.get("createdAt") as? Timestamp)?.dateValue()
+        updateServerTime(readAt: serverRead)
 
-            if existingSnapshot.exists {
-                let existingData = existingSnapshot.data() ?? [:]
-                let existingCreatedAt = existingData["createdAt"] as? Timestamp
-                // Only repair a missing createdAt once; never overwrite a historical timestamp
-                var mergePayload: [String: Any] = [
-                    "uid": uid,
-                    "phoneE164": e164,
-                    "updatedAt": FieldValue.serverTimestamp()
-                ]
+        if existingSnapshot.exists {
+            let existingData = existingSnapshot.data() ?? [:]
+            let existingCreatedAt = existingData["createdAt"] as? Timestamp
+            // Only repair a missing createdAt once; never overwrite a historical timestamp
+            var mergePayload: [String: Any] = [
+                "uid": uid,
+                "phoneE164": e164,
+                "updatedAt": FieldValue.serverTimestamp()
+            ]
 
-                if existingCreatedAt == nil {
-                    mergePayload["createdAt"] = FieldValue.serverTimestamp()
-                }
-
-                // Tier source-of-truth: default to free when missing unless legacy paid fields exist.
-                if existingData["plan"] == nil {
-                    let rc = existingData["rc"] as? [String: Any] ?? [:]
-                    let rcEntitled = rc["entitlementActive"] as? Bool
-                    let status = (existingData["subscriptionStatus"] as? String)?.lowercased()
-                    let inferredPlan: UserPlan = (rcEntitled == true || status == "subscribed" || status == "cancelled") ? .pro : .free
-                    mergePayload["plan"] = inferredPlan.rawValue
-                }
-
-                // Keep operational active=true by default for scheduler compatibility (except STOP).
-                if existingData["active"] == nil {
-                    mergePayload["active"] = true
-                }
-
-                if existingData["subscriptionStatus"] == nil {
-                    mergePayload["subscriptionStatus"] = SubscriptionStatus.unsubscribed.rawValue
-                }
-                
-                try await docRef.setData(mergePayload, merge: true)
-
-                if let createdAtDate = existingCreatedAt?.dateValue() {
-                    self.user?.createdAt = createdAtDate
-                } else if mergePayload["createdAt"] != nil {
-                    self.user?.createdAt = Date()
-                }
-            } else {
-                try await docRef.setData([
-                    "uid": uid,
-                    "phoneE164": e164,
-                    "createdAt": FieldValue.serverTimestamp(),
-                    "updatedAt": FieldValue.serverTimestamp(),
-                    // No new trial seeding in freemium.
-                    "subscriptionStatus": SubscriptionStatus.unsubscribed.rawValue,
-                    "plan": UserPlan.free.rawValue,
-                    "active": true,
-                ], merge: true)
-                self.user?.createdAt = Date()
+            if existingCreatedAt == nil {
+                mergePayload["createdAt"] = FieldValue.serverTimestamp()
             }
 
+            try await docRef.setData(mergePayload, merge: true)
 
-            // Ensure paid-state fields are synced from RevenueCat without trial dependence.
-            // CLEANUP AFTER: consolidate all plan writes into a single server-authoritative path.
-            RevenueCatManager.shared.recomputeAndPersistActive(uid: uid)
-            refreshRevenueCatEntitlement(reason: "setPhoneProfile")
+            if let createdAtDate = existingCreatedAt?.dateValue() {
+                self.user?.createdAt = createdAtDate
+            } else if mergePayload["createdAt"] != nil {
+                self.user?.createdAt = Date()
+            }
+        } else {
+            try await docRef.setData([
+                "uid": uid,
+                "phoneE164": e164,
+                "createdAt": FieldValue.serverTimestamp(),
+                "updatedAt": FieldValue.serverTimestamp(),
+            ], merge: true)
+            self.user?.createdAt = Date()
+        }
 
-            // Load the rest of app state
-            await refreshAll()
+
+        // Paid-state fields are server-owned. RevenueCat refresh updates local UX
+        // while webhooks maintain the Firestore billing mirror.
+        RevenueCatManager.shared.recomputeAndPersistActive(uid: uid)
+        refreshRevenueCatEntitlement(reason: "setPhoneProfile")
+
+        // Load the rest of app state
+        await refreshAll()
+    }
+
+    func completeOnboardingAfterSignIn(phoneDigits: String) async throws {
+        defer { finishOnboardingAuthTransition() }
+        try await setPhoneProfileAndLoad(phoneDigits)
+
+        do {
+            _ = try await functions.httpsCallable("triggerWelcome").call([:])
         } catch {
-            print("❌ setPhoneProfileAndLoad error:", error.localizedDescription)
+            print("triggerWelcome error:", error.localizedDescription)
         }
     }
 

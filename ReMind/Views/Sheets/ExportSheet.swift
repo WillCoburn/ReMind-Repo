@@ -8,7 +8,6 @@ import FirebaseAuth
 struct ExportSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appVM: AppViewModel
-    @ObservedObject private var revenueCat: RevenueCatManager = .shared
 
     @State private var isExporting = false
     @State private var link: URL? = nil
@@ -19,7 +18,6 @@ struct ExportSheet: View {
     private let exporter: ExportService = FirebaseExportService()
 
     var body: some View {
-        let _ = revenueCat.entitlementActive
         ZStack {
             LinearGradient(
                 colors: [

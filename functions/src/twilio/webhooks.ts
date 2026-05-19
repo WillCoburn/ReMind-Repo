@@ -5,12 +5,14 @@ import { onRequest } from "firebase-functions/v2/https";
 import {
   db,
   logger,
+  TWILIO_AUTH,
   STOP_KEYWORDS,
   START_KEYWORDS,
   findUserByPhone,
   applyOptOut,
   applyOptIn,
 } from "../config/options";
+import { isValidTwilioWebhookRequest } from "../security/webhooks";
 
 function parseTwilioPayload(req: any) {
   const contentType = (req.headers["content-type"] || "").toString();
@@ -77,13 +79,19 @@ async function handleStartForPhone(phone: string) {
   return true;
 }
 
-export const twilioStatusCallback = onRequest(async (req, res) => {
+export const twilioStatusCallback = onRequest({ secrets: [TWILIO_AUTH] }, async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).send("Method Not Allowed");
     return;
   }
 
   const payload = parseTwilioPayload(req);
+  if (!isValidTwilioWebhookRequest(req, TWILIO_AUTH.value(), payload)) {
+    logger.warn("[twilioWebhook] rejected unsigned status callback");
+    res.status(403).send("Forbidden");
+    return;
+  }
+
   const to = (payload.To || payload.to || "").toString();
   const errorCode = (payload.ErrorCode || payload.errorCode || "").toString();
 
@@ -94,13 +102,19 @@ export const twilioStatusCallback = onRequest(async (req, res) => {
   res.status(200).send("OK");
 });
 
-export const twilioInboundSms = onRequest(async (req, res) => {
+export const twilioInboundSms = onRequest({ secrets: [TWILIO_AUTH] }, async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).send("Method Not Allowed");
     return;
   }
 
   const payload = parseTwilioPayload(req);
+  if (!isValidTwilioWebhookRequest(req, TWILIO_AUTH.value(), payload)) {
+    logger.warn("[twilioWebhook] rejected unsigned inbound SMS");
+    res.status(403).send("Forbidden");
+    return;
+  }
+
   const from = (payload.From || payload.from || "").toString();
   const body = (payload.Body || payload.body || "").toString();
 

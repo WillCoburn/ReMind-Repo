@@ -15,6 +15,8 @@ import {
   TWILIO_MSID,
 } from "../config/options";
 import { getTwilioClient, buildMsgParams } from "../twilio/client";
+import { canTargetUid } from "../auth/callable";
+import { assertSmsDeliveryAllowed } from "../sms/eligibility";
 
 const WELCOME_TEXT = "Welcome to ReMind! Reply STOP to opt out or HELP for help.";
 
@@ -49,6 +51,7 @@ async function sendWelcomeIfNeeded(
 ) {
   const userRef = db.doc(`users/${uid}`);
   const snap = await userRef.get();
+  assertSmsDeliveryAllowed(snap);
   const already = snap.get("welcomed") === true;
   if (already) return false;
 
@@ -80,6 +83,9 @@ export const triggerWelcome = onCall(
     const callerUid = req.auth?.uid as string | undefined;
     const targetUid = (req.data?.uid as string | undefined) || callerUid;
     if (!targetUid) throw new HttpsError("unauthenticated", "Sign in or provide data.uid.");
+    if (!canTargetUid(callerUid, targetUid, req.auth?.token)) {
+      throw new HttpsError("permission-denied", "Cannot trigger welcome for another user.");
+    }
 
     const sid = TWILIO_SID.value();
     const token = TWILIO_AUTH.value();
@@ -89,7 +95,19 @@ export const triggerWelcome = onCall(
 
     const userRef = db.doc(`users/${targetUid}`);
     const existingUser = await userRef.get();
-    const userSeed: Record<string, unknown> = { active: true, smsOptOut: false };
+    if (existingUser.exists) {
+      assertSmsDeliveryAllowed(existingUser);
+    }
+
+    const userSeed: Record<string, unknown> = {};
+    if (!existingUser.exists) {
+      userSeed.active = true;
+      userSeed.smsOptOut = false;
+    } else {
+      if (existingUser.get("active") == null) userSeed.active = true;
+      if (existingUser.get("smsOptOut") == null) userSeed.smsOptOut = false;
+    }
+
     if (!existingUser.exists || existingUser.get("plan") == null) {
       userSeed.plan = "free";
     }
