@@ -21,6 +21,7 @@ extension AppViewModel {
             let result = try await functions.httpsCallable("sendOneNow").call([:])
             print("✅ sendOneNow result:", result.data)
             await refreshAll()
+            await refreshLatestSentReminder()
         } catch let err as NSError {
             // Decode Firebase Functions errors so we can surface the nice cap message
             if err.domain == FunctionsErrorDomain,

@@ -67,16 +67,10 @@ struct ExportSheet: View {
                             }
 
                             if let link {
-                                HStack(spacing: 10) {
-                                    Button("Copy link") {
-                                        UIPasteboard.general.string = link.absoluteString
-                                    }
+                                Link("Open link", destination: link)
                                     .buttonStyle(.bordered)
-
-                                    Link("Open link", destination: link)
-                                        .buttonStyle(.bordered)
-                                }
-                                .padding(.top, 4)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .padding(.top, 4)
                             }
                         }
                         .padding(.horizontal, 30)
@@ -277,12 +271,6 @@ private struct ExportPDFStackAnimation: View {
                         .background(Circle().fill(Color.white))
                         .offset(x: pageWidth * 0.64, y: -pageHeight * 0.43)
                         .transition(.scale.combined(with: .opacity))
-                } else if isExporting {
-                    Image(systemName: "arrow.down.doc.fill")
-                        .font(.system(size: 34, weight: .semibold))
-                        .foregroundColor(.figmaBlue)
-                        .offset(x: pageWidth * 0.66, y: -pageHeight * 0.40)
-                        .scaleEffect(0.94 + fan * 0.10)
                 }
             }
             .frame(width: availableWidth, height: availableHeight)

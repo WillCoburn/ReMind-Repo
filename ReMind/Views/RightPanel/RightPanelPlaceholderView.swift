@@ -832,6 +832,23 @@ private struct SettingsSubpageHandle: View {
     }
 }
 
+private struct SettingsSubpageDismissChevron: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.down")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(Color.black.opacity(0.36))
+                .frame(width: 44, height: 38)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Dismiss")
+        .padding(.top, 8)
+    }
+}
+
 private struct SettingsSubpageHeader: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -1297,7 +1314,7 @@ struct SendWindowSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: isCompact ? 18 : 24) {
-                        SettingsSubpageHandle()
+                        SettingsSubpageDismissChevron { onDone() }
 
                         SettingsSubpageHeader(
                             systemImage: "moon.zzz.fill",
@@ -1371,7 +1388,7 @@ struct SendWindowSheet: View {
         }
         .onAppear { animateHeader = true }
         .onDisappear { animateHeader = false }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
         .brainMailDynamicTypeRange()
     }
@@ -1388,12 +1405,14 @@ struct TimeZoneSheet: View {
     private let usTimeZones = SettingsHelpers.usTimeZones()
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                SettingsSubpageBackground()
+        ZStack {
+            SettingsSubpageBackground()
 
-                VStack(spacing: 18) {
-                    SettingsSubpageHandle()
+            GeometryReader { proxy in
+                let isCompact = proxy.size.height < 650
+
+                VStack(spacing: isCompact ? 18 : 24) {
+                    SettingsSubpageDismissChevron { onDone() }
 
                     SettingsSubpageHeader(
                         systemImage: "globe.americas.fill",
@@ -1443,23 +1462,15 @@ struct TimeZoneSheet: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 18)
                 }
+                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
             }
-            .navigationTitle("Time Zone")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { onDone() }
-                        .font(.headline.weight(.semibold))
-                        .foregroundColor(.figmaBlue)
-                }
-            }
-            .onAppear { animateHeader = true }
-            .onDisappear { animateHeader = false }
-            .brainMailDynamicTypeRange()
-            .tint(.figmaBlue)
         }
+        .onAppear { animateHeader = true }
+        .onDisappear { animateHeader = false }
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
+        .brainMailDynamicTypeRange()
+        .tint(.figmaBlue)
     }
 }
 
@@ -1488,7 +1499,7 @@ struct SubscriptionOptionsSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: isCompact ? 18 : 24) {
-                        SettingsSubpageHandle()
+                        SettingsSubpageDismissChevron { dismiss() }
 
                         SettingsSubpageHeader(
                             systemImage: appVM.isProUser ? "checkmark.seal.fill" : "sparkles",
@@ -1530,7 +1541,7 @@ struct SubscriptionOptionsSheet: View {
         .multilineTextAlignment(.center)
         .onAppear { animateHeader = true }
         .onDisappear { animateHeader = false }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
         .brainMailDynamicTypeRange()
     }

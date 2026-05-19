@@ -108,24 +108,36 @@ public struct FirebaseExportService: ExportService {
                 ctx.beginPage()
                 page += 1
                 
-                // ✅ Logo ONLY on first page
-                if page == 1,
-                   let logo = UIImage(
-                    named: "pdfFullLogo",
-                    in: Bundle.main,
-                    with: nil
-                   ) {
-                    
-                    let logoHeight: CGFloat = 40
-                    let aspect = logo.size.width / logo.size.height
-                    let logoWidth = logoHeight * aspect
-                    let logoRect = CGRect(
-                        x: margin,
-                        y: margin,
-                        width: logoWidth,
-                        height: logoHeight
-                    )
-                    logo.draw(in: logoRect)
+                if page == 1 {
+                    let brandFont = UIFont.systemFont(ofSize: 24, weight: .bold)
+                    let brandText = "BrainMail"
+
+                    if let logo = UIImage(named: "FullLogo", in: Bundle.main, with: nil) {
+                        let logoSize: CGFloat = 40
+                        let logoRect = CGRect(
+                            x: margin,
+                            y: margin,
+                            width: logoSize,
+                            height: logoSize
+                        )
+                        logo.draw(in: logoRect)
+
+                        brandText.draw(
+                            at: CGPoint(x: margin + logoSize + 10, y: margin + 7),
+                            withAttributes: [
+                                .font: brandFont,
+                                .foregroundColor: figmaBlue
+                            ]
+                        )
+                    } else {
+                        brandText.draw(
+                            at: CGPoint(x: margin, y: margin + 7),
+                            withAttributes: [
+                                .font: brandFont,
+                                .foregroundColor: figmaBlue
+                            ]
+                        )
+                    }
                 }
                 
                 // Footer

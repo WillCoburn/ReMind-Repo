@@ -33,8 +33,20 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        Auth.auth().setAPNSToken(deviceToken, type: .unknown)
+        #if DEBUG
+        let tokenType: AuthAPNSTokenType = .sandbox
+        #else
+        let tokenType: AuthAPNSTokenType = .prod
+        #endif
+        Auth.auth().setAPNSToken(deviceToken, type: tokenType)
         print("✅ Successfully registered for remote notifications. Token length: \(deviceToken.count) bytes")
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("❌ Failed to register for remote notifications:", error.localizedDescription)
     }
 
     // MARK: - URL Handling (Phone Auth reCAPTCHA / fallback)

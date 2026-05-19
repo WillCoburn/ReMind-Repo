@@ -202,14 +202,18 @@ private struct OneTimeCodeTextField: UIViewRepresentable {
         ) -> Bool {
             let currentText = textField.text ?? ""
             guard let textRange = Range(range, in: currentText) else {
-                updateCode(from: string, in: textField)
-                return false
+                return true
             }
 
             let proposedText = currentText.replacingCharacters(in: textRange, with: string)
-            updateCode(from: proposedText, in: textField)
-            moveCaretToEnd(in: textField)
-            return false
+            let proposedDigits = proposedText.filter(\.isNumber)
+            guard proposedDigits.count <= 6 else {
+                updateCode(from: String(proposedDigits.prefix(6)), in: textField)
+                moveCaretToEnd(in: textField)
+                return false
+            }
+
+            return true
         }
 
         private func updateCode(from text: String, in textField: UITextField) {
