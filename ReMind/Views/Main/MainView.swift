@@ -69,9 +69,8 @@ struct MainView: View {
 
                                 recentReminderSection(
                                     isComposing: isComposing,
-                                    maxBubbleWidth: recentReminderBubbleMaxWidth(
-                                        for: topContentWidth,
-                                        usesAccessibilityLayout: usesAccessibilityLayout
+                                    cardContentWidth: recentReminderCardContentWidth(
+                                        for: topContentWidth
                                     ),
                                     usesAccessibilityLayout: usesAccessibilityLayout
                                 )
@@ -250,13 +249,13 @@ struct MainView: View {
     @ViewBuilder
     private func recentReminderSection(
         isComposing: Bool,
-        maxBubbleWidth: CGFloat,
+        cardContentWidth: CGFloat,
         usesAccessibilityLayout: Bool
     ) -> some View {
         if isComposing && usesAccessibilityLayout {
             EmptyView()
         } else if isComposing {
-            recentReminderCard(maxBubbleWidth: maxBubbleWidth)
+            recentReminderCard(cardContentWidth: cardContentWidth)
                 .opacity(0.38)
                 .scaleEffect(0.97, anchor: .top)
                 .frame(maxHeight: 72, alignment: .top)
@@ -265,13 +264,13 @@ struct MainView: View {
                 .accessibilityHidden(true)
         } else {
             recentReminderCard(
-                maxBubbleWidth: maxBubbleWidth,
+                cardContentWidth: cardContentWidth,
                 usesAccessibilityLayout: usesAccessibilityLayout
             )
         }
     }
 
-    private func recentReminderCard(maxBubbleWidth: CGFloat, usesAccessibilityLayout: Bool = false) -> some View {
+    private func recentReminderCard(cardContentWidth: CGFloat, usesAccessibilityLayout: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Most recent reminder")
                 .font(.subheadline.weight(.semibold))
@@ -279,14 +278,23 @@ struct MainView: View {
 
             if let reminder = mostRecentReceivedReminder {
                 let deleteButtonSize: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 44
-                let bubbleWidth = max(maxBubbleWidth - deleteButtonSize - 6, 1)
+                let rowSpacing: CGFloat = dynamicTypeSize.brainMailUsesAccessibilityLayout ? 10 : 8
+                let bubbleWidth = max(
+                    min(
+                        cardContentWidth * (dynamicTypeSize.brainMailUsesAccessibilityLayout ? 0.78 : 0.82),
+                        cardContentWidth - deleteButtonSize - rowSpacing
+                    ),
+                    1
+                )
 
-                HStack(alignment: .center, spacing: 6) {
+                HStack(alignment: .center, spacing: rowSpacing) {
                     ReceivedMessageBubble(
                         text: reminder.text,
                         maxBubbleWidth: bubbleWidth
                     )
                     .layoutPriority(1)
+
+                    Spacer(minLength: 0)
 
                     deleteReminderButton(for: reminder)
                         .frame(width: deleteButtonSize, height: deleteButtonSize)
@@ -337,6 +345,7 @@ struct MainView: View {
         )
         .shadow(color: Color.black.opacity(0.04), radius: 16, x: 0, y: 8)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(.spring(response: 0.34, dampingFraction: 0.88), value: mostRecentReceivedReminder)
     }
 
     private var mostRecentReceivedReminder: LastReminder? {
@@ -702,9 +711,8 @@ struct MainView: View {
         max(viewportWidth - HomeLayout.horizontalPadding * 2, 1)
     }
 
-    private func recentReminderBubbleMaxWidth(for contentWidth: CGFloat, usesAccessibilityLayout: Bool) -> CGFloat {
-        let availableCardContentWidth = max(contentWidth - 32, 1)
-        return max(availableCardContentWidth * (usesAccessibilityLayout ? 0.99 : 0.98), 1)
+    private func recentReminderCardContentWidth(for contentWidth: CGFloat) -> CGFloat {
+        max(contentWidth - 32, 1)
     }
 
     private func actionRowSidePadding(for viewportWidth: CGFloat, iconSpacing: CGFloat) -> CGFloat {
@@ -860,43 +868,41 @@ private struct ReceivedMessageBubble: View {
     let maxBubbleWidth: CGFloat
 
     var body: some View {
-        let bubbleWidth = max(maxBubbleWidth, 1)
-
-        ViewThatFits(in: .horizontal) {
-            shortBubble
-                .frame(maxWidth: bubbleWidth, alignment: .leading)
-
-            fullWidthBubble(width: bubbleWidth)
-        }
-        .frame(width: bubbleWidth, alignment: .leading)
-        .accessibilityIdentifier("home.recentReminder.bubble")
-    }
-
-    private var shortBubble: some View {
-        Text(text)
+        Text(Self.softWrappingText(text))
             .font(.body)
             .foregroundStyle(Color.white)
-            .lineLimit(1)
-            .fixedSize(horizontal: true, vertical: false)
-            .padding(.leading, 25)
-            .padding(.trailing, 18)
-            .padding(.vertical, 13)
-            .background(bubbleBackground)
-            .overlay(bubbleStroke)
-    }
-
-    private func fullWidthBubble(width: CGFloat) -> some View {
-        Text(text)
-            .font(.body)
-            .foregroundStyle(Color.white)
-            .lineLimit(nil)
+            .lineLimit(80)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.leading, 25)
             .padding(.trailing, 18)
             .padding(.vertical, 13)
-            .frame(width: width, alignment: .leading)
+            .frame(maxWidth: max(maxBubbleWidth, 1), alignment: .leading)
             .background(bubbleBackground)
             .overlay(bubbleStroke)
+            .accessibilityIdentifier("home.recentReminder.bubble")
+            .accessibilityLabel(text)
+    }
+
+    private static func softWrappingText(_ text: String) -> String {
+        let softBreak = "\u{200B}"
+        var output = ""
+        var runLength = 0
+
+        for character in text {
+            output.append(character)
+
+            if character.isWhitespace || character.isNewline {
+                runLength = 0
+            } else {
+                runLength += 1
+                if runLength >= 12 || "/-_?&=#.".contains(character) {
+                    output.append(softBreak)
+                    runLength = 0
+                }
+            }
+        }
+
+        return output
     }
 
     private var bubbleBackground: some View {

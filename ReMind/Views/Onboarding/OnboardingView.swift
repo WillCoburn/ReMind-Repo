@@ -92,7 +92,11 @@ struct OnboardingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(OnboardingBackgroundView().ignoresSafeArea())
         .contentShape(Rectangle())
-        .onTapGesture { hideKeyboard() }
+        .onTapGesture {
+            if step == .enterPhone {
+                hideKeyboard()
+            }
+        }
         .animation(.easeOut(duration: 0.35), value: step)
         .onChange(of: code) { _ in
             if step == .enterCode && !errorText.isEmpty {
@@ -119,6 +123,7 @@ struct OnboardingView: View {
         let e164 = "+1\(phoneDigits)"
 
         do {
+            _ = await AppDelegate.waitForPhoneAuthAPNSToken()
             let verID = try await PhoneAuthProvider.provider().verifyPhoneNumber(e164, uiDelegate: nil)
             self.verificationID = verID
             self.isAdvancing = true

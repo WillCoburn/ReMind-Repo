@@ -18,10 +18,17 @@ extension AppViewModel {
         }
 
         do {
+            let previousReminder = latestReminderForDisplay
             let result = try await functions.httpsCallable("sendOneNow").call([:])
             print("✅ sendOneNow result:", result.data)
-            await refreshAll()
             await refreshLatestSentReminder()
+
+            if latestReminderForDisplay == previousReminder {
+                try? await Task.sleep(nanoseconds: 350_000_000)
+                await refreshLatestSentReminder()
+            }
+
+            await refreshAll()
         } catch let err as NSError {
             // Decode Firebase Functions errors so we can surface the nice cap message
             if err.domain == FunctionsErrorDomain,

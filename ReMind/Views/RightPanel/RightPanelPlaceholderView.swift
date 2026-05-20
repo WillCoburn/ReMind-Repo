@@ -1410,59 +1410,70 @@ struct TimeZoneSheet: View {
 
             GeometryReader { proxy in
                 let isCompact = proxy.size.height < 650
+                let listMaxHeight = max(proxy.size.height * (isCompact ? 0.34 : 0.42), 220)
 
-                VStack(spacing: isCompact ? 18 : 24) {
-                    SettingsSubpageDismissChevron { onDone() }
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: isCompact ? 18 : 24) {
+                        SettingsSubpageDismissChevron { onDone() }
 
-                    SettingsSubpageHeader(
-                        systemImage: "globe.americas.fill",
-                        title: "Time Zone",
-                        subtitle: "Choose the location used for reminder timing.",
-                        animate: animateHeader
-                    )
-                    .padding(.horizontal, 24)
+                        SettingsSubpageHeader(
+                            systemImage: "globe.americas.fill",
+                            title: "Time Zone",
+                            subtitle: "Choose the location used for reminder timing.",
+                            animate: animateHeader
+                        )
+                        .padding(.horizontal, 24)
 
-                    List(usTimeZones, id: \.self) { id in
-                        Button {
-                            tzIdentifier = id
-                            onChange()
-                        } label: {
-                            HStack(spacing: 12) {
-                                Text(SettingsHelpers.timeZoneCityDisplayNameWithGMT(id))
-                                    .font(.body)
-                                    .foregroundColor(.figmaBlue)
-                                    .lineLimit(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 2 : 1)
-                                    .minimumScaleFactor(0.86)
-                                    .fixedSize(horizontal: false, vertical: true)
+                        SettingsSubpageCard {
+                            ScrollView(showsIndicators: false) {
+                                VStack(spacing: 0) {
+                                    ForEach(usTimeZones, id: \.self) { id in
+                                        Button {
+                                            tzIdentifier = id
+                                            onChange()
+                                        } label: {
+                                            HStack(spacing: 12) {
+                                                Text(SettingsHelpers.timeZoneCityDisplayNameWithGMT(id))
+                                                    .font(.body)
+                                                    .foregroundColor(.figmaBlue)
+                                                    .lineLimit(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 2 : 1)
+                                                    .minimumScaleFactor(0.86)
+                                                    .fixedSize(horizontal: false, vertical: true)
 
-                                Spacer(minLength: 8)
+                                                Spacer(minLength: 8)
 
-                                if id == tzIdentifier {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.body.weight(.semibold))
-                                        .foregroundColor(.figmaBlue)
+                                                if id == tzIdentifier {
+                                                    Image(systemName: "checkmark.circle.fill")
+                                                        .font(.body.weight(.semibold))
+                                                        .foregroundColor(.figmaBlue)
+                                                }
+                                            }
+                                            .padding(.vertical, 11)
+                                            .contentShape(Rectangle())
+                                        }
+                                        .buttonStyle(.plain)
+
+                                        if id != usTimeZones.last {
+                                            Divider()
+                                                .overlay(Color.black.opacity(0.05))
+                                        }
+                                    }
                                 }
                             }
-                            .padding(.vertical, 6)
+                            .frame(maxHeight: listMaxHeight)
                         }
-                        .listRowBackground(Color.clear)
+                        .padding(.horizontal, 24)
+
+                        Spacer(minLength: isCompact ? 8 : 16)
+
+                        Button("Done") { onDone() }
+                            .buttonStyle(SettingsSubpageDoneButtonStyle())
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, max(proxy.safeAreaInsets.bottom + 16, 24))
                     }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(Color.white.opacity(0.82), lineWidth: 1)
-                    )
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color.white.opacity(0.88))
-                            .shadow(color: Color.black.opacity(0.055), radius: 18, x: 0, y: 9)
-                    )
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 18)
+                    .frame(width: proxy.size.width)
+                    .frame(minHeight: proxy.size.height)
                 }
-                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
             }
         }
         .onAppear { animateHeader = true }

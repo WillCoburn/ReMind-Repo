@@ -95,7 +95,7 @@ struct CodeEntrySection: View {
                     code: $code,
                     isFirstResponder: $isCodeFieldFocused
                 )
-                    .frame(maxWidth: .infinity, minHeight: 64)
+                .frame(maxWidth: .infinity, minHeight: 64)
             }
         }
         .frame(height: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 74 : 64)
@@ -202,18 +202,15 @@ private struct OneTimeCodeTextField: UIViewRepresentable {
         ) -> Bool {
             let currentText = textField.text ?? ""
             guard let textRange = Range(range, in: currentText) else {
-                return true
-            }
-
-            let proposedText = currentText.replacingCharacters(in: textRange, with: string)
-            let proposedDigits = proposedText.filter(\.isNumber)
-            guard proposedDigits.count <= 6 else {
-                updateCode(from: String(proposedDigits.prefix(6)), in: textField)
+                updateCode(from: currentText + string, in: textField)
                 moveCaretToEnd(in: textField)
                 return false
             }
 
-            return true
+            let proposedText = currentText.replacingCharacters(in: textRange, with: string)
+            updateCode(from: proposedText, in: textField)
+            moveCaretToEnd(in: textField)
+            return false
         }
 
         private func updateCode(from text: String, in textField: UITextField) {

@@ -174,11 +174,6 @@ struct PhoneEntryScreen: View {
                 }
                 .toggleStyle(BrainMailCheckboxToggleStyle())
 
-                Text("Reply STOP to opt out, HELP for support.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, 34)
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 14)

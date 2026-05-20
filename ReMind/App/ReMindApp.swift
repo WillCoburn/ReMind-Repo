@@ -2,6 +2,7 @@
 // File: App/ReMindApp.swift
 // ============================
 import SwiftUI
+import FirebaseAuth
 
 @main
 struct ReMindApp: App {
@@ -23,6 +24,9 @@ struct ReMindApp: App {
             RootView()
                 .environmentObject(appVM)
                 .environmentObject(net)
+                .onOpenURL { url in
+                    _ = Auth.auth().canHandle(url)
+                }
         }
         .onChange(of: scenePhase) { phase in
             guard phase == .active else { return }
