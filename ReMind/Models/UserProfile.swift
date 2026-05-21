@@ -28,7 +28,7 @@ public enum SubscriptionState: String, Codable, Sendable, Equatable {
 public enum SubscriptionLimits {
     public static let minRemindersPerWeek: Double = 1
     public static let freeMaxRemindersPerWeek: Double = 3
-    public static let proMaxRemindersPerWeek: Double = 20
+    public static let proMaxRemindersPerWeek: Double = 14
 
     public static func allowsProRange(
         state: SubscriptionState,

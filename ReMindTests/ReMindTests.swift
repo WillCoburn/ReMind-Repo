@@ -111,6 +111,17 @@ final class ReMindTests: XCTestCase {
         XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.proMaxRemindersPerWeek)
     }
 
+    func testProAutomatedReminderLimitIsFourteenPerWeek() {
+        XCTAssertEqual(SubscriptionLimits.proMaxRemindersPerWeek, 14)
+
+        let capabilities = SubscriptionCapabilities.resolve(
+            state: .subscribed,
+            lastKnownSubscribed: false
+        )
+
+        XCTAssertEqual(capabilities.maxRemindersPerWeek, 14)
+    }
+
     func testRevenueCatErrorDoesNotUnlockProControls() {
         let capabilities = SubscriptionCapabilities.resolve(
             state: .error,

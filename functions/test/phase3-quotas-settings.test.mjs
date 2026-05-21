@@ -63,7 +63,7 @@ test("successful instant-send reservation records the Twilio message without dou
 test("free reminder settings clamp to backend free limits", () => {
   const normalized = normalizeReminderSettings(
     {
-      remindersPerWeek: 20,
+      remindersPerWeek: 99,
       tzIdentifier: "America/New_York",
       quietStartHour: -4,
       quietEndHour: 99,
@@ -80,10 +80,10 @@ test("free reminder settings clamp to backend free limits", () => {
   assert.equal(normalized.wasClamped, true);
 });
 
-test("pro reminder settings allow the same max as the client pro capability", () => {
+test("pro reminder settings clamp saved values above 14 to the paid cap", () => {
   const normalized = normalizeReminderSettings(
     {
-      remindersPerWeek: 20,
+      remindersPerWeek: 99,
       tzIdentifier: "America/Los_Angeles",
       quietStartHour: 8,
       quietEndHour: 21,
@@ -94,6 +94,7 @@ test("pro reminder settings allow the same max as the client pro capability", ()
     }
   );
 
+  assert.equal(SERVER_LIMITS.proMaxRemindersPerWeek, 14);
   assert.equal(normalized.remindersPerWeek, SERVER_LIMITS.proMaxRemindersPerWeek);
-  assert.equal(normalized.wasClamped, false);
+  assert.equal(normalized.wasClamped, true);
 });

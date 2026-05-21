@@ -28,7 +28,10 @@ enum UserSettingsSync {
             ((legacyDaily != nil) ? (legacyDaily! * 7.0) : nil) ??
             3.0
 
-        weekly = max(1.0, min(20.0, weekly))
+        weekly = max(
+            SubscriptionLimits.minRemindersPerWeek,
+            min(SubscriptionLimits.proMaxRemindersPerWeek, weekly)
+        )
 
         if storedWeekly == nil {
             d.set(weekly, forKey: "remindersPerWeek")

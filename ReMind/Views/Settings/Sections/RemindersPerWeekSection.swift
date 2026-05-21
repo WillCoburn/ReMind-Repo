@@ -94,7 +94,7 @@ struct RemindersPerWeekSection: View {
                         Spacer()
                         Text("3")
                         Spacer()
-                        Text("20")
+                        Text(SettingsHelpers.remindersDisplay(maxReminders))
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -111,18 +111,23 @@ struct RemindersPerWeekSection: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    Text("Upgrade to access 4-20 reminders/week")
+                    Text("Upgrade to access 4-14 reminders/week")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
         }
         .onAppear {
-            guard showsUpgradeMessaging else { return }
-            if remindersPerWeek > freeMaxReminders || remindersPerWeek < minReminders {
-                remindersPerWeek = min(max(remindersPerWeek, minReminders), freeMaxReminders)
-            }
+            clampReminderSelectionIfNeeded()
         }
+    }
+
+    private func clampReminderSelectionIfNeeded() {
+        guard subscriptionState.isResolved else { return }
+        let availableMax = usesProRange ? maxReminders : freeMaxReminders
+        let clamped = min(max(remindersPerWeek, minReminders), availableMax)
+        guard clamped != remindersPerWeek else { return }
+        remindersPerWeek = clamped
     }
 
     private var remindersTitle: some View {

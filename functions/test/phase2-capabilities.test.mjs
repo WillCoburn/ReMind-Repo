@@ -39,6 +39,20 @@ test("server capabilities resolve active RevenueCat mirror to pro", () => {
   assert.equal(capabilities.appliesFreeUsageLimits, false);
 });
 
+test("server capabilities expose the paid automated reminder cap as 14 per week", () => {
+  assert.equal(SERVER_LIMITS.proMaxRemindersPerWeek, 14);
+
+  const capabilities = resolveServerCapabilities(
+    snap({
+      plan: "free",
+      rc: { entitlementActive: true, expiresAt: 2_000 },
+    }),
+    1_000
+  );
+
+  assert.equal(capabilities.maxRemindersPerWeek, 14);
+});
+
 test("server capabilities treat expired RevenueCat mirror as free even if plan drifted", () => {
   const capabilities = resolveServerCapabilities(
     snap({

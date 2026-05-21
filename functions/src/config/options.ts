@@ -6,7 +6,7 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import { smsDeliveryBlockReason } from "../sms/eligibility";
-import { resolveServerPlan } from "../entitlements/capabilities";
+import { SERVER_LIMITS, resolveServerPlan } from "../entitlements/capabilities";
 import { hasInactivityAutoPause } from "../inactivity/policy";
 import { normalizeReminderSettings } from "../settings/reminders";
 
@@ -25,7 +25,8 @@ export const TWILIO_MSID = defineSecret("TWILIO_MSID"); // optional
 export const REVENUECAT_WEBHOOK_AUTH = defineSecret("REVENUECAT_WEBHOOK_AUTH");
 
 // ----- Shared helpers & scheduling logic -----
-const clampWeeklyRate = (r: number) => Math.min(20, Math.max(1, r));
+const clampWeeklyRate = (r: number) =>
+  Math.min(SERVER_LIMITS.proMaxRemindersPerWeek, Math.max(1, r));
 const randExpHrs = (mean: number) => -Math.log(1 - Math.random()) * mean;
 
 export const MIN_ENTRIES_FOR_SCHEDULING = 3;
@@ -84,7 +85,10 @@ async function loadSettings(uid: string) {
   const plan = resolvePlan(userSnap);
   const normalized = normalizeReminderSettings(d, {
     plan,
-    maxRemindersPerWeek: plan === "pro" ? 20 : 3,
+    maxRemindersPerWeek:
+      plan === "pro"
+        ? SERVER_LIMITS.proMaxRemindersPerWeek
+        : SERVER_LIMITS.freeMaxRemindersPerWeek,
   });
 
   if (normalized.wasClamped) {

@@ -17,7 +17,7 @@ export type ServerCapabilities = {
 
 export const SERVER_LIMITS = {
   freeMaxRemindersPerWeek: 3,
-  proMaxRemindersPerWeek: 20,
+  proMaxRemindersPerWeek: 14,
 } as const;
 
 export function timestampSeconds(raw: unknown): number | null {

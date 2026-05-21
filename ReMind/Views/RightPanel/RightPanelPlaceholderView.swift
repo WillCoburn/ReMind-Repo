@@ -131,7 +131,7 @@ struct RightPanelPlaceholderView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject private var revenueCat = RevenueCatManager.shared
 
-    @AppStorage("remindersPerWeek") private var remindersPerWeek: Double = 3.0 // 1...20
+    @AppStorage("remindersPerWeek") private var remindersPerWeek: Double = 3.0 // 1...14
     @AppStorage("tzIdentifier")    private var tzIdentifier: String = TimeZone.current.identifier
     @AppStorage("quietStartHour")  private var quietStartHour: Double = 9     // 0...24
     @AppStorage("quietEndHour")    private var quietEndHour: Double = 22      // 0...24
@@ -517,7 +517,7 @@ struct RightPanelPlaceholderView: View {
     }
 
     private func clampReminderSelectionIfNeeded() {
-        guard appVM.subscriptionState == .free || appVM.subscriptionState == .expired else { return }
+        guard appVM.subscriptionState.isResolved else { return }
         let maxReminders = appVM.maxRemindersPerWeekForCurrentSubscription
         let clamped = min(max(remindersPerWeek, SubscriptionLimits.minRemindersPerWeek), maxReminders)
         guard clamped != remindersPerWeek else { return }
@@ -1017,9 +1017,9 @@ private struct RemindersPerWeekSliderSection: View {
     var onWhy: (() -> Void)?
     var onUpgrade: (() -> Void)?
 
-    private let minReminders: Double = 1
-    private let freeMaxReminders: Double = 3
-    private let maxReminders: Double = 20
+    private let minReminders: Double = SubscriptionLimits.minRemindersPerWeek
+    private let freeMaxReminders: Double = SubscriptionLimits.freeMaxRemindersPerWeek
+    private let maxReminders: Double = SubscriptionLimits.proMaxRemindersPerWeek
     private let stepReminders: Double = 1
 
     var body: some View {
@@ -1124,7 +1124,7 @@ private struct RemindersPerWeekSliderSection: View {
                 .padding(.top, usesAccessibilityLayout ? 2 : 0)
                 .accessibilityHidden(true)
 
-            Text("Upgrade to unlock up to 20 reminders per week.")
+            Text("Upgrade to unlock up to 14 reminders per week.")
                 .font(.footnote.weight(.medium))
                 .lineLimit(usesAccessibilityLayout ? nil : 2)
                 .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.9)
@@ -1195,7 +1195,10 @@ private struct RemindersPerWeekSliderSection: View {
 
     private var remindersBinding: Binding<Double> {
         if appVM.shouldUseProReminderRange {
-            return $remindersPerWeek
+            return Binding(
+                get: { min(max(remindersPerWeek, minReminders), availableMaxReminders) },
+                set: { remindersPerWeek = min(max($0, minReminders), availableMaxReminders) }
+            )
         }
 
         return Binding(
