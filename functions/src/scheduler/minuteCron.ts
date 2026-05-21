@@ -20,6 +20,12 @@ import {
   TWILIO_MSID,
 } from "../config/options";
 import { getTwilioClient, buildMsgParams, sendSMS } from "../twilio/client";
+import { resolveServerCapabilities } from "../entitlements/capabilities";
+import {
+  INACTIVITY_AUTO_PAUSE_NOTICE_TEXT,
+  shouldAutoPauseAutomatedReminders,
+} from "../inactivity/policy";
+import { reserveInactivityAutoPause } from "../inactivity/schedulerPause";
 import { parseRcExpiresAt } from "../revenuecat/state";
 import { smsDeliveryBlockReason } from "../sms/eligibility";
 
@@ -138,6 +144,53 @@ export const minuteCron = onSchedule(
           })();
           await scheduleNext(uid, new Date());
           continue;
+        }
+
+        const freshCapabilities = resolveServerCapabilities(freshUserSnap, nowSeconds);
+        if (
+          shouldAutoPauseAutomatedReminders(
+            freshUserSnap,
+            freshCapabilities,
+            now.toMillis()
+          )
+        ) {
+          const pauseReservation = await reserveInactivityAutoPause(uid, now, nowSeconds);
+          if (pauseReservation.paused) {
+            logger.info("[minuteCron] auto-paused inactive non-paying user", {
+              uid,
+              alreadyPaused: pauseReservation.alreadyPaused,
+              noticeReserved: pauseReservation.shouldSendNotice,
+            });
+
+            if (pauseReservation.shouldSendNotice && pauseReservation.to) {
+              const params = buildMsgParams({
+                to: pauseReservation.to,
+                body: INACTIVITY_AUTO_PAUSE_NOTICE_TEXT,
+                from,
+                msid,
+              });
+
+              try {
+                const res = await sendSMS(client, params);
+                logger.info("[minuteCron] sent inactivity auto-pause notice", {
+                  uid,
+                  messageSid: res?.sid,
+                });
+              } catch (noticeErr: any) {
+                if (isTwilioStopError(noticeErr)) {
+                  await applyOptOut(uid);
+                }
+                logger.warn("[minuteCron] failed to send inactivity auto-pause notice", {
+                  uid,
+                  message: noticeErr?.message,
+                  code: noticeErr?.code ?? null,
+                  status: noticeErr?.status ?? null,
+                });
+              }
+            }
+
+            continue;
+          }
         }
 
         if (!(await hasAtLeastEntries(uid, MIN_ENTRIES_FOR_SCHEDULING))) {

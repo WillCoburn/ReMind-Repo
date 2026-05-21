@@ -13,6 +13,8 @@ struct CodeEntryScreen: View {
 
     @State private var didAppear = false
     @State private var messageIsArriving = false
+    @State private var otpInputActive = false
+    @State private var otpActivationTask: Task<Void, Never>?
 
     var body: some View {
         GeometryReader { proxy in
@@ -48,7 +50,8 @@ struct CodeEntryScreen: View {
                         phoneNumber: phoneNumber,
                         onEditNumber: onBack,
                         onResend: onResend,
-                        showTopBar: false
+                        showTopBar: false,
+                        isInputActive: otpInputActive
                     )
                     .opacity(didAppear ? 1 : 0)
                     .offset(y: didAppear ? 0 : 10)
@@ -95,12 +98,27 @@ struct CodeEntryScreen: View {
                 .padding(.horizontal, horizontalPadding)
                 .padding(.vertical, 24)
             }
-            .scrollDismissesKeyboard(.interactively)
+            .scrollDismissesKeyboard(.never)
         }
         .background(OnboardingBackgroundView().ignoresSafeArea())
         .onAppear {
             didAppear = true
             messageIsArriving = true
+            otpInputActive = false
+            otpActivationTask?.cancel()
+            otpActivationTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                guard !Task.isCancelled else { return }
+                #if DEBUG
+                print("[OTP] activating input after code screen transition")
+                #endif
+                otpInputActive = true
+            }
+        }
+        .onDisappear {
+            otpActivationTask?.cancel()
+            otpActivationTask = nil
+            otpInputActive = false
         }
     }
 }

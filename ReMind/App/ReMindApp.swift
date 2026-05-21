@@ -32,6 +32,7 @@ struct ReMindApp: App {
             guard phase == .active else { return }
 
             NetworkMonitor.shared.forceRefresh()
+            appVM.recordAppActivity(reason: "sceneForeground")
 
             if appVM.isAuthInitialized {
                 RevenueCatManager.shared.recomputeAndPersistActive()

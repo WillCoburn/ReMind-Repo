@@ -2,9 +2,38 @@
 // File: App/ViewModels/AppViewModel/AppViewModel+Functions.swift
 // ============================
 import Foundation
+import FirebaseAuth
 import FirebaseFunctions
 
 extension AppViewModel {
+    private var appActivityWriteCooldown: TimeInterval { 5 * 60 }
+
+    func recordAppActivity(reason: String) {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+
+        let now = Date()
+        if lastAppActivityRecordedUid == uid,
+           let lastAppActivityRecordedAt,
+           now.timeIntervalSince(lastAppActivityRecordedAt) < appActivityWriteCooldown {
+            return
+        }
+
+        lastAppActivityRecordedUid = uid
+        lastAppActivityRecordedAt = now
+        appActivityTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                _ = try await self.functions.httpsCallable("recordAppActivity").call([
+                    "reason": reason
+                ])
+            } catch {
+#if DEBUG
+                print("⚠️ recordAppActivity error:", error.localizedDescription)
+#endif
+            }
+        }
+    }
+
     // MARK: - Send One Now (Cloud Function)
     /// Throws if something goes wrong; caller decides how to surface the error.
     func sendOneNow(isOnline: Bool = NetworkMonitor.shared.isConnected) async throws {

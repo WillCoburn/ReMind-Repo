@@ -7,6 +7,7 @@ import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import { smsDeliveryBlockReason } from "../sms/eligibility";
 import { resolveServerPlan } from "../entitlements/capabilities";
+import { hasInactivityAutoPause } from "../inactivity/policy";
 import { normalizeReminderSettings } from "../settings/reminders";
 
 // ----- Global options (region) -----
@@ -111,6 +112,12 @@ async function scheduleNext(uid: string, fromUtc = new Date()) {
   if (blockReason) {
     await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
     logger.info("[scheduleNext] SMS blocked; nextSendAt=null", { uid, blockReason });
+    return;
+  }
+
+  if (hasInactivityAutoPause(userSnap) && resolvePlan(userSnap) !== "pro") {
+    await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
+    logger.info("[scheduleNext] inactivity auto-paused; nextSendAt=null", { uid });
     return;
   }
 

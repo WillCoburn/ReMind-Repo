@@ -127,6 +127,10 @@ struct OnboardingView: View {
             let verID = try await PhoneAuthProvider.provider().verifyPhoneNumber(e164, uiDelegate: nil)
             self.verificationID = verID
             self.isAdvancing = true
+            #if DEBUG
+            print("[OTP] resigning previous text input before code screen transition")
+            #endif
+            hideKeyboard()
             withAnimation(.easeOut(duration: 0.35)) {
                 self.step = .enterCode
             }
@@ -166,6 +170,10 @@ struct OnboardingView: View {
             errorText = "No internet connection. Please reconnect and try again."
             return
         }
+
+        #if DEBUG
+        print("[OTP] verification trigger codeLength=\(code.count)")
+        #endif
 
         errorText = ""
         isVerifying = true

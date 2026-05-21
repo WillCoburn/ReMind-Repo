@@ -40,6 +40,11 @@ test("server-owned user fields are not client-writeable", () => {
     "revenueCatAppUserId",
     "billing",
     "entitlements",
+    "lastSeenAt",
+    "autoPausedAt",
+    "autoPauseReason",
+    "autoPauseNotifiedAt",
+    "nextSendAt",
   ];
 
   for (const field of serverOwnedFields) {

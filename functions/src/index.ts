@@ -519,6 +519,7 @@ export const toggleCommunityReport = onCall(async (request) => {
 // callables (user)
 export { sendOneNow } from "./user/sendOneNow";
 export { applyUserSettings } from "./user/applyUserSettings";
+export { recordAppActivity } from "./inactivity/recordAppActivity";
 
 // onboarding
 export { triggerWelcome } from "./onboarding/triggerWelcome";

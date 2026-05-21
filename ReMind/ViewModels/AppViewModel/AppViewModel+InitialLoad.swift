@@ -21,6 +21,8 @@ extension AppViewModel {
             self.featureTourStep = .settings
             self.showFeatureTour = false
             self.resetSubscriptionStateForAuthChange()
+            self.lastAppActivityRecordedAt = nil
+            self.lastAppActivityRecordedUid = nil
             self.hasLoadedInitialProfile = true
             return
         }
@@ -111,6 +113,7 @@ extension AppViewModel {
 
         attachUserListener(uid)
         attachEntriesListener(uid)
+        recordAppActivity(reason: "authLoad")
 
         refreshRevenueCatEntitlement(reason: "loadUserAndEntries")
 

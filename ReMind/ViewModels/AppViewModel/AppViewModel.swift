@@ -69,6 +69,9 @@ final class AppViewModel: ObservableObject {
     private var uptimeAtLastServerNow: TimeInterval?
     private var lastEntitlementActive = false
     var isSeedingUserProfile = false
+    var lastAppActivityRecordedAt: Date?
+    var lastAppActivityRecordedUid: String?
+    var appActivityTask: Task<Void, Never>?
 
     let revenueCat: RevenueCatManager = .shared
 
@@ -192,6 +195,7 @@ final class AppViewModel: ObservableObject {
 
     deinit {
         authLoadTask?.cancel()
+        appActivityTask?.cancel()
         if let handle = authHandle {
             Auth.auth().removeStateDidChangeListener(handle)
         }

@@ -108,6 +108,8 @@ extension AppViewModel {
         self.featureTourStep = .settings
         self.showFeatureTour = false
         self.resetSubscriptionStateForAuthChange()
+        self.lastAppActivityRecordedAt = nil
+        self.lastAppActivityRecordedUid = nil
         RevenueCatManager.shared.clearForLogout()
     }
     // MARK: - Delete account
