@@ -27,8 +27,8 @@ struct FeatureTourOverlay: View {
         ),
         .init(
             step: .reminders,
-            title: "Your entries will be texted back to help you stay in your best headspace.",
-            message: "Think of it as a message in a bottle for your future self. Sometimes they come when you need it most.",
+            title: "Save your first thought and BrainMail can start reminding you.",
+            message: "Add more over time to make those messages feel more varied. Sometimes they come when you need it most.",
             imageName: nil,
             textAlignment: .center
         ),

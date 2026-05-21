@@ -35,8 +35,6 @@ struct MainView: View {
     @State private var alertTitle = ""
     @State private var alertMessage = ""
 
-    private let goal: Int = 3
-
     var body: some View {
         let count = appVM.activeEntries.count
 
@@ -94,15 +92,6 @@ struct MainView: View {
 
                             saveStatusView
 
-                            HintBadge(count: count, goal: goal)
-                                .padding(.top, isComposing ? 0 : 2)
-                                .opacity(isComposing ? 0.72 : 1)
-                                .scaleEffect(isComposing ? 0.98 : 1, anchor: .top)
-                                .allowsHitTesting(!isComposing)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    dismissEntryKeyboard()
-                                }
                         }
                         .frame(width: topContentWidth, alignment: .top)
 
@@ -393,7 +382,7 @@ struct MainView: View {
     }
 
     private func actionIconRow(count: Int, viewportWidth: CGFloat) -> some View {
-        let canUseGuardedActions = net.isConnected && count >= goal
+        let canUseGuardedActions = net.isConnected && count > 0
         let iconSpacing = actionIconSpacing(for: viewportWidth)
         let sidePadding = actionRowSidePadding(for: viewportWidth, iconSpacing: iconSpacing)
 
@@ -453,7 +442,7 @@ struct MainView: View {
     }
 
     private func actionIconGrid(count: Int, viewportWidth: CGFloat) -> some View {
-        let canUseGuardedActions = net.isConnected && count >= goal
+        let canUseGuardedActions = net.isConnected && count > 0
         let gridWidth = actionGridWidth(for: viewportWidth)
         let columns = [
             GridItem(.flexible(minimum: HomeLayout.accessibilityActionGridCellMinWidth), spacing: HomeLayout.accessibilityActionGridColumnSpacing),
@@ -607,7 +596,7 @@ struct MainView: View {
     private func handleExportTap() {
         let count = appVM.activeEntries.count
         guard net.isConnected else { presentOfflineAlert(); return }
-        if count < goal { presentLockedAlert(feature: "Export PDF"); return }
+        if count == 0 { presentLockedAlert(feature: "Export PDF"); return }
         guardedActionTask?.cancel()
         guardedActionTask = Task { @MainActor in
             let freshOptOut = await appVM.reloadSmsOptOut()
@@ -620,7 +609,7 @@ struct MainView: View {
     private func handleSendNowTap() {
         let count = appVM.activeEntries.count
         guard net.isConnected else { presentOfflineAlert(); return }
-        if count < goal { presentLockedAlert(feature: "Send One Now"); return }
+        if count == 0 { presentLockedAlert(feature: "Send One Now"); return }
         guardedActionTask?.cancel()
         guardedActionTask = Task { @MainActor in
             let freshOptOut = await appVM.reloadSmsOptOut()
@@ -668,8 +657,8 @@ struct MainView: View {
     // MARK: - Alerts
 
     private func presentLockedAlert(feature: String) {
-        alertTitle = "Keep going!"
-        alertMessage = "You need at least \(goal) entries to use “\(feature)”. Add more entries to unlock this feature."
+        alertTitle = "Save one first"
+        alertMessage = "Save your first BrainMail before using “\(feature)”."
         showAlert = true
     }
 
@@ -1051,14 +1040,14 @@ private struct HelpGuideSheet: View {
                         HelpSectionCard(title: "What is this app?", systemImage: "sparkles") {
                             VStack(alignment: .leading, spacing: 10) {
                                 HelpBodyText("BrainMail is a tool for focusing on healthy thoughts.")
-                                HelpBodyText("Keep track of moments of clarity and inspiration, and they’ll be continually texted back to you to keep you in a better headspace.")
+                                HelpBodyText("Save your first thought and BrainMail can start reminding you. Add more over time to make your reminders feel more varied.")
                             }
                         }
 
                         HelpSectionCard(title: "How do I use it?", systemImage: "pencil.and.outline") {
                             VStack(alignment: .leading, spacing: 10) {
                                 HelpBodyText("Challenge yourself to be more intentional about recognizing and celebrating your good thoughts.")
-                                HelpBodyText("Jot them down here, and we will do the rest.")
+                                HelpBodyText("Jot one down here, and we will do the rest.")
                             }
                         }
 

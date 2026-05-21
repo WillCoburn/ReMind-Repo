@@ -29,7 +29,7 @@ const clampWeeklyRate = (r: number) =>
   Math.min(SERVER_LIMITS.proMaxRemindersPerWeek, Math.max(1, r));
 const randExpHrs = (mean: number) => -Math.log(1 - Math.random()) * mean;
 
-export const MIN_ENTRIES_FOR_SCHEDULING = 3;
+export const MIN_ENTRIES_FOR_SCHEDULING = 1;
 
 async function hasAtLeastEntries(uid: string, min = MIN_ENTRIES_FOR_SCHEDULING) {
   const snap = await db.collection(`users/${uid}/entries`).limit(Math.max(50, min * 5)).get();
@@ -127,7 +127,7 @@ async function scheduleNext(uid: string, fromUtc = new Date()) {
 
   if (!(await hasAtLeastEntries(uid, MIN_ENTRIES_FOR_SCHEDULING))) {
     await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
-    logger.info("[scheduleNext] threshold not met; nextSendAt=null", { uid });
+    logger.info("[scheduleNext] no sendable entries; nextSendAt=null", { uid });
     return;
   }
 
