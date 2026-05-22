@@ -16,6 +16,7 @@ import {
   TWILIO_FROM,
   TWILIO_MSID,
 } from "../config/options";
+import { resolveServerCapabilities } from "../entitlements/capabilities";
 import { getTwilioClient, buildMsgParams, sendSMS } from "../twilio/client";
 import { enforceMonthlyLimit } from "../usageLimits";
 import { assertSmsDeliveryAllowed } from "../sms/eligibility";
@@ -39,6 +40,15 @@ export const sendExportLink = onCall(
         throw new HttpsError("not-found", "User not found.");
       }
       assertSmsDeliveryAllowed(userSnap);
+      const capabilities = resolveServerCapabilities(userSnap);
+      logger.info("[sendExportLink] resolved capabilities", {
+        uid,
+        plan: capabilities.plan,
+        state: capabilities.state,
+        source: capabilities.source,
+        reason: capabilities.reason,
+        appliesFreeUsageLimits: capabilities.appliesFreeUsageLimits,
+      });
 
       const to = (userSnap.get("phoneE164") as string | undefined) || null;
       if (!to) {
@@ -96,9 +106,17 @@ export const sendExportLink = onCall(
         logger.info("[sendExportLink] generated token-based download URL");
       }
 
-      // Reserve quota only after upload/link generation is known-good. Twilio failures
+      // Reserve free quota only after upload/link generation is known-good. Twilio failures
       // still consume the slot to avoid duplicate export-link SMS sends on retry.
-      await enforceMonthlyLimit(uid, "pdfExportsThisMonth", 20);
+      if (capabilities.appliesFreeUsageLimits) {
+        await enforceMonthlyLimit(uid, "pdfExportsThisMonth", 20);
+      } else {
+        logger.info("[sendExportLink] bypassing free export quota", {
+          uid,
+          plan: capabilities.plan,
+          source: capabilities.source,
+        });
+      }
 
       // 5) Send SMS via Twilio
       const sid = TWILIO_SID.value();

@@ -68,12 +68,20 @@ final class AppViewModel: ObservableObject {
     private var lastServerNow: Date?
     private var uptimeAtLastServerNow: TimeInterval?
     private var lastEntitlementActive = false
+    private var freshRevenueCatProOverride: FreshRevenueCatProOverride?
+    private let freshRevenueCatProOverrideTTL: TimeInterval = 30 * 60
     var isSeedingUserProfile = false
     var lastAppActivityRecordedAt: Date?
     var lastAppActivityRecordedUid: String?
     var appActivityTask: Task<Void, Never>?
 
     let revenueCat: RevenueCatManager = .shared
+
+    private struct FreshRevenueCatProOverride {
+        let appUserID: String?
+        let receivedAt: Date
+        let expiresAt: Date?
+    }
 
     /// Legacy convenience; true when a profile is loaded.
     var isOnboarded: Bool { user != nil }
@@ -121,7 +129,18 @@ final class AppViewModel: ObservableObject {
         let tzIdentifier = UserDefaults.standard.string(forKey: "tzIdentifier") ?? TimeZone.current.identifier
         let weekKey = Self.instantWeekKey(now: Date(), tzIdentifier: tzIdentifier)
         let sends = usage.instantWeekKey == weekKey ? usage.instantSendsThisWeek : 0
-        return sends >= 1
+        let limitReached = sends >= 1
+        if limitReached {
+            debugLogUsageGate(
+                "clientFreeInstantLimit",
+                extra: [
+                    "weekKey": weekKey,
+                    "instantSendsThisWeek": sends,
+                    "usageWeekKey": usage.instantWeekKey ?? "nil"
+                ]
+            )
+        }
+        return limitReached
     }
 
     var latestReminderForDisplay: LastReminder? {
@@ -206,7 +225,11 @@ final class AppViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] info in
                 guard let self else { return }
-                self.refreshEntitlementState()
+                guard let info else {
+                    self.refreshEntitlementState()
+                    return
+                }
+                self.applyFreshRevenueCatCustomerInfo(info, reason: "revenueCatCustomerInfo")
             }
             .store(in: &entitlementCancellables)
         revenueCat.$lastRefreshError
@@ -251,6 +274,7 @@ final class AppViewModel: ObservableObject {
             entitlementSource = .unknown
             lastEntitlementActive = false
             lastKnownSubscriptionWasPro = false
+            freshRevenueCatProOverride = nil
             isEntitled = false
             isSubscribed = false
             isTrialActive = false
@@ -267,7 +291,7 @@ final class AppViewModel: ObservableObject {
             rcExpiresAt: profile.rcExpiresAt,
             referenceDate: referenceNow()
         )
-        applySubscriptionState(capabilities.state, source: .cached, reason: "serverProfile")
+        applyResolvedSubscriptionState(capabilities, source: .cached, reason: "serverProfile")
     }
 
     func applyEntitlementState(entitlementActive: Bool, source: EntitlementSource) {
@@ -351,7 +375,7 @@ final class AppViewModel: ObservableObject {
             rcExpiresAt: user.rcExpiresAt,
             referenceDate: referenceNow()
         )
-        applySubscriptionState(capabilities.state, source: .cached, reason: "refreshServerProfile")
+        applyResolvedSubscriptionState(capabilities, source: .cached, reason: "refreshServerProfile")
         scheduleTrialExpiryTimer()
     }
 
@@ -361,6 +385,22 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    func applyFreshRevenueCatCustomerInfo(_ info: CustomerInfo, reason: String) {
+        guard revenueCat.hasActiveProEntitlement(info) else {
+            freshRevenueCatProOverride = nil
+            refreshEntitlementState()
+            return
+        }
+
+        let entitlement = info.entitlements[PaywallConfig.entitlementId]
+        freshRevenueCatProOverride = FreshRevenueCatProOverride(
+            appUserID: Auth.auth().currentUser?.uid,
+            receivedAt: referenceNow(),
+            expiresAt: entitlement?.expirationDate
+        )
+        applySubscriptionState(.subscribed, source: .revenueCat, reason: reason)
+    }
+
     func resetSubscriptionStateForAuthChange() {
         subscriptionState = .loading
         subscriptionResolutionReason = "authChange"
@@ -368,6 +408,7 @@ final class AppViewModel: ObservableObject {
         entitlementSource = .unknown
         lastEntitlementActive = false
         lastKnownSubscriptionWasPro = false
+        freshRevenueCatProOverride = nil
         isEntitled = false
         isSubscribed = false
         isTrialActive = false
@@ -390,6 +431,68 @@ final class AppViewModel: ObservableObject {
             "🔐 [Subscription][AppVM] state=\(subscriptionState.rawValue) isPro=\(isProUser) lastKnownPro=\(lastKnownSubscriptionWasPro) source=\(entitlementSource) reason=\(reason)"
         )
 #endif
+    }
+
+    func debugLogUsageGate(_ event: String, extra: [String: Any] = [:]) {
+#if DEBUG
+        var payload: [String: Any] = [
+            "state": subscriptionState.rawValue,
+            "effectivePlan": effectivePlan.rawValue,
+            "isPro": isProUser,
+            "appliesFreeUsageLimits": shouldApplyFreeUsageLimits,
+            "entitlementSource": String(describing: entitlementSource),
+            "resolutionReason": subscriptionResolutionReason,
+            "serverPlan": user?.plan?.rawValue ?? "nil",
+            "subscriptionStatus": user?.subscriptionStatus ?? "nil",
+            "rcEntitlementActive": user?.rcEntitlementActive.map(String.init) ?? "nil",
+            "rcExpiresAt": user?.rcExpiresAt?.description ?? "nil"
+        ]
+        extra.forEach { payload[$0.key] = $0.value }
+        print("🔐 [Subscription][UsageGate] \(event) \(payload)")
+#endif
+    }
+
+    private func applyResolvedSubscriptionState(
+        _ capabilities: SubscriptionCapabilities,
+        source: EntitlementSource,
+        reason: String
+    ) {
+        if capabilities.state == .subscribed {
+            freshRevenueCatProOverride = nil
+            applySubscriptionState(capabilities.state, source: source, reason: reason)
+            return
+        }
+
+        if hasUsableFreshRevenueCatProOverride() {
+            applySubscriptionState(.subscribed, source: .revenueCat, reason: "freshRevenueCatPro:\(reason)")
+            return
+        }
+
+        applySubscriptionState(capabilities.state, source: source, reason: reason)
+    }
+
+    private func hasUsableFreshRevenueCatProOverride() -> Bool {
+        guard let override = freshRevenueCatProOverride else { return false }
+
+        if let overrideUserID = override.appUserID,
+           let currentUserID = Auth.auth().currentUser?.uid,
+           overrideUserID != currentUserID {
+            freshRevenueCatProOverride = nil
+            return false
+        }
+
+        let now = referenceNow()
+        guard now.timeIntervalSince(override.receivedAt) <= freshRevenueCatProOverrideTTL else {
+            freshRevenueCatProOverride = nil
+            return false
+        }
+
+        if let expiresAt = override.expiresAt, expiresAt <= now {
+            freshRevenueCatProOverride = nil
+            return false
+        }
+
+        return true
     }
 
     func parseLastReminder(from data: [String: Any]) -> LastReminder? {

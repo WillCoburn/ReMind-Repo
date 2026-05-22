@@ -1561,39 +1561,61 @@ struct SubscriptionOptionsSheet: View {
     }
 
     private var subscriptionStatusCard: some View {
-        HStack(alignment: .center, spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color.figmaBlue.opacity(0.10))
-                    .frame(width: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 42,
-                           height: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 42)
+        Group {
+            if appVM.subscriptionState == .free {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Current plan: Free")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(Color.black.opacity(0.76))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.white.opacity(0.56))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.black.opacity(0.045), lineWidth: 1)
+                )
+            } else {
+                HStack(alignment: .center, spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.figmaBlue.opacity(0.10))
+                            .frame(width: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 42,
+                                   height: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 42)
 
-                Image(systemName: appVM.isProUser ? "checkmark.circle.fill" : (appVM.subscriptionState == .loading ? "clock.fill" : "circle"))
-                    .font(.title3.weight(.semibold))
-                    .foregroundColor(.figmaBlue)
+                        Image(systemName: appVM.isProUser ? "checkmark.circle.fill" : "clock.fill")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(.figmaBlue)
+                    }
+                    .accessibilityHidden(true)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(subscriptionStatusTitle)
+                            .font(.headline.weight(.semibold))
+                            .foregroundColor(Color.black.opacity(0.80))
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Text(subscriptionStatusSubtitle)
+                            .font(.footnote)
+                            .foregroundColor(Color.black.opacity(0.56))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.figmaBlue.opacity(0.07))
+                )
             }
-            .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(subscriptionStatusTitle)
-                    .font(.headline.weight(.semibold))
-                    .foregroundColor(Color.black.opacity(0.80))
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(subscriptionStatusSubtitle)
-                    .font(.footnote)
-                    .foregroundColor(Color.black.opacity(0.56))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 0)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.figmaBlue.opacity(0.07))
-        )
     }
 
     private var subscriptionStatusTitle: String {
@@ -1614,7 +1636,7 @@ struct SubscriptionOptionsSheet: View {
     private var subscriptionStatusSubtitle: String {
         switch appVM.subscriptionState {
         case .subscribed:
-            return "Thanks for supporting BrainMail."
+            return "Thanks for using BrainMail."
         case .loading:
             return appVM.lastKnownSubscriptionWasPro
                 ? "Keeping your Pro access while we refresh."

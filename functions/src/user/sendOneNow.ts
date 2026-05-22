@@ -16,10 +16,9 @@ import {
   TWILIO_AUTH,
   TWILIO_FROM,
   TWILIO_MSID,
-  resolvePlan,
 } from "../config/options";
+import { resolveServerCapabilities } from "../entitlements/capabilities";
 import { getTwilioClient, buildMsgParams, sendSMS } from "../twilio/client";
-import { enforceMonthlyLimit } from "../usageLimits";
 import { assertSmsDeliveryAllowed } from "../sms/eligibility";
 import {
   markFreeInstantSendReservation,
@@ -70,13 +69,17 @@ export const sendOneNow = onCall(
       const to = userSnap.get("phoneE164") as string | undefined;
       if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
 
-      const plan = resolvePlan(userSnap);
-      logger.info("[sendOneNow] resolved plan", { uid, plan });
-
-      // Pro behavior remains unchanged, including the hidden monthly cap.
-      if (plan === "pro") {
-        await enforceMonthlyLimit(uid, "manualSendsThisMonth", 50);
-      }
+      const capabilities = resolveServerCapabilities(userSnap);
+      const clientEntitlement = (req.data?.clientEntitlement ?? {}) as Record<string, unknown>;
+      logger.info("[sendOneNow] resolved capabilities", {
+        uid,
+        plan: capabilities.plan,
+        state: capabilities.state,
+        source: capabilities.source,
+        reason: capabilities.reason,
+        appliesFreeUsageLimits: capabilities.appliesFreeUsageLimits,
+        clientEntitlement,
+      });
 
       const settingsSnap = await db.doc(`users/${uid}/meta/settings`).get();
       const tzIdentifier = String(settingsSnap.get("tzIdentifier") ?? "UTC");
@@ -88,10 +91,16 @@ export const sendOneNow = onCall(
       if (!body) throw new HttpsError("failed-precondition", "No entries available.");
 
       const reservationId = randomUUID();
-      if (plan === "free") {
+      if (capabilities.appliesFreeUsageLimits) {
         // Reserve before Twilio. A failed/ambiguous provider response keeps the quota consumed
         // so retries cannot accidentally create duplicate free SMS sends.
         await reserveFreeInstantSendQuota(uid, weekKey, reservationId);
+      } else {
+        logger.info("[sendOneNow] bypassing free instant-send quota", {
+          uid,
+          plan: capabilities.plan,
+          source: capabilities.source,
+        });
       }
 
       // Send via Twilio
@@ -106,14 +115,14 @@ export const sendOneNow = onCall(
       try {
         res = await sendSMS(client, params);
       } catch (sendErr: any) {
-        if (plan === "free") {
+        if (capabilities.appliesFreeUsageLimits) {
           await markFreeInstantSendReservation(uid, weekKey, reservationId, "failed");
         }
         throw sendErr;
       }
       logger.info("[sendOneNow] sent", { messageSid: res.sid });
 
-      if (plan === "free") {
+      if (capabilities.appliesFreeUsageLimits) {
         await markFreeInstantSendReservation(uid, weekKey, reservationId, "sent", res.sid);
       }
 

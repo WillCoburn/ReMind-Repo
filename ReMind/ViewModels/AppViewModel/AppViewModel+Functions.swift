@@ -48,7 +48,18 @@ extension AppViewModel {
 
         do {
             let previousReminder = latestReminderForDisplay
-            let result = try await functions.httpsCallable("sendOneNow").call([:])
+            let clientEntitlement: [String: Any] = [
+                "state": subscriptionState.rawValue,
+                "effectivePlan": effectivePlan.rawValue,
+                "isProUser": isProUser,
+                "appliesFreeUsageLimits": shouldApplyFreeUsageLimits,
+                "source": String(describing: entitlementSource),
+                "reason": subscriptionResolutionReason
+            ]
+            debugLogUsageGate("sendOneNow.request", extra: clientEntitlement)
+            let result = try await functions.httpsCallable("sendOneNow").call([
+                "clientEntitlement": clientEntitlement
+            ])
             print("✅ sendOneNow result:", result.data)
             await refreshLatestSentReminder()
 
@@ -66,7 +77,7 @@ extension AppViewModel {
                let details = err.userInfo[FunctionsErrorDetailsKey] as? String,
                !details.isEmpty {
                 // This is the monthly cap error coming from Cloud Functions
-                print("❌ sendOneNow limit reached:", details)
+                debugLogUsageGate("sendOneNow.limitReached", extra: ["details": details])
                 throw NSError(
                     domain: "ReMindSendOneNow",
                     code: err.code,

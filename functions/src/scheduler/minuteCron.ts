@@ -147,6 +147,14 @@ export const minuteCron = onSchedule(
         }
 
         const freshCapabilities = resolveServerCapabilities(freshUserSnap, nowSeconds);
+        logger.info("[minuteCron] resolved capabilities", {
+          uid,
+          plan: freshCapabilities.plan,
+          state: freshCapabilities.state,
+          source: freshCapabilities.source,
+          reason: freshCapabilities.reason,
+          maxRemindersPerWeek: freshCapabilities.maxRemindersPerWeek,
+        });
         if (
           shouldAutoPauseAutomatedReminders(
             freshUserSnap,

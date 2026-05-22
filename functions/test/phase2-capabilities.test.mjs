@@ -8,6 +8,7 @@ const {
   resolveServerCapabilities,
   SERVER_LIMITS,
 } = require("../lib/entitlements/capabilities.js");
+const { deriveSubscriptionState } = require("../lib/revenuecat/state.js");
 
 function snap(data) {
   return {
@@ -72,8 +73,77 @@ test("server capabilities preserve legacy server-owned pro plan when rc mirror i
   assert.equal(capabilities.canUseProReminderRange, true);
 });
 
+test("server capabilities let subscribed server profile bypass stale free RevenueCat mirror", () => {
+  const capabilities = resolveServerCapabilities(
+    snap({
+      plan: "pro",
+      subscriptionStatus: "subscribed",
+      rc: { entitlementActive: false },
+    }),
+    1_000
+  );
+  assert.equal(capabilities.plan, "pro");
+  assert.equal(capabilities.source, "serverProfile");
+  assert.equal(capabilities.appliesFreeUsageLimits, false);
+});
+
+test("server capabilities let active cancelled profile remain pro until expiration", () => {
+  const capabilities = resolveServerCapabilities(
+    snap({
+      plan: "pro",
+      subscriptionStatus: "cancelled",
+      rc: { entitlementActive: false, expiresAt: 2_000 },
+    }),
+    1_000
+  );
+  assert.equal(capabilities.plan, "pro");
+  assert.equal(capabilities.appliesFreeUsageLimits, false);
+});
+
+test("server capabilities let expired RevenueCat mirror override subscribed profile", () => {
+  const capabilities = resolveServerCapabilities(
+    snap({
+      plan: "pro",
+      subscriptionStatus: "subscribed",
+      rc: { entitlementActive: true, expiresAt: 500 },
+    }),
+    1_000
+  );
+  assert.equal(capabilities.state, "expired");
+  assert.equal(capabilities.plan, "free");
+  assert.equal(capabilities.appliesFreeUsageLimits, true);
+});
+
 test("server capabilities treat webhook delay as free until server mirror says pro", () => {
   const capabilities = resolveServerCapabilities(snap({ plan: "free" }), 1_000);
   assert.equal(capabilities.plan, "free");
   assert.equal(capabilities.appliesFreeUsageLimits, true);
+});
+
+test("revenuecat state keeps cancelled users pro through the paid period", () => {
+  const derived = deriveSubscriptionState(
+    {
+      entitlementActive: true,
+      willRenew: false,
+      expiresAt: 2_000,
+    },
+    1_000
+  );
+
+  assert.equal(derived.plan, "pro");
+  assert.equal(derived.subscriptionStatus, "cancelled");
+});
+
+test("revenuecat state expires users after the paid period ends", () => {
+  const derived = deriveSubscriptionState(
+    {
+      entitlementActive: true,
+      willRenew: false,
+      expiresAt: 500,
+    },
+    1_000
+  );
+
+  assert.equal(derived.plan, "free");
+  assert.equal(derived.subscriptionStatus, "unsubscribed");
 });

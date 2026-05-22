@@ -28,6 +28,8 @@ struct MainView: View {
     @State private var pulseEditor = false
     @State private var isSubmitting = false
     @State private var isDeletingLatestReminder = false
+    @State private var composerState: ComposerState = .collapsed
+    @State private var composerFocusTask: Task<Void, Never>?
     @FocusState private var isEntryFieldFocused: Bool
 
     // Alerts
@@ -40,7 +42,7 @@ struct MainView: View {
 
         let inputIsEmpty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let buttonDisabled = isSubmitting || inputIsEmpty || !net.isConnected
-        let isComposing = isEntryFieldFocused
+        let isComposing = composerState == .focused
         GeometryReader { proxy in
             let safeTop = max(proxy.safeAreaInsets.top, 16)
             let safeBottom = max(proxy.safeAreaInsets.bottom, 16)
@@ -60,7 +62,7 @@ struct MainView: View {
                             VStack(spacing: isComposing ? (usesAccessibilityLayout ? 16 : 12) : (usesAccessibilityLayout ? 22 : 18)) {
                                 logoHeader
                                     .scaleEffect(isComposing && !usesAccessibilityLayout ? 0.86 : 1)
-                                    .opacity(isComposing ? 0.82 : 1)
+                                    .opacity(isComposing ? 0.42 : 1)
                                     .frame(height: logoHeight(isComposing: isComposing, usesAccessibilityLayout: usesAccessibilityLayout))
                                     .padding(.top, safeTop + (isComposing ? 6 : 12))
                                     .id(HomeScrollTarget.top)
@@ -81,14 +83,22 @@ struct MainView: View {
                             EntryComposer(
                                 text: $input,
                                 isSubmitting: $isSubmitting,
+                                state: $composerState,
                                 isDisabled: buttonDisabled,
                                 pulseEditor: pulseEditor,
                                 inputHeight: entryInputHeight,
                                 isEntryFieldFocused: _isEntryFieldFocused,
                                 onSubmit: { await sendEntry() },
-                                onCancel: cancelEntryComposer
+                                onDismiss: collapseComposer
                             )
                             .id(HomeScrollTarget.entryComposer)
+                            .simultaneousGesture(
+                                DragGesture(minimumDistance: 18)
+                                    .onEnded { value in
+                                        guard value.translation.height > 28 else { return }
+                                        collapseComposer()
+                                    }
+                            )
 
                             saveStatusView
 
@@ -97,7 +107,8 @@ struct MainView: View {
 
                         actionIconActions(count: count, viewportWidth: viewportWidth)
                             .frame(width: viewportWidth)
-                            .opacity(isComposing ? 0.72 : 1)
+                            .disabled(isComposing)
+                            .opacity(isComposing ? 0.56 : 1)
                             .scaleEffect(isComposing ? 0.98 : 1)
                             .padding(.top, isComposing ? 0 : 4)
                             .contentShape(Rectangle())
@@ -106,41 +117,50 @@ struct MainView: View {
                             }
                     }
                     .frame(width: viewportWidth, alignment: .top)
-                    .padding(.bottom, safeBottom + (isComposing ? 42 : 24))
+                    .padding(.bottom, safeBottom + (isComposing ? 18 : 24))
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .contentShape(Rectangle())
                 .onChange(of: isEntryFieldFocused) { focused in
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
-                        withAnimation(.easeInOut(duration: 0.24)) {
-                            scrollProxy.scrollTo(
-                                focused ? HomeScrollTarget.entryComposer : HomeScrollTarget.top,
-                                anchor: focused ? .center : .top
-                            )
+                    if focused && composerState != .focused {
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                            composerState = .focused
                         }
+                    } else if !focused && composerState == .focused {
+                        collapseComposer()
                     }
                 }
-                .animation(.spring(response: 0.36, dampingFraction: 0.88), value: isEntryFieldFocused)
+                .onChange(of: composerState) { state in
+                    composerFocusTask?.cancel()
+                    if state == .focused {
+                        composerFocusTask = Task { @MainActor in
+                            try? await Task.sleep(nanoseconds: 70_000_000)
+                            guard composerState == .focused else { return }
+                            isEntryFieldFocused = true
+                        }
+                    } else {
+                        isEntryFieldFocused = false
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+                    guard composerState == .focused else { return }
+                    withAnimation(.easeInOut(duration: keyboardAnimationDuration(from: notification))) {
+                        scrollProxy.scrollTo(HomeScrollTarget.entryComposer, anchor: .center)
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                    guard composerState == .focused else { return }
+                    collapseComposer()
+                }
+                .animation(.spring(response: 0.42, dampingFraction: 0.86), value: composerState)
             }
         }
         .background {
             OnboardingBackgroundView()
-                .ignoresSafeArea()
+                .overlay(Color.white.opacity(isComposing ? 0.08 : 0))
+                .ignoresSafeArea(.all)
         }
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button {
-                        isEntryFieldFocused = false
-                        hideKeyboard()
-                    } label: {
-                        Image(systemName: "keyboard.chevron.compact.down")
-                            .font(.title3)
-                    }
-                    .accessibilityLabel("Dismiss keyboard")
-                }
-            }
             .sheet(item: $activeHomeSheet) { sheet in
                 NavigationStack {
                     switch sheet {
@@ -165,7 +185,7 @@ struct MainView: View {
             .onChange(of: isPageActive) { active in
                 guard active else {
                     guardedActionTask?.cancel()
-                    dismissEntryKeyboard()
+                    collapseComposer()
                     return
                 }
                 refreshMainViewData()
@@ -176,6 +196,7 @@ struct MainView: View {
             }
             .onDisappear {
                 guardedActionTask?.cancel()
+                composerFocusTask?.cancel()
             }
             .onChange(of: appVM.user?.uid) { _ in
                 guardedActionTask?.cancel()
@@ -241,16 +262,15 @@ struct MainView: View {
         cardContentWidth: CGFloat,
         usesAccessibilityLayout: Bool
     ) -> some View {
-        if isComposing && usesAccessibilityLayout {
-            EmptyView()
-        } else if isComposing {
-            recentReminderCard(cardContentWidth: cardContentWidth)
-                .opacity(0.38)
-                .scaleEffect(0.97, anchor: .top)
-                .frame(maxHeight: 72, alignment: .top)
-                .clipped()
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
+        if isComposing {
+            recentReminderCard(
+                cardContentWidth: cardContentWidth,
+                usesAccessibilityLayout: usesAccessibilityLayout
+            )
+            .opacity(usesAccessibilityLayout ? 0.32 : 0.56)
+            .scaleEffect(0.98, anchor: .top)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         } else {
             recentReminderCard(
                 cardContentWidth: cardContentWidth,
@@ -575,7 +595,7 @@ struct MainView: View {
         do {
             try await appVM.submit(text: text)
             input = ""
-            dismissEntryKeyboard()
+            collapseComposer()
 
             withAnimation(.easeInOut(duration: 0.5)) { pulseEditor = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -587,7 +607,7 @@ struct MainView: View {
                 withAnimation(.easeInOut(duration: 0.5)) { showSuccessMessage = false }
             }
         } catch {
-            alertTitle = "Couldn't save reminder"
+            alertTitle = "Couldn't save entry"
             alertMessage = error.localizedDescription
             showAlert = true
         }
@@ -658,7 +678,7 @@ struct MainView: View {
 
     private func presentLockedAlert(feature: String) {
         alertTitle = "Save one first"
-        alertMessage = "Save your first BrainMail before using “\(feature)”."
+        alertMessage = "Save your first entry before using “\(feature)”."
         showAlert = true
     }
 
@@ -686,14 +706,25 @@ struct MainView: View {
     }
 
     private func dismissEntryKeyboard() {
-        guard isEntryFieldFocused else { return }
+        collapseComposer()
+    }
+
+    private func collapseComposer() {
+        guard composerState != .collapsed || isEntryFieldFocused else { return }
+        composerFocusTask?.cancel()
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.9)) {
+            composerState = .collapsed
+        }
+        if input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            input = ""
+        }
         isEntryFieldFocused = false
         hideKeyboard()
     }
 
-    private func cancelEntryComposer() {
-        input = ""
-        dismissEntryKeyboard()
+    private func keyboardAnimationDuration(from notification: Notification) -> Double {
+        let value = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? NSNumber
+        return value?.doubleValue ?? 0.28
     }
 
     private func constrainedTopContentWidth(for viewportWidth: CGFloat) -> CGFloat {
@@ -742,25 +773,25 @@ struct MainView: View {
         }
 
         if usesAccessibilityLayout {
-            return min(max(availableHeight * 0.24, 168), 230)
+            return min(max(availableHeight * 0.22, 140), 220)
         }
 
-        return min(max(availableHeight * 0.17, 124), 154)
+        return min(max(availableHeight * 0.16, 108), 148)
     }
 
     private func logoHeight(isComposing: Bool, usesAccessibilityLayout: Bool) -> CGFloat {
         if usesAccessibilityLayout {
-            return isComposing ? 54 : 70
+            return isComposing ? 34 : 70
         }
 
-        return isComposing ? 72 : 90
+        return isComposing ? 42 : 90
     }
 }
 
 private enum HomeLayout {
     static let horizontalPadding: CGFloat = 24
-    static let collapsedEntryInputHeight: CGFloat = 112
-    static let accessibilityCollapsedEntryInputHeight: CGFloat = 136
+    static let collapsedEntryInputHeight: CGFloat = 76
+    static let accessibilityCollapsedEntryInputHeight: CGFloat = 96
     static let actionIconCircleSize: CGFloat = 64
     static let accessibilityActionIconCircleSize: CGFloat = 72
     static let actionIconButtonWidth: CGFloat = 68

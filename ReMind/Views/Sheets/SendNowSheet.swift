@@ -138,6 +138,7 @@ struct SendNowSheet: View {
     private func sendNow() async {
         guard !isSending else { return }
         if appVM.hasUsedFreeInstantSendThisWeek {
+            appVM.debugLogUsageGate("sendNowSheet.clientBlockedWeeklyInstant")
             showWeeklyLimitAlert = true
             return
         }

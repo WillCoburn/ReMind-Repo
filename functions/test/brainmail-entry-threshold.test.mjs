@@ -71,7 +71,7 @@ test("main BrainMail UI no longer uses a multi-entry unlock counter", () => {
   assert.match(main, /let canUseGuardedActions = net\.isConnected && count > 0/);
   assert.match(main, /if count == 0 \{ presentLockedAlert\(feature: "Send One Now"\); return \}/);
   assert.match(main, /if count == 0 \{ presentLockedAlert\(feature: "Export PDF"\); return \}/);
-  assert.match(main, /Save your first BrainMail before using/);
+  assert.match(main, /Save your first entry before using/);
 
   assert.doesNotMatch(
     hint,
@@ -118,4 +118,30 @@ test("stale 3-entry onboarding and unlock copy is absent from first-time UI file
     const source = readRepoFile(path);
     assert.doesNotMatch(source, staleCopyPattern, path);
   }
+});
+
+test("entry composer uses explicit focus-mode state instead of keyboard height math", () => {
+  const composer = readRepoFile("ReMind/Views/Main/Components/EntryComposer.swift");
+  const main = readRepoFile("ReMind/Views/Main/MainView.swift");
+
+  assert.match(composer, /enum ComposerState:\s*Equatable\s*\{[\s\S]*case collapsed[\s\S]*case focused/);
+  assert.match(composer, /@Binding var state:\s*ComposerState/);
+  assert.match(main, /@State private var composerState:\s*ComposerState = \.collapsed/);
+  assert.match(main, /let isComposing = composerState == \.focused/);
+  assert.doesNotMatch(main, /let isComposing = isEntryFieldFocused/);
+  assert.match(main, /keyboardWillHideNotification/);
+  assert.match(main, /collapseComposer\(\)/);
+  assert.doesNotMatch(main, /keyboardFrame|keyboardHeight|keyboardFrameEndUserInfoKey/);
+});
+
+test("entry composer removes transactional cancel control and keeps save inside writing surface", () => {
+  const composer = readRepoFile("ReMind/Views/Main/Components/EntryComposer.swift");
+
+  assert.match(composer, /Text\("New entry"\)/);
+  assert.match(composer, /Tap to write to future you\.\.\./);
+  assert.match(composer, /Hey future me\.\.\./);
+  assert.match(composer, /writingSurfaceBackground/);
+  assert.match(composer, /saveButton\(isExpanded:/);
+  assert.match(composer, /accessibilityLabel\("Save entry"\)/);
+  assert.doesNotMatch(composer, /cancelButton|onCancel|Cancel reminder|Label\("Cancel"/);
 });

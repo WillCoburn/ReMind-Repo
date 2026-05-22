@@ -124,12 +124,15 @@ public struct SubscriptionCapabilities: Codable, Sendable, Equatable {
         }
 
         let normalizedStatus = subscriptionStatus?.lowercased()
+        let serverProfileSubscribed =
+            serverPlan == .pro ||
+            normalizedStatus == "subscribed" ||
+            normalizedStatus == "active" ||
+            normalizedStatus == "cancelled"
         let state: SubscriptionState
         if let rcExpiresAt, rcExpiresAt < referenceDate {
             state = .expired
-        } else if rcEntitlementActive == true {
-            state = .subscribed
-        } else if serverPlan == .pro && rcEntitlementActive == nil && rcExpiresAt == nil {
+        } else if rcEntitlementActive == true || serverProfileSubscribed {
             state = .subscribed
         } else if normalizedStatus == "expired" {
             state = .expired

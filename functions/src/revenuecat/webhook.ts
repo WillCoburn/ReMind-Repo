@@ -80,10 +80,17 @@ export const revenueCatWebhook = onRequest(
         ? false
         : true;
 
+    const paidPeriodFromExpiry = expiresAtSeconds != null && expiresAtSeconds >= nowSeconds;
+    const inferredEntitlementActive =
+      entitlementActiveFromEvent ??
+      (expiresAtSeconds != null ? paidPeriodFromExpiry : eventType !== "EXPIRATION");
+    const entitlementActive =
+      eventType !== "EXPIRATION" &&
+      (paidPeriodFromExpiry || inferredEntitlementActive);
+
     const derived = deriveSubscriptionState(
       {
-        entitlementActive:
-          entitlementActiveFromEvent ?? (expiresAtSeconds != null ? expiresAtSeconds >= nowSeconds : eventType !== "EXPIRATION"),
+        entitlementActive,
         willRenew: willRenewFromEvent,
         expiresAt,
       },

@@ -2,6 +2,11 @@ import * as admin from "firebase-admin";
 
 export type ServerPlan = "free" | "pro";
 export type ServerCapabilityState = "free" | "pro" | "expired";
+export type ServerCapabilitySource =
+  | "revenueCatMirror"
+  | "serverProfile"
+  | "expired"
+  | "free";
 
 type SnapshotLike = {
   get(fieldPath: string): unknown;
@@ -10,6 +15,8 @@ type SnapshotLike = {
 export type ServerCapabilities = {
   state: ServerCapabilityState;
   plan: ServerPlan;
+  source: ServerCapabilitySource;
+  reason: string;
   canUseProReminderRange: boolean;
   maxRemindersPerWeek: number;
   appliesFreeUsageLimits: boolean;
@@ -42,20 +49,40 @@ export function resolveServerCapabilities(
   const rcEntitlementActive = rcEntitlementRaw === true;
   const rcExpiresAtSeconds = timestampSeconds(user.get("rc.expiresAt"));
   const rcExpired = rcExpiresAtSeconds != null && rcExpiresAtSeconds < nowSeconds;
-  const hasRevenueCatMirror = rcEntitlementRaw != null || rcExpiresAtSeconds != null;
+  const serverProfileSubscribed =
+    explicitPlan === "pro" ||
+    subscriptionStatus === "subscribed" ||
+    subscriptionStatus === "active" ||
+    subscriptionStatus === "cancelled";
 
   const isPro =
-    (rcEntitlementActive && !rcExpired) ||
-    (!hasRevenueCatMirror && explicitPlan === "pro");
+    !rcExpired &&
+    (rcEntitlementActive || serverProfileSubscribed);
   const state: ServerCapabilityState = isPro
     ? "pro"
     : rcExpired || subscriptionStatus === "expired"
     ? "expired"
     : "free";
+  const source: ServerCapabilitySource = isPro
+    ? rcEntitlementActive
+      ? "revenueCatMirror"
+      : "serverProfile"
+    : state === "expired"
+    ? "expired"
+    : "free";
+  const reason = [
+    `source=${source}`,
+    `plan=${explicitPlan || "missing"}`,
+    `status=${subscriptionStatus || "missing"}`,
+    `rcActive=${String(rcEntitlementRaw)}`,
+    `rcExpiresAt=${rcExpiresAtSeconds ?? "missing"}`,
+  ].join(" ");
 
   return {
     state,
     plan: isPro ? "pro" : "free",
+    source,
+    reason,
     canUseProReminderRange: isPro,
     maxRemindersPerWeek: isPro
       ? SERVER_LIMITS.proMaxRemindersPerWeek

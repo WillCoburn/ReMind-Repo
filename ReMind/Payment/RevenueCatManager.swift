@@ -174,6 +174,18 @@ final class RevenueCatManager: NSObject, ObservableObject {
         syncToFirestore(info: info, uid: uid)
     }
 
+    func applyCustomerInfo(_ info: CustomerInfo) {
+        apply(info)
+    }
+
+    func hasActiveProEntitlement(_ info: CustomerInfo) -> Bool {
+        info.entitlements[PaywallConfig.entitlementId]?.isActive == true
+    }
+
+    var noActiveSubscriptionRestoreMessage: String {
+        "No active subscription found for this Apple ID. Make sure you’re signed into the Apple ID used to subscribe."
+    }
+
     // MARK: - Firestore sync
 
     private func syncToFirestore(info: CustomerInfo, uid: String) {
@@ -349,10 +361,21 @@ final class RevenueCatManager: NSObject, ObservableObject {
     
     //restore
     func restore(completion: @escaping (_ success: Bool, _ errorMessage: String?) -> Void) {
+        restore { success, errorMessage, _ in
+            completion(success, errorMessage)
+        }
+    }
+
+    func restore(completion: @escaping (_ success: Bool, _ errorMessage: String?, _ customerInfo: CustomerInfo?) -> Void) {
         ensureConfigured()
+        let completeOnMain: (Bool, String?, CustomerInfo?) -> Void = { success, message, customerInfo in
+            DispatchQueue.main.async {
+                completion(success, message, customerInfo)
+            }
+        }
 
         guard let uid = Auth.auth().currentUser?.uid else {
-            completion(false, "Please sign in to restore purchases.")
+            completeOnMain(false, "Please sign in to restore purchases.", nil)
             return
         }
 
@@ -360,7 +383,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
             guard let self else { return }
 
             if let error {
-                completion(false, "Unable to sign in: \(error.localizedDescription)")
+                completeOnMain(false, "Unable to sign in: \(error.localizedDescription)", nil)
                 return
             }
 
@@ -370,21 +393,33 @@ final class RevenueCatManager: NSObject, ObservableObject {
 
             Purchases.shared.restorePurchases { customerInfo, error in
                 if let error {
-                    completion(false, error.localizedDescription)
+                    completeOnMain(false, self.restoreFailureMessage(from: error), customerInfo)
                     return
                 }
 
                 guard let info = customerInfo else {
-                    completion(false, "Nothing to restore.")
+                    completeOnMain(false, "Unable to refresh purchases. Please try again.", nil)
                     return
                 }
 
-                // Apply and mirror the restored RevenueCat snapshot.
+                // Apply the restored RevenueCat snapshot, then gate success on the active entitlement.
                 self.apply(info)
 
-                completion(true, nil)
+                if self.hasActiveProEntitlement(info) {
+                    completeOnMain(true, nil, info)
+                } else {
+                    completeOnMain(false, self.noActiveSubscriptionRestoreMessage, info)
+                }
             }
         }
+    }
+
+    func restoreFailureMessage(from error: Error) -> String {
+        let description = error.localizedDescription
+        if description.range(of: "cancel", options: [.caseInsensitive, .diacriticInsensitive]) != nil {
+            return "Restore cancelled."
+        }
+        return "Restore failed: \(description)"
     }
 
 }

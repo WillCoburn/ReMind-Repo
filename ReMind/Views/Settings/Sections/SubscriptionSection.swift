@@ -9,6 +9,8 @@ struct SubscriptionSection: View {
 
     var onStartSubscription: () -> Void
     @Binding var restoreMessage: String?
+    @State private var restoreMessageIsError = false
+    @State private var restoreMessageClearTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .center, spacing: 12) {
@@ -56,34 +58,66 @@ struct SubscriptionSection: View {
             }
 
             Button("Restore Purchases") {
-                 RevenueCatManager.shared.restore { ok, err in
-                     restoreMessage = err ?? (ok ? "Restored." : "Nothing to restore.")
+                 RevenueCatManager.shared.restore { ok, err, customerInfo in
+                     DispatchQueue.main.async {
+                         if let customerInfo {
+                             appVM.applyFreshRevenueCatCustomerInfo(customerInfo, reason: "settingsRestorePurchases")
+                         }
+                         appVM.refreshRevenueCatEntitlement(reason: "settingsRestorePurchases")
+                         let message = err ?? (
+                            ok
+                            ? "Purchases restored."
+                            : RevenueCatManager.shared.noActiveSubscriptionRestoreMessage
+                         )
+                         setRestoreMessage(message, isError: !ok || err != nil)
+                     }
                  }
             }
             .buttonStyle(SubscriptionSecondaryButtonStyle())
 
-            Text("I'm truly sorry this can't be free, I hate it too – the backend and SMS service costs me about the subscription fee to run. Hope it's worth it to you :)")
-                .font(.footnote)
-                .foregroundStyle(Color.black.opacity(0.56))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 10)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.figmaBlue.opacity(0.06))
-                )
+            if !appVM.isProUser {
+                Text("I’m truly sorry this can’t be free, I hate it too — the backend SMS costs me the subscription fee. Just trying to break even here — hope it’s worth it to you!")
+                    .font(.footnote)
+                    .foregroundStyle(Color.black.opacity(0.50))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.figmaBlue.opacity(0.045))
+                    )
+            }
 
             if let msg = restoreMessage {
                 Text(msg)
                     .font(.footnote.weight(.medium))
-                    .foregroundStyle(Color.black.opacity(0.58))
+                    .foregroundStyle(restoreMessageIsError ? Color.red.opacity(0.82) : Color.figmaBlue.opacity(0.78))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .frame(maxWidth: .infinity)
+        .animation(.easeInOut(duration: 0.18), value: restoreMessage)
+        .onDisappear {
+            restoreMessageClearTask?.cancel()
+            restoreMessageClearTask = nil
+        }
+    }
+
+    private func setRestoreMessage(_ message: String, isError: Bool) {
+        restoreMessageClearTask?.cancel()
+        restoreMessage = message
+        restoreMessageIsError = isError
+        restoreMessageClearTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 3_800_000_000)
+            guard restoreMessage == message else { return }
+            withAnimation(.easeInOut(duration: 0.18)) {
+                restoreMessage = nil
+            }
+        }
     }
 }
 

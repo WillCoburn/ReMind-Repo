@@ -2,7 +2,7 @@
 // File: functions/src/user/applyUserSettings.ts
 // ============================
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { admin, db, scheduleNext, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID, TWILIO_SID } from "../config/options";
+import { admin, db, logger, scheduleNext, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID, TWILIO_SID } from "../config/options";
 import { resolveServerCapabilities } from "../entitlements/capabilities";
 import { normalizeReminderSettings } from "../settings/reminders";
 
@@ -25,6 +25,14 @@ export const applyUserSettings = onCall(
     const requestedSettings = req.data?.settings as Record<string, unknown> | undefined;
     const requestedRevision = clientRevision(req.data);
     const capabilities = resolveServerCapabilities(userSnap);
+    logger.info("[applyUserSettings] resolved capabilities", {
+      uid,
+      plan: capabilities.plan,
+      state: capabilities.state,
+      source: capabilities.source,
+      reason: capabilities.reason,
+      maxRemindersPerWeek: capabilities.maxRemindersPerWeek,
+    });
 
     await db.runTransaction(async (tx) => {
       const currentSnap = await tx.get(settingsRef);

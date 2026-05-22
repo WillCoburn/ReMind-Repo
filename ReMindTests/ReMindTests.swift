@@ -192,6 +192,39 @@ final class ReMindTests: XCTestCase {
         XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.proMaxRemindersPerWeek)
     }
 
+    func testSubscribedServerProfileBypassesStaleFreeRevenueCatMirror() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            serverPlan: .pro,
+            subscriptionStatus: "subscribed",
+            profileLoaded: true,
+            lastKnownSubscribed: false,
+            rcEntitlementActive: false,
+            rcExpiresAt: nil,
+            referenceDate: Date(timeIntervalSince1970: 1_000)
+        )
+
+        XCTAssertEqual(capabilities.state, .subscribed)
+        XCTAssertTrue(capabilities.isProUser)
+        XCTAssertFalse(capabilities.shouldApplyFreeUsageLimits)
+        XCTAssertEqual(capabilities.maxRemindersPerWeek, SubscriptionLimits.proMaxRemindersPerWeek)
+    }
+
+    func testExpiredRevenueCatMirrorStillOverridesSubscribedServerProfile() {
+        let capabilities = SubscriptionCapabilities.resolve(
+            serverPlan: .pro,
+            subscriptionStatus: "subscribed",
+            profileLoaded: true,
+            lastKnownSubscribed: true,
+            rcEntitlementActive: true,
+            rcExpiresAt: Date(timeIntervalSince1970: 500),
+            referenceDate: Date(timeIntervalSince1970: 1_000)
+        )
+
+        XCTAssertEqual(capabilities.state, .expired)
+        XCTAssertFalse(capabilities.isProUser)
+        XCTAssertTrue(capabilities.shouldApplyFreeUsageLimits)
+    }
+
     func testServerProfileProDoesNotShowUpgradeMessaging() {
         let capabilities = SubscriptionCapabilities.resolve(
             serverPlan: .pro,

@@ -6,7 +6,7 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import { smsDeliveryBlockReason } from "../sms/eligibility";
-import { SERVER_LIMITS, resolveServerPlan } from "../entitlements/capabilities";
+import { SERVER_LIMITS, resolveServerCapabilities, resolveServerPlan } from "../entitlements/capabilities";
 import { hasInactivityAutoPause } from "../inactivity/policy";
 import { normalizeReminderSettings } from "../settings/reminders";
 
@@ -82,19 +82,21 @@ async function loadSettings(uid: string) {
   const snap = await db.doc(`users/${uid}/meta/settings`).get();
   const d = snap.exists ? snap.data()! : {};
   const userSnap = await db.doc(`users/${uid}`).get();
-  const plan = resolvePlan(userSnap);
-  const normalized = normalizeReminderSettings(d, {
-    plan,
-    maxRemindersPerWeek:
-      plan === "pro"
-        ? SERVER_LIMITS.proMaxRemindersPerWeek
-        : SERVER_LIMITS.freeMaxRemindersPerWeek,
-  });
+  const capabilities = resolveServerCapabilities(userSnap);
+  const plan = capabilities.plan;
+  const normalized = normalizeReminderSettings(d, capabilities);
 
   if (normalized.wasClamped) {
     const { wasClamped: _wasClamped, ...settingsWrite } = normalized;
     await db.doc(`users/${uid}/meta/settings`).set(settingsWrite, { merge: true });
-    logger.warn("[loadSettings] normalized reminder settings", { uid, plan, raw: d, normalized });
+    logger.warn("[loadSettings] normalized reminder settings", {
+      uid,
+      plan,
+      source: capabilities.source,
+      reason: capabilities.reason,
+      raw: d,
+      normalized,
+    });
   }
 
   return {
@@ -119,9 +121,15 @@ async function scheduleNext(uid: string, fromUtc = new Date()) {
     return;
   }
 
-  if (hasInactivityAutoPause(userSnap) && resolvePlan(userSnap) !== "pro") {
+  const capabilities = resolveServerCapabilities(userSnap);
+  if (hasInactivityAutoPause(userSnap) && capabilities.plan !== "pro") {
     await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
-    logger.info("[scheduleNext] inactivity auto-paused; nextSendAt=null", { uid });
+    logger.info("[scheduleNext] inactivity auto-paused; nextSendAt=null", {
+      uid,
+      plan: capabilities.plan,
+      source: capabilities.source,
+      reason: capabilities.reason,
+    });
     return;
   }
 

@@ -1,5 +1,5 @@
 import { HttpsError } from "firebase-functions/v2/https";
-import { db } from "../config/options";
+import { db, logger } from "../config/options";
 
 export const FREE_INSTANT_SENDS_PER_WEEK = 1;
 
@@ -72,7 +72,23 @@ export async function reserveFreeInstantSendQuota(
   await db.runTransaction(async (tx) => {
     const fresh = await tx.get(userRef);
     const usage = (fresh.get("usage") as InstantSendUsage | undefined) ?? {};
-    const nextUsage = reserveInstantSendUsage(usage, weekKey, reservationId, nowMillis);
+    logger.info("[instantSendQuota] reserving free instant send", {
+      uid,
+      weekKey,
+      currentSends: instantSendsForWeek(usage, weekKey),
+      usage,
+    });
+    let nextUsage: InstantSendUsage;
+    try {
+      nextUsage = reserveInstantSendUsage(usage, weekKey, reservationId, nowMillis);
+    } catch (err) {
+      logger.warn("[instantSendQuota] free instant send limit hit", {
+        uid,
+        weekKey,
+        currentSends: instantSendsForWeek(usage, weekKey),
+      });
+      throw err;
+    }
     tx.set(userRef, { usage: nextUsage }, { merge: true });
   });
 }
@@ -90,6 +106,13 @@ export async function markFreeInstantSendReservation(
   await db.runTransaction(async (tx) => {
     const fresh = await tx.get(userRef);
     const usage = (fresh.get("usage") as InstantSendUsage | undefined) ?? {};
+    logger.info("[instantSendQuota] marking free instant send reservation", {
+      uid,
+      weekKey,
+      reservationId,
+      status,
+      currentSends: instantSendsForWeek(usage, weekKey),
+    });
     const nextUsage = markInstantSendReservation(
       usage,
       weekKey,
