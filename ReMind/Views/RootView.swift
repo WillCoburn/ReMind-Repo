@@ -147,7 +147,7 @@ struct RootView: View {
             .tag(Page.right)
         }
         .tabViewStyle(.page(indexDisplayMode: .never)) // Snapchat-style swipe
-        // Keep bottom overlays (like MainView's action bar) pinned even when the keyboard shows
+        // Extend pages under container chrome without opting out of keyboard avoidance.
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(.container, edges: [.top, .bottom])
     }

@@ -11,6 +11,9 @@ struct SubscriptionSection: View {
     @Binding var restoreMessage: String?
     @State private var restoreMessageIsError = false
     @State private var restoreMessageClearTask: Task<Void, Never>?
+    @State private var restoreTimeoutTask: Task<Void, Never>?
+    @State private var restoreAttemptID = UUID()
+    @State private var isRestoringPurchases = false
 
     var body: some View {
         VStack(alignment: .center, spacing: 12) {
@@ -57,23 +60,14 @@ struct SubscriptionSection: View {
                 .buttonStyle(SubscriptionSecondaryButtonStyle())
             }
 
-            Button("Restore Purchases") {
-                 RevenueCatManager.shared.restore { ok, err, customerInfo in
-                     DispatchQueue.main.async {
-                         if let customerInfo {
-                             appVM.applyFreshRevenueCatCustomerInfo(customerInfo, reason: "settingsRestorePurchases")
-                         }
-                         appVM.refreshRevenueCatEntitlement(reason: "settingsRestorePurchases")
-                         let message = err ?? (
-                            ok
-                            ? "Purchases restored."
-                            : RevenueCatManager.shared.noActiveSubscriptionRestoreMessage
-                         )
-                         setRestoreMessage(message, isError: !ok || err != nil)
-                     }
-                 }
+            Button {
+                restorePurchases()
+            } label: {
+                restoreButtonLabel
             }
             .buttonStyle(SubscriptionSecondaryButtonStyle())
+            .disabled(isRestoringPurchases)
+            .accessibilityLabel(isRestoringPurchases ? "Restoring purchases" : "Restore purchases")
 
             if !appVM.isProUser {
                 Text("I’m truly sorry this can’t be free, I hate it too — the backend SMS costs me the subscription fee. Just trying to break even here — hope it’s worth it to you!")
@@ -103,14 +97,83 @@ struct SubscriptionSection: View {
         .animation(.easeInOut(duration: 0.18), value: restoreMessage)
         .onDisappear {
             restoreMessageClearTask?.cancel()
+            restoreTimeoutTask?.cancel()
             restoreMessageClearTask = nil
+            restoreTimeoutTask = nil
+            isRestoringPurchases = false
+        }
+    }
+
+    private var restoreButtonLabel: some View {
+        ZStack {
+            Text("Restore Purchases")
+                .opacity(isRestoringPurchases ? 0 : 1)
+
+            HStack(spacing: 8) {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(Color.black.opacity(0.54))
+                    .scaleEffect(0.82)
+
+                Text("Restoring...")
+            }
+            .opacity(isRestoringPurchases ? 1 : 0)
+        }
+        .frame(maxWidth: .infinity)
+        .animation(.easeInOut(duration: 0.16), value: isRestoringPurchases)
+    }
+
+    private func restorePurchases() {
+        guard !isRestoringPurchases else { return }
+        let attemptID = UUID()
+        restoreAttemptID = attemptID
+        restoreMessageClearTask?.cancel()
+        restoreTimeoutTask?.cancel()
+        withAnimation(.easeInOut(duration: 0.16)) {
+            restoreMessage = nil
+            restoreMessageIsError = false
+            isRestoringPurchases = true
+        }
+
+        restoreTimeoutTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 30_000_000_000)
+            guard !Task.isCancelled, restoreAttemptID == attemptID, isRestoringPurchases else { return }
+            withAnimation(.easeInOut(duration: 0.16)) {
+                isRestoringPurchases = false
+            }
+            setRestoreMessage("Restore is taking longer than expected. Please try again.", isError: true)
+        }
+
+        RevenueCatManager.shared.restore { ok, err, customerInfo in
+            DispatchQueue.main.async {
+                guard restoreAttemptID == attemptID else { return }
+                restoreTimeoutTask?.cancel()
+                restoreTimeoutTask = nil
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    isRestoringPurchases = false
+                }
+
+                if let customerInfo {
+                    appVM.applyFreshRevenueCatCustomerInfo(customerInfo, reason: "settingsRestorePurchases")
+                }
+                appVM.refreshRevenueCatEntitlement(reason: "settingsRestorePurchases")
+
+                let message = err ?? (
+                    ok
+                    ? "Purchases restored."
+                    : RevenueCatManager.shared.noActiveSubscriptionRestoreMessage
+                )
+                setRestoreMessage(message, isError: !ok || err != nil)
+            }
         }
     }
 
     private func setRestoreMessage(_ message: String, isError: Bool) {
         restoreMessageClearTask?.cancel()
-        restoreMessage = message
-        restoreMessageIsError = isError
+        withAnimation(.easeInOut(duration: 0.18)) {
+            restoreMessage = message
+            restoreMessageIsError = isError
+        }
         restoreMessageClearTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 3_800_000_000)
             guard restoreMessage == message else { return }

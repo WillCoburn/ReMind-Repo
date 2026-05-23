@@ -18,6 +18,9 @@ struct EntryComposer: View {
     var isDisabled: Bool
     var pulseEditor: Bool
     var inputHeight: CGFloat = 154
+    var fillsAvailableSpace: Bool = false
+    var onBeginEditing: () -> Void = {}
+    var debugLog: (String) -> Void = { _ in }
 
     @FocusState var isEntryFieldFocused: Bool
 
@@ -30,56 +33,14 @@ struct EntryComposer: View {
         let isExpanded = state == .focused
         let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
 
-        VStack(alignment: .leading, spacing: isExpanded ? 10 : 12) {
-            Text("New entry")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isExpanded ? Color.figmaBlue.opacity(0.92) : Color.black.opacity(0.72))
-                .lineLimit(usesAccessibilityLayout ? 2 : 1)
-                .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.86)
+        VStack(alignment: .leading, spacing: 12) {
+            headerRow(isExpanded: isExpanded, usesAccessibilityLayout: usesAccessibilityLayout)
 
-            ZStack(alignment: .topLeading) {
-                writingSurfaceBackground(isExpanded: isExpanded, hasText: hasText)
+            writingSurface(isExpanded: isExpanded, hasText: hasText)
 
-                TextEditor(text: $text)
-                    .focused($isEntryFieldFocused)
-                    .accessibilityIdentifier("home.entryTextEditor")
-                    .padding(.horizontal, isExpanded ? 10 : 12)
-                    .padding(.vertical, isExpanded ? 6 : 5)
-                    .frame(height: inputHeight, alignment: .topLeading)
-                    .background(Color.clear)
-                    .scrollContentBackground(.hidden)
-                    .foregroundColor(Color.black.opacity(0.84))
-                    .font(.body)
-                    .textInputAutocapitalization(.sentences)
-                    .scrollDisabled(!isExpanded)
-                    .onTapGesture {
-                        focusComposer()
-                    }
-
-                if !hasText {
-                    placeholderContent(isExpanded: isExpanded)
-                        .padding(.top, isExpanded ? 15 : 14)
-                        .padding(.horizontal, isExpanded ? 15 : 16)
-                        .allowsHitTesting(false)
-                }
-            }
-            .frame(height: inputHeight, alignment: .topLeading)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                focusComposer()
-            }
-            .simultaneousGesture(
-                TapGesture(count: 2).onEnded {
-                    handleDoubleTap()
-                }
-            )
-
-            if isExpanded {
-                bottomControls
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-            }
         }
         .padding(isExpanded ? 18 : 16)
+        .frame(maxHeight: isExpanded && fillsAvailableSpace ? .infinity : nil, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(Color.white.opacity(isExpanded ? 0.74 : 0.66))
@@ -99,13 +60,131 @@ struct EntryComposer: View {
         .animation(.spring(response: 0.36, dampingFraction: 0.88), value: inputHeight)
         .animation(.easeInOut(duration: 0.2), value: hasText)
         .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(state == .focused ? "home.entryComposer.expanded" : "home.entryComposer.compact")
         .frame(maxWidth: .infinity, alignment: .leading)
         .brainMailDynamicTypeRange()
+        .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .onTapGesture {
+            guard state != .focused else { return }
+            debugLog("tap compact card outer expanded=false focus=\(isEntryFieldFocused) draft=\(draftSummary)")
+            onBeginEditing()
+        }
+        .onAppear {
+            debugLog("composer appeared expanded=\(isExpanded) focus=\(isEntryFieldFocused) draft=\(draftSummary)")
+        }
+        .onDisappear {
+            debugLog("composer disappeared expanded=\(isExpanded) focus=\(isEntryFieldFocused) draft=\(draftSummary)")
+        }
+    }
+
+    @ViewBuilder
+    private func headerRow(isExpanded: Bool, usesAccessibilityLayout: Bool) -> some View {
+        if isExpanded {
+            HStack(alignment: .center, spacing: 10) {
+                Text("New entry")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.figmaBlue.opacity(0.92))
+                    .lineLimit(usesAccessibilityLayout ? 2 : 1)
+                    .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.86)
+
+                Spacer(minLength: 8)
+
+                closeButton
+
+                saveButton
+            }
+            .transition(.opacity)
+        } else {
+            Text("New entry")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.black.opacity(0.72))
+                .lineLimit(usesAccessibilityLayout ? 2 : 1)
+                .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.86)
+        }
     }
 
     private var accessibilityHint: String {
         if isDisabled { return "Type something to enable." }
         return "Saves your entry."
+    }
+
+    @ViewBuilder
+    private func writingSurface(isExpanded: Bool, hasText: Bool) -> some View {
+        if isExpanded {
+            expandedWritingSurface(hasText: hasText)
+        } else {
+            collapsedWritingPreview(hasText: hasText)
+        }
+    }
+
+    private func expandedWritingSurface(hasText: Bool) -> some View {
+        ZStack(alignment: .topLeading) {
+            writingSurfaceBackground(isExpanded: true, hasText: hasText)
+
+            TextEditor(text: $text)
+                .focused($isEntryFieldFocused)
+                .accessibilityIdentifier("home.entryTextEditor")
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .frame(
+                    minHeight: inputHeight,
+                    maxHeight: .infinity,
+                    alignment: .topLeading
+                )
+                .background(Color.clear)
+                .scrollContentBackground(.hidden)
+                .foregroundColor(Color.black.opacity(0.84))
+                .font(.body)
+                .textInputAutocapitalization(.sentences)
+                .scrollDismissesKeyboard(.interactively)
+
+            if !hasText {
+                placeholderContent(isExpanded: true)
+                    .padding(.top, 15)
+                    .padding(.horizontal, 15)
+                    .allowsHitTesting(false)
+            }
+        }
+        .frame(
+            minHeight: inputHeight,
+            maxHeight: .infinity,
+            alignment: .topLeading
+        )
+        .layoutPriority(1)
+    }
+
+    private func collapsedWritingPreview(hasText: Bool) -> some View {
+        ZStack(alignment: .topLeading) {
+            writingSurfaceBackground(isExpanded: false, hasText: hasText)
+
+            if hasText {
+                Text(text)
+                    .font(.body)
+                    .foregroundColor(Color.black.opacity(0.66))
+                    .lineLimit(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 3 : 2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            } else {
+                placeholderContent(isExpanded: false)
+                    .padding(.top, 14)
+                    .padding(.horizontal, 16)
+            }
+        }
+        .frame(height: inputHeight, alignment: .topLeading)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            debugLog("tap compact card expanded=false focus=\(isEntryFieldFocused) draft=\(draftSummary)")
+            onBeginEditing()
+        }
+        .simultaneousGesture(
+            TapGesture(count: 2).onEnded {
+                handleDoubleTap()
+            }
+        )
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Opens the entry composer.")
     }
 
     private func writingSurfaceBackground(isExpanded: Bool, hasText: Bool) -> some View {
@@ -140,24 +219,14 @@ struct EntryComposer: View {
         .lineLimit(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 3 : 2)
     }
 
-    private var bottomControls: some View {
-        HStack(alignment: .center, spacing: 12) {
-            collapseButton
-
-            Spacer(minLength: 12)
-
-            saveButton
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private var collapseButton: some View {
+    private var closeButton: some View {
         Button {
+            debugLog("cancel tapped expanded=\(state == .focused) focus=\(isEntryFieldFocused) draft=\(draftSummary)")
             onDismiss()
         } label: {
-            Image(systemName: "chevron.down")
+            Image(systemName: "xmark")
                 .font(.system(size: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 17 : 15, weight: .semibold))
-                .foregroundStyle(Color.black.opacity(0.42))
+                .foregroundStyle(Color.black.opacity(0.44))
                 .frame(
                     width: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 46 : 42,
                     height: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 46 : 40
@@ -165,11 +234,13 @@ struct EntryComposer: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Collapse entry composer")
+        .accessibilityLabel("Close entry composer")
+        .accessibilityIdentifier("home.entryComposer.close")
     }
 
     private var saveButton: some View {
         Button {
+            debugLog("save tapped disabled=\(isDisabled) expanded=\(state == .focused) focus=\(isEntryFieldFocused) draft=\(draftSummary)")
             Task { await onSubmit() }
         } label: {
             HStack(spacing: 7) {
@@ -207,14 +278,17 @@ struct EntryComposer: View {
         .buttonStyle(.plain)
         .accessibilityLabel("Save entry")
         .accessibilityHint(accessibilityHint)
+        .accessibilityIdentifier("home.entryComposer.save")
     }
 
     private func focusComposer() {
         if state != .focused {
-            withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
-                state = .focused
-            }
+            debugLog("focus requested while collapsed; delegating open draft=\(draftSummary)")
+            onBeginEditing()
+            return
         }
+        debugLog("focus requested while expanded focusBefore=\(isEntryFieldFocused) draft=\(draftSummary)")
+        isEntryFieldFocused = true
     }
 
     private func handleDoubleTap() {
@@ -226,5 +300,10 @@ struct EntryComposer: View {
             return
         }
         text = clipboardText
+    }
+
+    private var draftSummary: String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return "isEmpty=\(trimmed.isEmpty) count=\(text.count)"
     }
 }

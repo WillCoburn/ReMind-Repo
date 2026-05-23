@@ -70,11 +70,47 @@ final class ReMindUITests: XCTestCase {
             XCTAssertLessThanOrEqual($0.frame.maxX, app.frame.maxX + 1)
         }
 
-        scrollUntilHittable(app.textViews["home.entryTextEditor"], in: scrollView, direction: .down)
+        let compactComposer = app.descendants(matching: .any)["home.entryComposer.compact"]
+        scrollUntilHittable(compactComposer, in: scrollView, direction: .down)
+        XCTAssertTrue(compactComposer.isHittable)
+        compactComposer.tap()
+
         let editor = app.textViews["home.entryTextEditor"]
-        XCTAssertTrue(editor.isHittable)
-        editor.tap()
+        XCTAssertTrue(editor.waitForExistence(timeout: 4))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
+    }
+
+    func testNewEntryComposerOpensAndClosesReliably() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-BrainMailDebugScreen", "main"]
+        app.launch()
+
+        let scrollView = app.scrollViews.firstMatch
+        XCTAssertTrue(scrollView.waitForExistence(timeout: 8))
+
+        let compactComposer = app.descendants(matching: .any)["home.entryComposer.compact"]
+        scrollUntilHittable(compactComposer, in: scrollView, direction: .down)
+        XCTAssertTrue(compactComposer.isHittable)
+
+        compactComposer.tap()
+
+        let editor = app.textViews["home.entryTextEditor"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 4))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
+        editor.typeText("Testing the new composer")
+
+        let close = app.buttons["home.entryComposer.close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 2))
+        close.tap()
+
+        XCTAssertTrue(compactComposer.waitForExistence(timeout: 4))
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.keyboards.firstMatch)
+        waitForExpectations(timeout: 4)
+
+        compactComposer.tap()
+        XCTAssertTrue(editor.waitForExistence(timeout: 4))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
+        editor.typeText(" again")
     }
 
     func testHelpSheetScrollsWithinBoundsForCurrentDynamicType() throws {

@@ -14,8 +14,9 @@ struct InspirationBankSheet: View {
     @State private var pendingReminder: InspirationReminder?
     @State private var showAddConfirmation = false
     @State private var addedReminderIDs: Set<String> = []
+    @State private var removedReminderIDs: Set<String> = []
+    @State private var busyReminderIDs: Set<String> = []
     @State private var toastMessage: String?
-    @State private var isAdding = false
 
     var body: some View {
         let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
@@ -47,16 +48,14 @@ struct InspirationBankSheet: View {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: usesAccessibilityLayout ? 14 : 12) {
                             ForEach(shuffledItems(in: selectedCategory)) { reminder in
+                                let isAdded = isReminderAlreadyInBank(reminder)
                                 InspirationReminderCard(
                                     reminder: reminder,
-                                    isAdded: isReminderAlreadyInBank(reminder),
-                                    isBusy: isAdding && pendingReminder?.id == reminder.id,
+                                    isAdded: isAdded,
+                                    isBusy: busyReminderIDs.contains(reminder.id),
                                     usesAccessibilityLayout: usesAccessibilityLayout,
-                                    onAdd: {
-                                        pendingReminder = reminder
-                                        withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
-                                            showAddConfirmation = true
-                                        }
+                                    onToggle: {
+                                        toggleReminder(reminder, isAdded: isAdded)
                                     }
                                 )
                             }
@@ -130,7 +129,10 @@ struct InspirationBankSheet: View {
     }
 
     private func isReminderAlreadyInBank(_ reminder: InspirationReminder) -> Bool {
-        addedReminderIDs.contains(reminder.id) || appVM.hasActiveEntryMatching(reminder.text)
+        if removedReminderIDs.contains(reminder.id) {
+            return false
+        }
+        return addedReminderIDs.contains(reminder.id) || appVM.hasActiveEntryMatching(reminder.text)
     }
 
     private func shuffledItems(in category: InspirationCategory) -> [InspirationReminder] {
@@ -156,24 +158,40 @@ struct InspirationBankSheet: View {
         withAnimation(.easeInOut(duration: 0.18)) {
             showAddConfirmation = false
         }
+        pendingReminder = nil
 
         Task {
             await addReminder(reminder)
         }
     }
 
+    private func toggleReminder(_ reminder: InspirationReminder, isAdded: Bool) {
+        guard !busyReminderIDs.contains(reminder.id) else { return }
+
+        if isAdded {
+            Task {
+                await removeReminder(reminder)
+            }
+        } else {
+            pendingReminder = reminder
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                showAddConfirmation = true
+            }
+        }
+    }
+
     private func addReminder(_ reminder: InspirationReminder) async {
-        guard !isAdding else { return }
-        isAdding = true
-        pendingReminder = reminder
+        guard beginReminderOperation(reminder) else { return }
         defer {
-            isAdding = false
-            pendingReminder = nil
+            endReminderOperation(reminder)
         }
 
         do {
             if appVM.hasActiveEntryMatching(reminder.text) {
-                addedReminderIDs.insert(reminder.id)
+                withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
+                    removedReminderIDs.remove(reminder.id)
+                    addedReminderIDs.insert(reminder.id)
+                }
                 showToast("Already in your bank")
                 return
             }
@@ -183,12 +201,58 @@ struct InspirationBankSheet: View {
                 source: "Inspiration Bank",
                 sourceCategory: reminder.category.rawValue
             )
-            addedReminderIDs.insert(reminder.id)
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
+                removedReminderIDs.remove(reminder.id)
+                addedReminderIDs.insert(reminder.id)
+            }
             Haptics.success()
             showToast("Added to your bank")
         } catch {
             showToast(error.localizedDescription)
         }
+    }
+
+    private func removeReminder(_ reminder: InspirationReminder) async {
+        guard beginReminderOperation(reminder) else { return }
+        let wasLocallyAdded = addedReminderIDs.contains(reminder.id)
+        let wasLocallyRemoved = removedReminderIDs.contains(reminder.id)
+
+        withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
+            addedReminderIDs.remove(reminder.id)
+            removedReminderIDs.insert(reminder.id)
+        }
+
+        defer {
+            endReminderOperation(reminder)
+        }
+
+        do {
+            if appVM.hasActiveEntryMatching(reminder.text) {
+                try await appVM.softDeleteReminderFromBank(LastReminder(text: reminder.text))
+            }
+            Haptics.success()
+            showToast("Removed from your bank")
+        } catch {
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
+                if wasLocallyAdded {
+                    addedReminderIDs.insert(reminder.id)
+                }
+                if !wasLocallyRemoved {
+                    removedReminderIDs.remove(reminder.id)
+                }
+            }
+            showToast(error.localizedDescription)
+        }
+    }
+
+    private func beginReminderOperation(_ reminder: InspirationReminder) -> Bool {
+        guard !busyReminderIDs.contains(reminder.id) else { return false }
+        busyReminderIDs.insert(reminder.id)
+        return true
+    }
+
+    private func endReminderOperation(_ reminder: InspirationReminder) {
+        busyReminderIDs.remove(reminder.id)
     }
 
     private func showToast(_ message: String) {
@@ -362,7 +426,7 @@ private struct InspirationReminderCard: View {
     let isAdded: Bool
     let isBusy: Bool
     let usesAccessibilityLayout: Bool
-    let onAdd: () -> Void
+    let onToggle: () -> Void
 
     var body: some View {
         Group {
@@ -431,7 +495,7 @@ private struct InspirationReminderCard: View {
     }
 
     private var addButton: some View {
-        Button(action: onAdd) {
+        Button(action: onToggle) {
             ZStack {
                 Circle()
                     .fill(isAdded ? Color.figmaBlue.opacity(0.12) : Color.figmaBlue)
@@ -449,8 +513,8 @@ private struct InspirationReminderCard: View {
             }
         }
         .buttonStyle(.plain)
-        .disabled(isAdded || isBusy)
-        .accessibilityLabel(isAdded ? "Already in your reminder bank" : "Add to reminder bank")
+        .disabled(isBusy)
+        .accessibilityLabel(isAdded ? "Remove from reminder bank" : "Add to reminder bank")
         .accessibilityIdentifier("inspiration.add.\(reminder.id)")
     }
 }

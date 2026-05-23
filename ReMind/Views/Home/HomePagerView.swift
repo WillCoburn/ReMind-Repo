@@ -23,8 +23,6 @@ struct HomePagerView: View {
         }
         // Snapchat-style horizontal paging
         .tabViewStyle(.page(indexDisplayMode: .never))
-        // Keep bottom overlays pinned even when the keyboard is visible
-           //.ignoresSafeArea(.keyboard, edges: .bottom)
         .ignoresSafeArea(edges: .horizontal)
     }
 }
