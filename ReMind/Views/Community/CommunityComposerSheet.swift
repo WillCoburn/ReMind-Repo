@@ -13,15 +13,21 @@ struct CommunityComposerSheet: View {
         ZStack {
             BrainMailComposeSheetBackground()
 
-            VStack(alignment: .leading, spacing: 16) {
-                BrainMailComposeInputBox(
+            VStack(alignment: .leading, spacing: 0) {
+                BrainMailComposeSheetHeader(
                     title: "Community note",
+                    subtitle: "Share something uplifting or meaningful with others."
+                )
+                .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 24 : 22)
+
+                BrainMailComposeInputBox(
                     text: $text,
                     placeholder: "Share something you found uplifting or meaningful...",
                     minHeight: 160,
                     accessibilityIdentifier: "community.compose.textEditor",
                     focus: $isTextEditorFocused
                 )
+                .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 18 : 16)
 
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "info.circle")
@@ -41,7 +47,7 @@ struct CommunityComposerSheet: View {
                 )
                 .cornerRadius(10)
 
-                Spacer(minLength: 0)
+                Spacer(minLength: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 24 : 20)
 
                 HStack(alignment: .center, spacing: 12) {
                     Button("Cancel") { dismiss() }
@@ -66,7 +72,9 @@ struct CommunityComposerSheet: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding()
+            .padding(.horizontal, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 28 : 24)
+            .padding(.top, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 44)
+            .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 22 : 18)
         }
         .presentationDragIndicator(.visible)
         .task {

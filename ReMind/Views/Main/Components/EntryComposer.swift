@@ -115,9 +115,14 @@ struct NewEntryComposerSheet: View {
         ZStack {
             BrainMailComposeSheetBackground()
 
-            VStack(alignment: .leading, spacing: 16) {
-                BrainMailComposeInputBox(
+            VStack(alignment: .leading, spacing: 0) {
+                BrainMailComposeSheetHeader(
                     title: "New entry",
+                    subtitle: "Write something you’d want to receive later."
+                )
+                .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 24 : 22)
+
+                BrainMailComposeInputBox(
                     text: $text,
                     placeholder: "What’s something worth remembering?",
                     minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 230 : 190,
@@ -130,9 +135,10 @@ struct NewEntryComposerSheet: View {
                         .font(.caption)
                         .foregroundStyle(Color.red.opacity(0.82))
                         .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 12)
                 }
 
-                Spacer(minLength: 0)
+                Spacer(minLength: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 24 : 20)
 
                 HStack(alignment: .center, spacing: 12) {
                     Button {
@@ -174,9 +180,9 @@ struct NewEntryComposerSheet: View {
                     .accessibilityIdentifier("home.entryComposer.sheet.save")
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
-            .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 20 : 16)
+            .padding(.horizontal, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 28 : 24)
+            .padding(.top, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 44)
+            .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 22 : 18)
         }
         .accessibilityIdentifier("home.entryComposer.sheet")
         .presentationDragIndicator(.visible)
@@ -207,24 +213,41 @@ struct BrainMailComposeSheetBackground: View {
     }
 }
 
+struct BrainMailComposeSheetHeader: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.black.opacity(0.84))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(subtitle)
+                .font(.subheadline)
+                .foregroundStyle(Color.black.opacity(0.5))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 struct BrainMailComposeInputBox: View {
     @Binding var text: String
 
-    let title: String
     let placeholder: String
     var minHeight: CGFloat = 160
     var accessibilityIdentifier: String
     var focus: FocusState<Bool>.Binding
 
     init(
-        title: String,
         text: Binding<String>,
         placeholder: String,
         minHeight: CGFloat = 160,
         accessibilityIdentifier: String,
         focus: FocusState<Bool>.Binding
     ) {
-        self.title = title
         self._text = text
         self.placeholder = placeholder
         self.minHeight = minHeight
@@ -233,43 +256,36 @@ struct BrainMailComposeInputBox: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.black.opacity(0.72))
-                .fixedSize(horizontal: false, vertical: true)
+        ZStack(alignment: .topLeading) {
+            TextEditor(text: $text)
+                .focused(focus)
+                .frame(minHeight: minHeight, alignment: .topLeading)
+                .padding(8)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+                .foregroundColor(.black)
+                .font(.body)
+                .textInputAutocapitalization(.sentences)
+                .accessibilityIdentifier(accessibilityIdentifier)
 
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $text)
-                    .focused(focus)
-                    .frame(minHeight: minHeight, alignment: .topLeading)
-                    .padding(8)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .foregroundColor(.black)
+            if text.isEmpty {
+                Text(placeholder)
+                    .foregroundColor(.gray)
                     .font(.body)
-                    .textInputAutocapitalization(.sentences)
-                    .accessibilityIdentifier(accessibilityIdentifier)
-
-                if text.isEmpty {
-                    Text(placeholder)
-                        .foregroundColor(.gray)
-                        .font(.body)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 16)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .allowsHitTesting(false)
-                }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 16)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .allowsHitTesting(false)
             }
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.gray.opacity(0.25), lineWidth: 1)
-                    )
-            )
         }
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                )
+        )
     }
 }
 
