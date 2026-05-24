@@ -10,125 +10,83 @@ struct CommunityComposerSheet: View {
     @FocusState private var isTextEditorFocused: Bool
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // Sheet background
-                Color.white
-                    .ignoresSafeArea()
+        ZStack {
+            BrainMailComposeSheetBackground()
 
-                Color.blue.opacity(0.04)
-                    .ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 16) {
+                BrainMailComposeInputBox(
+                    title: "Community note",
+                    text: $text,
+                    placeholder: "Share something you found uplifting or meaningful...",
+                    minHeight: 160,
+                    accessibilityIdentifier: "community.compose.textEditor",
+                    focus: $isTextEditorFocused
+                )
 
-                VStack(alignment: .leading, spacing: 16) {
-                TextEditor(text: $text)
-                        .frame(minHeight: 160)
-                        .padding(8)
-                        .scrollContentBackground(.hidden)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.gray.opacity(0.25), lineWidth: 1)
-                                )
-                                .compositingGroup()
-                        )
-                        .foregroundColor(.black)
-                        .font(.body)
-                        .focused($isTextEditorFocused)
-                        .overlay(alignment: .topLeading) {
-                            if text.isEmpty {
-                                Text("Share something you found uplifting or meaningful...")
-                                    .foregroundColor(.gray)
-                                    .font(.body)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 16)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "info.circle")
+                        .font(.title3)
+                        .foregroundColor(.gray)
 
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "info.circle")
-                            .font(.title3)
-                            .foregroundColor(.gray)
-
-                        Text("Community posts expire automatically after 7 days.\nAnything rude or offensive will result in a ban.")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(12)
-                    .background(
-                        Color.white // <-- ensures white base layer
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.gray.opacity(0.25), lineWidth: 1)
-                    )
-                    .cornerRadius(10)
-
-
+                    Text("Community posts expire automatically after 7 days.\nAnything rude or offensive will result in a ban.")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding()
-            }
-            .onAppear {
-                // Ask for focus as soon as this view appears
-                isTextEditorFocused = true
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(.black)
-                }
-                ToolbarItem(placement: .cancellationAction) {
+                .padding(12)
+                .background(Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                )
+                .cornerRadius(10)
+
+                Spacer(minLength: 0)
+
+                HStack(alignment: .center, spacing: 12) {
                     Button("Cancel") { dismiss() }
+                        .font(.subheadline.weight(.semibold))
                         .foregroundColor(.figmaBlue)
-                }
-                ToolbarItem(placement: .confirmationAction) {
+                        .frame(minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 50 : 44)
+                        .buttonStyle(.plain)
+
+                    Spacer(minLength: 12)
+
                     Button {
                         Task { await handleSubmit() }
                     } label: {
-                        HStack(spacing: 8) {
-                            if isSubmitting {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            }
-
-                            Text(isSubmitting ? "Posting…" : "Post")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 12 : 10)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.9)
-                        .background(
-                            Capsule()
-                                .fill(Color.figmaBlue)
+                        BrainMailComposePrimaryButtonLabel(
+                            title: "Post",
+                            loadingTitle: "Posting…",
+                            isLoading: isSubmitting,
+                            isDisabled: text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting
                         )
                     }
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting)
-                    .opacity((text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting) ? 0.5 : 1.0)
+                    .buttonStyle(.plain)
                 }
             }
-
-            .alert(
-                "Error",
-                isPresented: Binding(
-                    get: { errorMessage != nil },
-                    set: { if !$0 { errorMessage = nil } }
-                ),
-                actions: {
-                    Button("OK", role: .cancel) { errorMessage = nil }
-                },
-                message: {
-                    Text(errorMessage ?? "")
-                }
-            )
-            .brainMailDynamicTypeRange()
+            .padding()
         }
+        .presentationDragIndicator(.visible)
+        .task {
+            await Task.yield()
+            isTextEditorFocused = true
+        }
+        .alert(
+            "Error",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            ),
+            actions: {
+                Button("OK", role: .cancel) { errorMessage = nil }
+            },
+            message: {
+                Text(errorMessage ?? "")
+            }
+        )
+        .brainMailDynamicTypeRange()
     }
 
     private func handleSubmit() async {

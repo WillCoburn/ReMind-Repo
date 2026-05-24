@@ -99,9 +99,9 @@ final class ReMindUITests: XCTestCase {
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
         editor.typeText("Testing the new composer")
 
-        let close = app.buttons["home.entryComposer.close"]
-        XCTAssertTrue(close.waitForExistence(timeout: 2))
-        close.tap()
+        let cancel = app.buttons["home.entryComposer.sheet.cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 2))
+        cancel.tap()
 
         XCTAssertTrue(compactComposer.waitForExistence(timeout: 4))
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.keyboards.firstMatch)
