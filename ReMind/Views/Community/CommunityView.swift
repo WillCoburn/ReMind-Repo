@@ -128,10 +128,21 @@ struct CommunityView: View {
             Color.blue.opacity(0.04).ignoresSafeArea()
 
             if isLoading {
-                VStack(spacing: 20) {
-                    header
-                    ProgressView("Loading…")
-                        .foregroundColor(.black)
+                GeometryReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            header
+
+                            Spacer(minLength: 12)
+
+                            loadingCommunityState
+                                .padding(.horizontal, 28)
+
+                            Spacer(minLength: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 112 : 84)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: proxy.size.height)
+                    }
                 }
 
             } else if let errorMessage, !errorMessage.isEmpty {
@@ -257,6 +268,20 @@ struct CommunityView: View {
                     .foregroundColor(.palettePewter.opacity(0.82))
                     .multilineTextAlignment(.center)
             }
+        }
+        .frame(maxWidth: 380)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var loadingCommunityState: some View {
+        VStack(spacing: 16) {
+            CommunityTourIllustration()
+                .frame(maxWidth: 360)
+                .accessibilityHidden(true)
+
+            ProgressView("Loading…")
+                .font(.subheadline)
+                .foregroundColor(.palettePewter.opacity(0.82))
         }
         .frame(maxWidth: 380)
         .frame(maxWidth: .infinity)

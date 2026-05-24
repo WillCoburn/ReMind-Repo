@@ -15,7 +15,7 @@ struct ConsentAndAgreeBottom: View {
 
             // MARK: - Terms & Privacy links (underlined + figmaBlue)
             HStack(spacing: 4) {
-                Link(destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!) {
+                Link(destination: URL(string: "https://brainmailapp.github.io/BrainMail-site/terms.html")!) {
                     Text("Terms & Conditions")
                         .font(.footnote)
                         .foregroundColor(.figmaBlue)
@@ -26,7 +26,7 @@ struct ConsentAndAgreeBottom: View {
                     .font(.footnote)
                     .foregroundColor(.secondary)
 
-                Link(destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!) {
+                Link(destination: URL(string: "https://brainmailapp.github.io/BrainMail-site/privacy.html")!) {
                     Text("Privacy Policy")
                         .font(.footnote)
                         .foregroundColor(.figmaBlue)

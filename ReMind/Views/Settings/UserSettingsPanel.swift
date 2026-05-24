@@ -207,7 +207,7 @@ struct UserSettingsForm: View {
                 .environmentObject(appVM)
         }
         .sheet(isPresented: $showCommunityGuidelines) {
-            SafariView(url: URL(string: "https://re-mind-app.github.io/BrainMail-site/")!)
+            SafariView(url: URL(string: "https://brainmailapp.github.io/BrainMail-site/")!)
         }
         .onAppear {
             appVM.refreshRevenueCatEntitlement(reason: "settingsAppear")

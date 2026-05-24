@@ -120,28 +120,40 @@ test("stale 3-entry onboarding and unlock copy is absent from first-time UI file
   }
 });
 
-test("entry composer uses explicit focus-mode state instead of keyboard height math", () => {
+test("entry composer uses native sheet focus instead of keyboard height math", () => {
   const composer = readRepoFile("ReMind/Views/Main/Components/EntryComposer.swift");
   const main = readRepoFile("ReMind/Views/Main/MainView.swift");
 
-  assert.match(composer, /enum ComposerState:\s*Equatable\s*\{[\s\S]*case collapsed[\s\S]*case focused/);
-  assert.match(composer, /@Binding var state:\s*ComposerState/);
-  assert.match(main, /@State private var composerState:\s*ComposerState = \.collapsed/);
-  assert.match(main, /let isComposing = composerState == \.focused/);
-  assert.doesNotMatch(main, /let isComposing = isEntryFieldFocused/);
-  assert.match(main, /keyboardWillHideNotification/);
-  assert.match(main, /collapseComposer\(\)/);
+  assert.match(composer, /struct NewEntryComposerSheet:\s*View/);
+  assert.match(composer, /@FocusState private var isTextEditorFocused:\s*Bool/);
+  assert.match(composer, /\.task\s*\{[\s\S]*isTextEditorFocused = true/);
+  assert.match(main, /private enum ActiveHomeSheet:[\s\S]*case newEntry/);
+  assert.match(main, /\.sheet\(item:\s*\$activeHomeSheet\)/);
+  assert.match(main, /case \.newEntry:[\s\S]*NewEntryComposerSheet\(/);
+  assert.match(main, /private func presentEntrySheet\(\)[\s\S]*activeHomeSheet = \.newEntry/);
   assert.doesNotMatch(main, /keyboardFrame|keyboardHeight|keyboardFrameEndUserInfoKey/);
+  assert.doesNotMatch(composer, /keyboardFrame|keyboardHeight|keyboardFrameEndUserInfoKey/);
 });
 
-test("entry composer removes transactional cancel control and keeps save inside writing surface", () => {
+test("entry composer keeps compact tap card and clean native sheet actions", () => {
   const composer = readRepoFile("ReMind/Views/Main/Components/EntryComposer.swift");
 
   assert.match(composer, /Text\("New entry"\)/);
   assert.match(composer, /Tap to write to future you\.\.\./);
-  assert.match(composer, /Hey future me\.\.\./);
+  assert.match(composer, /placeholder:\s*""/);
+  assert.doesNotMatch(
+    composer,
+    new RegExp([
+      ["What.s", "something", "worth", "remembering"].join(" "),
+      ["What.s", "soemthing", "worth", "remembereing"].join(" "),
+    ].join("|"))
+  );
+  assert.doesNotMatch(
+    composer,
+    new RegExp(["Write", "something", "you.d", "want", "to", "receive", "later"].join(" "))
+  );
   assert.match(composer, /writingSurfaceBackground/);
-  assert.match(composer, /saveButton\(isExpanded:/);
-  assert.match(composer, /accessibilityLabel\("Save entry"\)/);
-  assert.doesNotMatch(composer, /cancelButton|onCancel|Cancel reminder|Label\("Cancel"/);
+  assert.match(composer, /BrainMailComposePrimaryButtonLabel\([\s\S]*title: "Save"/);
+  assert.match(composer, /Text\("Cancel"\)/);
+  assert.doesNotMatch(composer, /cancelButton|Cancel reminder|Label\("Cancel"/);
 });

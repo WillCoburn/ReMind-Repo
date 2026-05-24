@@ -190,7 +190,7 @@ struct PhoneEntryScreen: View {
     }
 
     private var termsLink: some View {
-        Link("Terms", destination: URL(string: "https://re-mind-app.github.io/remind-site/terms.html")!)
+        Link("Terms", destination: URL(string: "https://brainmailapp.github.io/BrainMail-site/terms.html")!)
             .font(.footnote.weight(.medium))
             .foregroundStyle(Color.figmaBlue.opacity(0.78))
             .tint(Color.figmaBlue.opacity(0.78))
@@ -199,7 +199,7 @@ struct PhoneEntryScreen: View {
     }
 
     private var privacyLink: some View {
-        Link("Privacy", destination: URL(string: "https://re-mind-app.github.io/remind-site/privacy.html")!)
+        Link("Privacy", destination: URL(string: "https://brainmailapp.github.io/BrainMail-site/privacy.html")!)
             .font(.footnote.weight(.medium))
             .foregroundStyle(Color.figmaBlue.opacity(0.78))
             .tint(Color.figmaBlue.opacity(0.78))

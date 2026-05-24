@@ -15,8 +15,7 @@ struct CommunityComposerSheet: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 BrainMailComposeSheetHeader(
-                    title: "Community note",
-                    subtitle: "Share something uplifting or meaningful with others."
+                    title: "Community note"
                 )
                 .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 24 : 22)
 

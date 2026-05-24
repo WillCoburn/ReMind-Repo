@@ -117,14 +117,13 @@ struct NewEntryComposerSheet: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 BrainMailComposeSheetHeader(
-                    title: "New entry",
-                    subtitle: "Write something you’d want to receive later."
+                    title: "New entry"
                 )
                 .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 24 : 22)
 
                 BrainMailComposeInputBox(
                     text: $text,
-                    placeholder: "What’s something worth remembering?",
+                    placeholder: "",
                     minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 230 : 190,
                     accessibilityIdentifier: "home.entryTextEditor",
                     focus: $isTextEditorFocused
@@ -215,20 +214,12 @@ struct BrainMailComposeSheetBackground: View {
 
 struct BrainMailComposeSheetHeader: View {
     let title: String
-    let subtitle: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text(title)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(Color.black.opacity(0.84))
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(Color.black.opacity(0.5))
-                .fixedSize(horizontal: false, vertical: true)
-        }
+        Text(title)
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(Color.black.opacity(0.84))
+            .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -268,7 +259,7 @@ struct BrainMailComposeInputBox: View {
                 .textInputAutocapitalization(.sentences)
                 .accessibilityIdentifier(accessibilityIdentifier)
 
-            if text.isEmpty {
+            if text.isEmpty, !placeholder.isEmpty {
                 Text(placeholder)
                     .foregroundColor(.gray)
                     .font(.body)

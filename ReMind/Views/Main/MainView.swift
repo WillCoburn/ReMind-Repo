@@ -1016,7 +1016,6 @@ private struct HelpGuideSheet: View {
                         HelpSectionCard(title: "What is this app?", systemImage: "sparkles") {
                             VStack(alignment: .leading, spacing: 10) {
                                 HelpBodyText("BrainMail is a tool for focusing on healthy thoughts.")
-                                HelpBodyText("Save your first thought and BrainMail can start reminding you. Add more over time to make your reminders feel more varied.")
                             }
                         }
 

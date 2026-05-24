@@ -213,7 +213,7 @@ struct RightPanelPlaceholderView: View {
             case .paywall:
                 SubscriptionSheet()
             case .communityGuidelines:
-                SafariView(url: URL(string: "https://re-mind-app.github.io/BrainMail-site/")!)
+                SafariView(url: URL(string: "https://brainmailapp.github.io/BrainMail-site/")!)
             }
         }
         .alert(
