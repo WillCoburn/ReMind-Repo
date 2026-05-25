@@ -38,31 +38,42 @@ struct MainView: View {
     var body: some View {
         let count = appVM.activeEntries.count
 
-        GeometryReader { proxy in
-            let safeTop = max(proxy.safeAreaInsets.top, 16)
-            let safeBottom = max(proxy.safeAreaInsets.bottom, 16)
-            let viewportWidth = max(proxy.size.width, 1)
-            let topContentWidth = constrainedTopContentWidth(for: viewportWidth)
-            let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
-            let entryInputHeight = entryInputHeight(
-                usesAccessibilityLayout: usesAccessibilityLayout
-            )
+        ZStack {
+            if isComposing {
+                FullScreenNewEntryComposer(
+                    text: $input,
+                    isSubmitting: $isSubmitting,
+                    isNetworkConnected: net.isConnected,
+                    onCancel: cancelEntryComposer,
+                    onSave: saveEntry
+                )
+                .transition(.opacity)
+            } else {
+                GeometryReader { proxy in
+                    let safeTop = max(proxy.safeAreaInsets.top, 16)
+                    let safeBottom = max(proxy.safeAreaInsets.bottom, 16)
+                    let viewportWidth = max(proxy.size.width, 1)
+                    let topContentWidth = constrainedTopContentWidth(for: viewportWidth)
+                    let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
+                    let entryInputHeight = entryInputHeight(
+                        usesAccessibilityLayout: usesAccessibilityLayout
+                    )
 
-            closedHomeLayout(
-                count: count,
-                safeTop: safeTop,
-                safeBottom: safeBottom,
-                viewportWidth: viewportWidth,
-                topContentWidth: topContentWidth,
-                usesAccessibilityLayout: usesAccessibilityLayout,
-                entryInputHeight: entryInputHeight
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .blur(radius: isComposing ? 1.4 : 0)
-            .scaleEffect(isComposing ? 0.995 : 1)
-            .allowsHitTesting(!isComposing)
-            .animation(.easeInOut(duration: 0.18), value: isComposing)
+                    closedHomeLayout(
+                        count: count,
+                        safeTop: safeTop,
+                        safeBottom: safeBottom,
+                        viewportWidth: viewportWidth,
+                        topContentWidth: topContentWidth,
+                        usesAccessibilityLayout: usesAccessibilityLayout,
+                        entryInputHeight: entryInputHeight
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                }
+                .transition(.opacity)
+            }
         }
+        .animation(.easeInOut(duration: 0.18), value: isComposing)
         .background {
             OnboardingBackgroundView()
                 .ignoresSafeArea(.all)
@@ -123,38 +134,22 @@ struct MainView: View {
             .toolbar(.hidden, for: .navigationBar)
             .brainMailDynamicTypeRange()
             .overlay {
-                ZStack {
-                    if isComposing {
-                        NewEntryComposerOverlay(
-                            text: $input,
-                            isSubmitting: $isSubmitting,
-                            isNetworkConnected: net.isConnected,
-                            onCancel: cancelEntryComposer,
-                            onSave: saveEntry
-                        )
-                        .transition(.opacity)
-                        .zIndex(1)
-                    }
-
-                    if showDeleteReminderConfirmation, let pendingDeleteReminder {
-                        BrainMailConfirmationOverlay(
-                            title: "Are you sure you want to remove this reminder from your bank?",
-                            message: "",
-                            confirmTitle: "Yes, delete",
-                            cancelTitle: "Cancel",
-                            symbolName: "trash",
-                            onConfirm: {
-                                confirmDeleteReminder(pendingDeleteReminder)
-                            },
-                            onCancel: cancelDeleteReminder
-                        )
-                        .transition(.opacity)
-                        .zIndex(2)
-                    }
+                if showDeleteReminderConfirmation, let pendingDeleteReminder {
+                    BrainMailConfirmationOverlay(
+                        title: "Are you sure you want to remove this reminder from your bank?",
+                        message: "",
+                        confirmTitle: "Yes, delete",
+                        cancelTitle: "Cancel",
+                        symbolName: "trash",
+                        onConfirm: {
+                            confirmDeleteReminder(pendingDeleteReminder)
+                        },
+                        onCancel: cancelDeleteReminder
+                    )
+                    .transition(.opacity)
                 }
-                .animation(.spring(response: 0.34, dampingFraction: 0.88), value: isComposing)
-                .animation(.easeInOut(duration: 0.18), value: showDeleteReminderConfirmation)
             }
+            .animation(.easeInOut(duration: 0.18), value: showDeleteReminderConfirmation)
     }
 
     private var logoHeader: some View {
@@ -679,7 +674,7 @@ struct MainView: View {
 
     private func presentEntryComposer() {
         guard !isComposing, activeHomeSheet == nil else { return }
-        withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
+        withAnimation(.easeInOut(duration: 0.18)) {
             isComposing = true
         }
     }
@@ -695,7 +690,7 @@ struct MainView: View {
 
         hideKeyboard()
         if isComposing {
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+            withAnimation(.easeInOut(duration: 0.18)) {
                 isComposing = false
             }
         }

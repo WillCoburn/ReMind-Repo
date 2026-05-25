@@ -14,7 +14,7 @@ The project was originally called ReMind in code and bundle identifiers. Product
 
 - Onboarding: user enters a phone number, agrees to receive texts, completes SMS code verification, and gets a Firebase Auth session.
 - Main screen: user sees the most recent received reminder, adds new entries to their private bank, opens Send One Now, exports, help, and the Inspiration Bank.
-- New entry: the compact home card opens a native sheet. The sheet uses a shared BrainMail compose input style and saves through `AppViewModel.submit(text:)`.
+- New entry: the compact home card expands into an inline editor on the main screen and saves through `AppViewModel.submit(text:)`.
 - Automatic reminders: backend scheduling picks sendable entries and sends them by SMS according to user settings.
 - Send One Now: user manually triggers one SMS reminder immediately through a callable Cloud Function.
 - Community: user reads short uplifting posts, creates a community note, likes, reports, opens threads, and replies.
@@ -139,15 +139,15 @@ Important supporting components:
 Current new-entry behavior:
 
 - The home screen shows a compact "New entry" card.
-- Tapping it opens a stable native sheet, not a custom matched-geometry overlay.
-- `NewEntryComposerSheet` owns focus for the `TextEditor`.
-- Cancel dismisses the sheet.
+- Tapping it expands the same card into an inline `TextEditor`, not a sheet or custom overlay.
+- `EntryComposer` owns focus for its inline editor and `MainView` uses `ScrollViewReader` to keep the card comfortably visible.
+- Cancel clears the draft and collapses the card.
 - Save calls the existing `AppViewModel.submit(text:)` path.
-- The input sheet deliberately avoids custom keyboard offset math.
+- Normal SwiftUI viewport resizing and scrolling handle the keyboard; the composer deliberately avoids custom keyboard offset math.
 
 Recent caution:
 
-- Several experiments around inline expansion/custom overlays made keyboard behavior fragile. The current direction is native sheets with shared compose styling. Avoid reintroducing custom keyboard-height-driven layout, matched geometry compose overlays, or competing focus systems unless there is a very strong reason.
+- Previous native sheet and animated overlay experiments felt disconnected or fragile. Keep the main entry flow inline and avoid custom keyboard-height-driven layout, matched geometry compose overlays, or competing focus systems unless there is a very strong reason.
 
 ## Settings / Stats / Right Panel
 
@@ -324,8 +324,8 @@ Community illustration:
 New entry composer:
 
 - Compact home card stays concise.
-- Native sheet contains title, input, Cancel, Save.
-- Avoid background placeholder copy in the main entry sheet unless intentionally reintroduced.
+- The same card expands inline to contain title, input, Cancel, and Save.
+- Inline placeholder copy is "What’s something worth remembering?".
 
 ## Known Architectural Pitfalls
 

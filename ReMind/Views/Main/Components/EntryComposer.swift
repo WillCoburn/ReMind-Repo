@@ -94,132 +94,116 @@ struct EntryComposer: View {
     }
 }
 
-struct NewEntryComposerOverlay: View {
+struct FullScreenNewEntryComposer: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @Binding var text: String
     @Binding var isSubmitting: Bool
 
-    var isNetworkConnected: Bool
+    let isNetworkConnected: Bool
     var onCancel: () -> Void
     var onSave: () async -> Bool
 
     @FocusState private var isTextEditorFocused: Bool
-    @State private var hasSettled = false
+
+    private var usesAccessibilityLayout: Bool {
+        dynamicTypeSize.brainMailUsesAccessibilityLayout
+    }
 
     private var isSaveDisabled: Bool {
         isSubmitting || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !isNetworkConnected
     }
 
     var body: some View {
-        GeometryReader { proxy in
-            let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
-            let layout = NewEntryOverlayLayout(
-                containerSize: proxy.size,
-                safeAreaInsets: proxy.safeAreaInsets,
-                usesAccessibilityLayout: usesAccessibilityLayout
-            )
-
-            ZStack(alignment: .top) {
-                Color.black.opacity(0.18)
-                    .ignoresSafeArea()
-                    .contentShape(Rectangle())
-                    .onTapGesture { }
-                    .accessibilityHidden(true)
-
-                composerCard(
-                    layout: layout,
-                    usesAccessibilityLayout: usesAccessibilityLayout
-                )
-                .frame(width: layout.cardWidth)
-                .frame(
-                    minHeight: layout.cardMinHeight,
-                    idealHeight: layout.cardIdealHeight,
-                    maxHeight: layout.cardMaxHeight,
-                    alignment: .topLeading
-                )
-                .padding(.top, layout.topPadding)
-                .scaleEffect(hasSettled ? 1 : 0.9, anchor: .top)
-                .opacity(hasSettled ? 1 : 0)
-                .offset(y: hasSettled ? 0 : -10)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        ViewThatFits(in: .vertical) {
+            expandedComposer
+            constrainedComposer
         }
-        .accessibilityIdentifier("home.entryComposer.overlay")
-        .onAppear {
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
-                hasSettled = true
-            }
-        }
+        .padding(.horizontal, usesAccessibilityLayout ? 14 : 12)
+        .padding(.vertical, usesAccessibilityLayout ? 14 : 10)
+        .frame(maxWidth: 600, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home.entryComposer.fullScreen")
         .task {
-            try? await Task.sleep(nanoseconds: 190_000_000)
+            try? await Task.sleep(nanoseconds: 120_000_000)
             guard !Task.isCancelled else { return }
-            await MainActor.run {
-                isTextEditorFocused = true
-            }
+            isTextEditorFocused = true
         }
         .onDisappear {
             isTextEditorFocused = false
-            hasSettled = false
         }
         .brainMailDynamicTypeRange()
     }
 
-    private func composerCard(
-        layout: NewEntryOverlayLayout,
-        usesAccessibilityLayout: Bool
-    ) -> some View {
-        VStack(alignment: .leading, spacing: layout.verticalSpacing) {
-            Text("New entry")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(Color.black.opacity(0.78))
-                .lineLimit(usesAccessibilityLayout ? 2 : 1)
-                .minimumScaleFactor(usesAccessibilityLayout ? 0.9 : 0.86)
-                .fixedSize(horizontal: false, vertical: true)
+    private var expandedComposer: some View {
+        composerSurface {
+            VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 18 : 16) {
+                header
 
-            ExpandingEntryEditor(
-                text: $text,
-                placeholder: "What’s something worth remembering?",
-                minHeight: layout.editorMinHeight,
-                accessibilityIdentifier: "home.entryTextEditor",
-                focus: $isTextEditorFocused
-            )
-            .layoutPriority(1)
-
-            if !isNetworkConnected {
-                Text("Connect to the internet to save.")
-                    .font(.caption)
-                    .foregroundStyle(Color.red.opacity(0.82))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.opacity)
-            }
-
-            Spacer(minLength: layout.actionTopSpacing)
-
-            actionRow(usesAccessibilityLayout: usesAccessibilityLayout)
-                .layoutPriority(2)
-        }
-        .padding(.horizontal, layout.horizontalPadding)
-        .padding(.top, layout.topContentPadding)
-        .padding(.bottom, layout.bottomContentPadding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white.opacity(0.72))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.78), lineWidth: 1)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(0.10), lineWidth: 1)
+                entryEditor(
+                    minHeight: usesAccessibilityLayout ? 132 : 148,
+                    fillsAvailableSpace: true
                 )
-        )
-        .shadow(color: Color.black.opacity(0.10), radius: 24, x: 0, y: 14)
-        .accessibilityElement(children: .contain)
+                .layoutPriority(1)
+
+                connectionMessage
+
+                actionRow
+            }
+        }
     }
 
-    private func actionRow(usesAccessibilityLayout: Bool) -> some View {
+    private var constrainedComposer: some View {
+        composerSurface {
+            VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 14 : 12) {
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 18 : 16) {
+                        header
+
+                        entryEditor(
+                            minHeight: usesAccessibilityLayout ? 126 : 112,
+                            fillsAvailableSpace: false
+                        )
+
+                        connectionMessage
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .layoutPriority(1)
+
+                actionRow
+            }
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 10 : 8) {
+            Text("New entry")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.black.opacity(0.80))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("Write something you'd want to receive later.")
+                .font(.subheadline)
+                .foregroundStyle(Color.black.opacity(0.52))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var connectionMessage: some View {
+        if !isNetworkConnected {
+            Text("Connect to the internet to save.")
+                .font(.caption)
+                .foregroundStyle(Color.red.opacity(0.82))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var actionRow: some View {
         HStack(alignment: .center, spacing: 12) {
             Button {
                 isTextEditorFocused = false
@@ -234,7 +218,7 @@ struct NewEntryComposerOverlay: View {
                     .frame(minHeight: usesAccessibilityLayout ? 50 : 44)
             }
             .buttonStyle(.plain)
-            .accessibilityIdentifier("home.entryComposer.overlay.cancel")
+            .accessibilityIdentifier("home.entryComposer.fullScreen.cancel")
 
             Spacer(minLength: 12)
 
@@ -256,80 +240,26 @@ struct NewEntryComposerOverlay: View {
             }
             .disabled(isSaveDisabled)
             .buttonStyle(.plain)
-            .accessibilityIdentifier("home.entryComposer.overlay.save")
+            .accessibilityIdentifier("home.entryComposer.fullScreen.save")
         }
     }
-}
 
-private struct NewEntryOverlayLayout {
-    let cardWidth: CGFloat
-    let cardMinHeight: CGFloat
-    let cardIdealHeight: CGFloat
-    let cardMaxHeight: CGFloat
-    let editorMinHeight: CGFloat
-    let topPadding: CGFloat
-    let horizontalPadding: CGFloat
-    let topContentPadding: CGFloat
-    let bottomContentPadding: CGFloat
-    let verticalSpacing: CGFloat
-    let actionTopSpacing: CGFloat
-
-    init(
-        containerSize: CGSize,
-        safeAreaInsets: EdgeInsets,
-        usesAccessibilityLayout: Bool
-    ) {
-        let width = max(containerSize.width, 1)
-        let height = max(containerSize.height, 1)
-        let horizontalMargin = min(max(width * 0.06, 18), usesAccessibilityLayout ? 30 : 28)
-        let maxCardWidth: CGFloat = usesAccessibilityLayout ? 560 : 500
-        cardWidth = min(maxCardWidth, max(width - horizontalMargin * 2, 1))
-
-        let safeTop = max(safeAreaInsets.top, 0)
-        let safeBottom = max(safeAreaInsets.bottom, 0)
-        topPadding = safeTop + min(max(width * 0.06, 18), usesAccessibilityLayout ? 28 : 30)
-
-        let usableHeight = max(height - safeTop - safeBottom, 1)
-        let bottomBreathingRoom = max(safeBottom, usesAccessibilityLayout ? 14 : 18)
-        let fittingHeight = max(height - topPadding - bottomBreathingRoom, 1)
-        let preferredMaxHeight = usableHeight * (usesAccessibilityLayout ? 0.78 : 0.66)
-        let minimumUsefulMaxHeight = usableHeight * (usesAccessibilityLayout ? 0.58 : 0.52)
-        cardMaxHeight = max(1, min(fittingHeight, max(preferredMaxHeight, minimumUsefulMaxHeight)))
-        cardIdealHeight = max(1, min(cardMaxHeight, usableHeight * (usesAccessibilityLayout ? 0.70 : 0.60)))
-        cardMinHeight = max(1, min(cardIdealHeight, cardMaxHeight * (usesAccessibilityLayout ? 0.80 : 0.76)))
-        editorMinHeight = max(1, cardMaxHeight * (usesAccessibilityLayout ? 0.26 : 0.30))
-
-        horizontalPadding = min(max(cardWidth * 0.07, 18), usesAccessibilityLayout ? 28 : 24)
-        topContentPadding = usesAccessibilityLayout ? 24 : 22
-        bottomContentPadding = usesAccessibilityLayout ? 20 : 18
-        verticalSpacing = usesAccessibilityLayout ? 14 : 12
-        actionTopSpacing = usesAccessibilityLayout ? 12 : 10
-    }
-}
-
-private struct ExpandingEntryEditor: View {
-    @Binding var text: String
-
-    let placeholder: String
-    let minHeight: CGFloat
-    let accessibilityIdentifier: String
-    var focus: FocusState<Bool>.Binding
-
-    var body: some View {
+    private func entryEditor(minHeight: CGFloat, fillsAvailableSpace: Bool) -> some View {
         ZStack(alignment: .topLeading) {
             TextEditor(text: $text)
-                .focused(focus)
-                .frame(minHeight: minHeight, maxHeight: .infinity, alignment: .topLeading)
+                .focused($isTextEditorFocused)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(10)
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
                 .foregroundColor(.black)
                 .font(.body)
                 .textInputAutocapitalization(.sentences)
-                .accessibilityIdentifier(accessibilityIdentifier)
+                .accessibilityLabel("New entry")
+                .accessibilityIdentifier("home.entryTextEditor")
 
             if text.isEmpty {
-                Text(placeholder)
+                Text("What’s something worth remembering?")
                     .font(.body)
                     .foregroundStyle(Color.black.opacity(0.36))
                     .fixedSize(horizontal: false, vertical: true)
@@ -338,123 +268,41 @@ private struct ExpandingEntryEditor: View {
                     .allowsHitTesting(false)
             }
         }
-        .frame(minHeight: minHeight, maxHeight: .infinity, alignment: .topLeading)
+        .frame(
+            minHeight: minHeight,
+            idealHeight: fillsAvailableSpace ? nil : minHeight + 34,
+            maxHeight: fillsAvailableSpace ? .infinity : nil,
+            alignment: .topLeading
+        )
         .background(
-            RoundedRectangle(cornerRadius: 17, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(Color.white.opacity(0.52))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 17, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.figmaBlue.opacity(text.isEmpty ? 0.06 : 0.10), lineWidth: 1)
                 )
-                .shadow(color: Color.black.opacity(0.025), radius: 7, x: 0, y: 3)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
-    }
-}
-
-struct NewEntryComposerSheet: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    @Binding var text: String
-    @Binding var isSubmitting: Bool
-
-    var isNetworkConnected: Bool
-    var onCancel: () -> Void
-    var onSave: () async -> Bool
-
-    @FocusState private var isTextEditorFocused: Bool
-    @State private var handledDismissal = false
-
-    private var isSaveDisabled: Bool {
-        isSubmitting || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !isNetworkConnected
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
-    var body: some View {
-        ZStack {
-            BrainMailComposeSheetBackground()
-
-            VStack(alignment: .leading, spacing: 0) {
-                BrainMailComposeSheetHeader(
-                    title: "New entry"
-                )
-                .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 24 : 22)
-
-                BrainMailComposeInputBox(
-                    text: $text,
-                    placeholder: "",
-                    minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 230 : 190,
-                    accessibilityIdentifier: "home.entryTextEditor",
-                    focus: $isTextEditorFocused
-                )
-
-                if !isNetworkConnected {
-                    Text("Connect to the internet to save.")
-                        .font(.caption)
-                        .foregroundStyle(Color.red.opacity(0.82))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 12)
-                }
-
-                Spacer(minLength: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 24 : 20)
-
-                HStack(alignment: .center, spacing: 12) {
-                    Button {
-                        handledDismissal = true
-                        isTextEditorFocused = false
-                        onCancel()
-                    } label: {
-                        Text("Cancel")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.figmaBlue.opacity(0.86))
-                            .padding(.horizontal, 4)
-                            .frame(minHeight: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 50 : 44)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("home.entryComposer.sheet.cancel")
-
-                    Spacer(minLength: 12)
-
-                    Button {
-                        guard !isSaveDisabled else { return }
-                        handledDismissal = true
-                        Task {
-                            let didSave = await onSave()
-                            if !didSave {
-                                handledDismissal = false
-                                isTextEditorFocused = true
-                            }
-                        }
-                    } label: {
-                        BrainMailComposePrimaryButtonLabel(
-                            title: "Save",
-                            loadingTitle: "Saving…",
-                            isLoading: isSubmitting,
-                            isDisabled: isSaveDisabled
-                        )
-                    }
-                    .disabled(isSaveDisabled)
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("home.entryComposer.sheet.save")
-                }
-            }
-            .padding(.horizontal, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 28 : 24)
-            .padding(.top, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 48 : 44)
-            .padding(.bottom, dynamicTypeSize.brainMailUsesAccessibilityLayout ? 22 : 18)
-        }
-        .accessibilityIdentifier("home.entryComposer.sheet")
-        .presentationDragIndicator(.visible)
-        .task {
-            await Task.yield()
-            guard !handledDismissal else { return }
-            isTextEditorFocused = true
-        }
-        .onDisappear {
-            isTextEditorFocused = false
-            if !handledDismissal {
-                onCancel()
-            }
-        }
-        .brainMailDynamicTypeRange()
+    private func composerSurface<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(.horizontal, usesAccessibilityLayout ? 22 : 20)
+            .padding(.vertical, usesAccessibilityLayout ? 24 : 20)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(Color.white.opacity(0.66))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(Color.white.opacity(0.78), lineWidth: 1)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .stroke(Color.figmaBlue.opacity(0.08), lineWidth: 1)
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.045), radius: 18, x: 0, y: 8)
     }
 }
 

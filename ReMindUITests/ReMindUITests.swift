@@ -75,9 +75,18 @@ final class ReMindUITests: XCTestCase {
         XCTAssertTrue(compactComposer.isHittable)
         compactComposer.tap()
 
+        let fullScreenComposer = app.descendants(matching: .any)["home.entryComposer.fullScreen"]
         let editor = app.textViews["home.entryTextEditor"]
+        let cancel = app.buttons["home.entryComposer.fullScreen.cancel"]
+        XCTAssertTrue(fullScreenComposer.waitForExistence(timeout: 4))
         XCTAssertTrue(editor.waitForExistence(timeout: 4))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
+        XCTAssertFalse(compactComposer.exists)
+        XCTAssertFalse(app.staticTexts["Most recent reminder"].exists)
+        XCTAssertFalse(app.buttons["home.action.Help"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["home.entryComposer.overlay"].exists)
+        XCTAssertEqual(app.sheets.count, 0)
+        assertEventuallyAboveKeyboard(cancel, keyboard: app.keyboards.firstMatch)
     }
 
     func testNewEntryComposerOpensAndClosesReliably() throws {
@@ -94,12 +103,23 @@ final class ReMindUITests: XCTestCase {
 
         compactComposer.tap()
 
+        let fullScreenComposer = app.descendants(matching: .any)["home.entryComposer.fullScreen"]
         let editor = app.textViews["home.entryTextEditor"]
+        let save = app.buttons["home.entryComposer.fullScreen.save"]
+        XCTAssertTrue(fullScreenComposer.waitForExistence(timeout: 4))
         XCTAssertTrue(editor.waitForExistence(timeout: 4))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
+        XCTAssertFalse(compactComposer.exists)
+        XCTAssertFalse(app.staticTexts["Most recent reminder"].exists)
+        XCTAssertFalse(app.buttons["home.action.Help"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["home.entryComposer.overlay"].exists)
+        XCTAssertEqual(app.sheets.count, 0)
+        assertEventuallyAboveKeyboard(save, keyboard: app.keyboards.firstMatch)
+        XCTAssertFalse(save.isEnabled)
         editor.typeText("Testing the new composer")
+        XCTAssertTrue(save.isEnabled)
 
-        let cancel = app.buttons["home.entryComposer.overlay.cancel"]
+        let cancel = app.buttons["home.entryComposer.fullScreen.cancel"]
         XCTAssertTrue(cancel.waitForExistence(timeout: 2))
         cancel.tap()
 
@@ -111,7 +131,37 @@ final class ReMindUITests: XCTestCase {
         compactComposer.tap()
         XCTAssertTrue(editor.waitForExistence(timeout: 4))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
+        XCTAssertFalse((editor.value as? String ?? "").contains("Testing the new composer"))
         editor.typeText(" again")
+    }
+
+    func testNewEntryComposerRemainsUsableWithLargeDynamicType() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-BrainMailDebugScreen", "main",
+            "-UIPreferredContentSizeCategoryName", UIContentSizeCategory.accessibilityExtraExtraLarge.rawValue
+        ]
+        app.launch()
+
+        let scrollView = app.scrollViews.firstMatch
+        XCTAssertTrue(scrollView.waitForExistence(timeout: 8))
+
+        let compactComposer = app.descendants(matching: .any)["home.entryComposer.compact"]
+        scrollUntilTappable(compactComposer, in: scrollView, app: app)
+        XCTAssertTrue(compactComposer.isHittable)
+        compactComposer.tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["home.entryComposer.fullScreen"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.textViews["home.entryTextEditor"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
+        XCTAssertEqual(app.sheets.count, 0)
+
+        let cancel = app.buttons["home.entryComposer.fullScreen.cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 4))
+        assertEventuallyAboveKeyboard(cancel, keyboard: app.keyboards.firstMatch)
+        XCTAssertTrue(cancel.isHittable)
+        cancel.tap()
+        XCTAssertTrue(compactComposer.waitForExistence(timeout: 4))
     }
 
     func testHelpSheetScrollsWithinBoundsForCurrentDynamicType() throws {
@@ -304,6 +354,20 @@ final class ReMindUITests: XCTestCase {
         line: UInt = #line
     ) {
         XCTAssertLessThanOrEqual(abs(lhs - rhs), tolerance, message, file: file, line: line)
+    }
+
+    private func assertEventuallyAboveKeyboard(
+        _ element: XCUIElement,
+        keyboard: XCUIElement,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let predicate = NSPredicate { _, _ in
+            element.exists && keyboard.exists && element.frame.maxY <= keyboard.frame.minY + 1
+        }
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        let result = XCTWaiter.wait(for: [expectation], timeout: 4)
+        XCTAssertEqual(result, .completed, "Composer actions should settle above the keyboard.", file: file, line: line)
     }
 
     func testLaunchPerformance() throws {
