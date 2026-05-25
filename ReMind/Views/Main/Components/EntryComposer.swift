@@ -3,6 +3,25 @@
 // ============================================
 import SwiftUI
 
+private struct BrainMailEntryCardShell: View {
+    var isPulsing = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 24, style: .continuous)
+            .fill(Color.white.opacity(0.66))
+            .scaleEffect(isPulsing ? 0.98 : 1)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color.white.opacity(0.74), lineWidth: 1)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(Color.figmaBlue.opacity(isPulsing ? 1 : 0.08), lineWidth: isPulsing ? 3 : 1)
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.04), radius: 16, x: 0, y: 8)
+    }
+}
+
 struct EntryComposer: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -26,20 +45,9 @@ struct EntryComposer: View {
             collapsedWritingPreview(hasText: hasText)
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white.opacity(0.66))
-                .scaleEffect(pulseEditor ? 0.98 : 1)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.72), lineWidth: 1)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(pulseEditor ? 1 : 0.08), lineWidth: pulseEditor ? 3 : 1)
-                )
-        )
-        .shadow(color: Color.black.opacity(0.04), radius: 16, x: 0, y: 8)
+        .background {
+            BrainMailEntryCardShell(isPulsing: pulseEditor)
+        }
         .animation(.easeInOut(duration: 0.5), value: pulseEditor)
         .animation(.easeInOut(duration: 0.2), value: hasText)
         .accessibilityElement(children: .contain)
@@ -94,7 +102,76 @@ struct EntryComposer: View {
     }
 }
 
-struct FullScreenNewEntryComposer: View {
+struct EntryComposerOpeningGhost: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    let inputHeight: CGFloat
+    let isExpanded: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: isExpanded ? 16 : 12) {
+            Text("New entry")
+                .font(isExpanded ? .title3.weight(.semibold) : .subheadline.weight(.semibold))
+                .foregroundStyle(Color.black.opacity(isExpanded ? 0.80 : 0.72))
+                .fixedSize(horizontal: false, vertical: true)
+
+            if isExpanded {
+                Text("Write something you'd want to receive later.")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.black.opacity(0.52))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .transition(.opacity)
+            }
+
+            writingPreview
+        }
+        .padding(isExpanded ? 20 : 16)
+        .frame(maxWidth: .infinity, maxHeight: isExpanded ? .infinity : nil, alignment: .topLeading)
+        .background {
+            BrainMailEntryCardShell()
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private var writingPreview: some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: isExpanded ? 18 : 17, style: .continuous)
+                .fill(Color.white.opacity(isExpanded ? 0.52 : 0.48))
+                .overlay(
+                    RoundedRectangle(cornerRadius: isExpanded ? 18 : 17, style: .continuous)
+                        .stroke(Color.figmaBlue.opacity(0.06), lineWidth: 1)
+                )
+
+            if isExpanded {
+                Text("What’s something worth remembering?")
+                    .font(.body)
+                    .foregroundStyle(Color.black.opacity(0.36))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 18)
+                    .transition(.opacity)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 15 : 14, weight: .semibold))
+                        .foregroundStyle(Color.figmaBlue.opacity(0.36))
+
+                    Text("Tap to write to future you...")
+                        .font(.body)
+                        .foregroundColor(Color.black.opacity(0.38))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .lineLimit(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 3 : 2)
+                .padding(.top, 14)
+                .padding(.horizontal, 16)
+            }
+        }
+        .frame(minHeight: inputHeight, maxHeight: isExpanded ? .infinity : inputHeight, alignment: .topLeading)
+    }
+}
+
+struct NewEntryComposerSheet: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @Binding var text: String
@@ -105,6 +182,7 @@ struct FullScreenNewEntryComposer: View {
     var onSave: () async -> Bool
 
     @FocusState private var isTextEditorFocused: Bool
+    @State private var isContentVisible = false
 
     private var usesAccessibilityLayout: Bool {
         dynamicTypeSize.brainMailUsesAccessibilityLayout
@@ -115,18 +193,36 @@ struct FullScreenNewEntryComposer: View {
     }
 
     var body: some View {
-        ViewThatFits(in: .vertical) {
-            expandedComposer
-            constrainedComposer
+        if #available(iOS 16.4, *) {
+            sheetContent
+                .presentationBackground(.clear)
+        } else {
+            sheetContent
         }
-        .padding(.horizontal, usesAccessibilityLayout ? 14 : 12)
-        .padding(.vertical, usesAccessibilityLayout ? 14 : 10)
-        .frame(maxWidth: 600, maxHeight: .infinity)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("home.entryComposer.fullScreen")
+    }
+
+    private var sheetContent: some View {
+        ZStack {
+            BrainMailComposeSheetBackground()
+
+            ViewThatFits(in: .vertical) {
+                regularContent
+                constrainedContent
+            }
+        }
+        .opacity(isContentVisible ? 1 : 0)
+        .accessibilityIdentifier("home.entryComposer.sheet")
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
         .task {
-            try? await Task.sleep(nanoseconds: 120_000_000)
+            isContentVisible = false
+            isTextEditorFocused = false
+            try? await Task.sleep(nanoseconds: 90_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.14)) {
+                isContentVisible = true
+            }
+            try? await Task.sleep(nanoseconds: 130_000_000)
             guard !Task.isCancelled else { return }
             isTextEditorFocused = true
         }
@@ -136,54 +232,46 @@ struct FullScreenNewEntryComposer: View {
         .brainMailDynamicTypeRange()
     }
 
-    private var expandedComposer: some View {
-        composerSurface {
-            VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 18 : 16) {
-                header
+    private var regularContent: some View {
+        VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 18 : 16) {
+            header
 
-                entryEditor(
-                    minHeight: usesAccessibilityLayout ? 132 : 148,
-                    fillsAvailableSpace: true
-                )
-                .layoutPriority(1)
+            editor(minHeight: usesAccessibilityLayout ? 148 : 168)
 
-                connectionMessage
+            connectionMessage
 
-                actionRow
-            }
+            Spacer(minLength: usesAccessibilityLayout ? 18 : 16)
+
+            actionRow
         }
+        .padding(.horizontal, usesAccessibilityLayout ? 28 : 24)
+        .padding(.top, usesAccessibilityLayout ? 48 : 44)
+        .padding(.bottom, usesAccessibilityLayout ? 22 : 18)
     }
 
-    private var constrainedComposer: some View {
-        composerSurface {
-            VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 14 : 12) {
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 18 : 16) {
-                        header
-
-                        entryEditor(
-                            minHeight: usesAccessibilityLayout ? 126 : 112,
-                            fillsAvailableSpace: false
-                        )
-
-                        connectionMessage
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+    private var constrainedContent: some View {
+        VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 14 : 12) {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 18 : 16) {
+                    header
+                    editor(minHeight: usesAccessibilityLayout ? 112 : 126)
+                    connectionMessage
                 }
-                .scrollDismissesKeyboard(.interactively)
-                .layoutPriority(1)
-
-                actionRow
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .scrollDismissesKeyboard(.interactively)
+            .layoutPriority(1)
+
+            actionRow
         }
+        .padding(.horizontal, usesAccessibilityLayout ? 28 : 24)
+        .padding(.top, usesAccessibilityLayout ? 40 : 36)
+        .padding(.bottom, usesAccessibilityLayout ? 22 : 18)
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 10 : 8) {
-            Text("New entry")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(Color.black.opacity(0.80))
-                .fixedSize(horizontal: false, vertical: true)
+            BrainMailComposeSheetHeader(title: "New entry")
 
             Text("Write something you'd want to receive later.")
                 .font(.subheadline)
@@ -191,6 +279,16 @@ struct FullScreenNewEntryComposer: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func editor(minHeight: CGFloat) -> some View {
+        BrainMailComposeInputBox(
+            text: $text,
+            placeholder: "What’s something worth remembering?",
+            minHeight: minHeight,
+            accessibilityIdentifier: "home.entryTextEditor",
+            focus: $isTextEditorFocused
+        )
     }
 
     @ViewBuilder
@@ -212,13 +310,10 @@ struct FullScreenNewEntryComposer: View {
                 Text("Cancel")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.figmaBlue.opacity(0.86))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.86)
-                    .padding(.horizontal, 4)
                     .frame(minHeight: usesAccessibilityLayout ? 50 : 44)
             }
             .buttonStyle(.plain)
-            .accessibilityIdentifier("home.entryComposer.fullScreen.cancel")
+            .accessibilityIdentifier("home.entryComposer.sheet.cancel")
 
             Spacer(minLength: 12)
 
@@ -240,69 +335,8 @@ struct FullScreenNewEntryComposer: View {
             }
             .disabled(isSaveDisabled)
             .buttonStyle(.plain)
-            .accessibilityIdentifier("home.entryComposer.fullScreen.save")
+            .accessibilityIdentifier("home.entryComposer.sheet.save")
         }
-    }
-
-    private func entryEditor(minHeight: CGFloat, fillsAvailableSpace: Bool) -> some View {
-        ZStack(alignment: .topLeading) {
-            TextEditor(text: $text)
-                .focused($isTextEditorFocused)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(10)
-                .scrollContentBackground(.hidden)
-                .background(Color.clear)
-                .foregroundColor(.black)
-                .font(.body)
-                .textInputAutocapitalization(.sentences)
-                .accessibilityLabel("New entry")
-                .accessibilityIdentifier("home.entryTextEditor")
-
-            if text.isEmpty {
-                Text("What’s something worth remembering?")
-                    .font(.body)
-                    .foregroundStyle(Color.black.opacity(0.36))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 18)
-                    .allowsHitTesting(false)
-            }
-        }
-        .frame(
-            minHeight: minHeight,
-            idealHeight: fillsAvailableSpace ? nil : minHeight + 34,
-            maxHeight: fillsAvailableSpace ? .infinity : nil,
-            alignment: .topLeading
-        )
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.52))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(text.isEmpty ? 0.06 : 0.10), lineWidth: 1)
-                )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-    }
-
-    private func composerSurface<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .padding(.horizontal, usesAccessibilityLayout ? 22 : 20)
-            .padding(.vertical, usesAccessibilityLayout ? 24 : 20)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.white.opacity(0.66))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(Color.white.opacity(0.78), lineWidth: 1)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .stroke(Color.figmaBlue.opacity(0.08), lineWidth: 1)
-                    )
-            )
-            .shadow(color: Color.black.opacity(0.045), radius: 18, x: 0, y: 8)
     }
 }
 

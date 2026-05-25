@@ -120,38 +120,42 @@ test("stale 3-entry onboarding and unlock copy is absent from first-time UI file
   }
 });
 
-test("entry composer edits inline through scroll and focus instead of keyboard height math", () => {
+test("entry composer bridges into a native sheet with a ghost expansion and no keyboard height math", () => {
   const composer = readRepoFile("ReMind/Views/Main/Components/EntryComposer.swift");
   const main = readRepoFile("ReMind/Views/Main/MainView.swift");
 
   assert.match(composer, /struct EntryComposer:\s*View/);
+  assert.match(composer, /struct EntryComposerOpeningGhost:\s*View/);
+  assert.match(composer, /struct NewEntryComposerSheet:\s*View/);
   assert.match(composer, /@FocusState private var isTextEditorFocused:\s*Bool/);
-  assert.doesNotMatch(composer, /NewEntryComposerOverlay|NewEntryComposerSheet|NewEntryOverlayLayout|Task\.sleep/);
-  assert.match(main, /@State private var isComposing = false/);
-  assert.match(main, /ScrollViewReader\s*\{\s*scrollProxy/);
-  assert.match(main, /\.id\(HomeScrollTarget\.entryComposer\)/);
-  assert.match(main, /scrollProxy\.scrollTo\(\s*HomeScrollTarget\.entryComposer/);
+  assert.match(composer, /\.presentationDetents\(\[\.large\]\)/);
+  assert.match(composer, /\.presentationBackground\(\.clear\)/);
+  assert.match(composer, /Task\.sleep\(nanoseconds: 130_000_000\)/);
+  assert.doesNotMatch(composer, /FullScreenNewEntryComposer|matchedGeometryEffect|NewEntryOverlayLayout/);
+  assert.match(main, /@State private var isEntrySheetPresented = false/);
+  assert.match(main, /@State private var isShowingEntryGhost = false/);
+  assert.match(main, /\.anchorPreference\(key:\s*EntryCardFramePreferenceKey\.self/);
+  assert.match(main, /EntryComposerOpeningGhost\(/);
   assert.match(main, /\.sheet\(item:\s*\$activeHomeSheet\)/);
-  assert.doesNotMatch(main, /case newEntry|case \.newEntry|NewEntryComposerSheet\(|NewEntryComposerOverlay\(/);
-  assert.match(main, /private func presentEntryComposer\(\)[\s\S]*isComposing = true/);
+  assert.match(main, /\.sheet\(isPresented:\s*\$isEntrySheetPresented/);
+  assert.match(main, /NewEntryComposerSheet\(/);
+  assert.match(main, /Task\.sleep\(nanoseconds: 220_000_000\)/);
+  assert.doesNotMatch(main, /FullScreenNewEntryComposer|matchedGeometryEffect|keyboardFrame|keyboardHeight|keyboardFrameEndUserInfoKey/);
   assert.doesNotMatch(main, /keyboardFrame|keyboardHeight|keyboardFrameEndUserInfoKey/);
   assert.doesNotMatch(composer, /keyboardFrame|keyboardHeight|keyboardFrameEndUserInfoKey/);
 });
 
-test("entry composer keeps compact styling and exposes inline actions", () => {
+test("entry composer keeps compact styling and exposes native sheet actions", () => {
   const composer = readRepoFile("ReMind/Views/Main/Components/EntryComposer.swift");
 
   assert.match(composer, /Text\("New entry"\)/);
   assert.match(composer, /Tap to write to future you\.\.\./);
   assert.match(composer, /Text\("What’s something worth remembering\?"\)/);
-  assert.doesNotMatch(
-    composer,
-    new RegExp(["Write", "something", "you.d", "want", "to", "receive", "later"].join(" "))
-  );
+  assert.match(composer, /Text\("Write something you'd want to receive later\."\)/);
   assert.match(composer, /writingSurfaceBackground/);
   assert.match(composer, /BrainMailComposePrimaryButtonLabel\([\s\S]*title: "Save"/);
-  assert.match(composer, /Label\("Cancel", systemImage: "xmark"\)/);
-  assert.match(composer, /home\.entryComposer\.inline\.cancel/);
-  assert.match(composer, /home\.entryComposer\.inline\.save/);
-  assert.doesNotMatch(composer, /home\.entryComposer\.overlay|home\.entryComposer\.sheet/);
+  assert.match(composer, /Text\("Cancel"\)/);
+  assert.match(composer, /home\.entryComposer\.sheet\.cancel/);
+  assert.match(composer, /home\.entryComposer\.sheet\.save/);
+  assert.doesNotMatch(composer, /home\.entryComposer\.fullScreen/);
 });

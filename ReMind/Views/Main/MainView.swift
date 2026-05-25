@@ -13,6 +13,14 @@ private enum ActiveHomeSheet: String, Equatable, Identifiable {
     var id: String { rawValue }
 }
 
+private struct EntryCardFramePreferenceKey: PreferenceKey {
+    static var defaultValue: Anchor<CGRect>?
+
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = nextValue() ?? value
+    }
+}
+
 struct MainView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var net: NetworkMonitor
@@ -27,7 +35,10 @@ struct MainView: View {
     @State private var showSuccessMessage = false
     @State private var pulseEditor = false
     @State private var isSubmitting = false
-    @State private var isComposing = false
+    @State private var isEntrySheetPresented = false
+    @State private var isShowingEntryGhost = false
+    @State private var isEntryGhostExpanded = false
+    @State private var entryPresentationTask: Task<Void, Never>?
     @State private var isDeletingLatestReminder = false
 
     // Alerts
@@ -39,41 +50,62 @@ struct MainView: View {
         let count = appVM.activeEntries.count
 
         ZStack {
-            if isComposing {
-                FullScreenNewEntryComposer(
-                    text: $input,
-                    isSubmitting: $isSubmitting,
-                    isNetworkConnected: net.isConnected,
-                    onCancel: cancelEntryComposer,
-                    onSave: saveEntry
+            GeometryReader { proxy in
+                let safeTop = max(proxy.safeAreaInsets.top, 16)
+                let safeBottom = max(proxy.safeAreaInsets.bottom, 16)
+                let viewportWidth = max(proxy.size.width, 1)
+                let viewportHeight = max(proxy.size.height, 1)
+                let topContentWidth = constrainedTopContentWidth(for: viewportWidth)
+                let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
+                let entryInputHeight = entryInputHeight(
+                    usesAccessibilityLayout: usesAccessibilityLayout
                 )
-                .transition(.opacity)
-            } else {
-                GeometryReader { proxy in
-                    let safeTop = max(proxy.safeAreaInsets.top, 16)
-                    let safeBottom = max(proxy.safeAreaInsets.bottom, 16)
-                    let viewportWidth = max(proxy.size.width, 1)
-                    let topContentWidth = constrainedTopContentWidth(for: viewportWidth)
-                    let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
-                    let entryInputHeight = entryInputHeight(
-                        usesAccessibilityLayout: usesAccessibilityLayout
-                    )
 
-                    closedHomeLayout(
-                        count: count,
-                        safeTop: safeTop,
-                        safeBottom: safeBottom,
-                        viewportWidth: viewportWidth,
-                        topContentWidth: topContentWidth,
-                        usesAccessibilityLayout: usesAccessibilityLayout,
-                        entryInputHeight: entryInputHeight
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                closedHomeLayout(
+                    count: count,
+                    safeTop: safeTop,
+                    safeBottom: safeBottom,
+                    viewportWidth: viewportWidth,
+                    topContentWidth: topContentWidth,
+                    usesAccessibilityLayout: usesAccessibilityLayout,
+                    entryInputHeight: entryInputHeight
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .allowsHitTesting(!isShowingEntryGhost && !isEntrySheetPresented)
+                .overlayPreferenceValue(EntryCardFramePreferenceKey.self) { cardAnchor in
+                    GeometryReader { overlayProxy in
+                        if let cardAnchor, isShowingEntryGhost {
+                            let compactFrame = overlayProxy[cardAnchor]
+                            let expandedHeight = entryGhostTargetHeight(
+                                viewportHeight: viewportHeight,
+                                safeTop: safeTop,
+                                compactHeight: compactFrame.height
+                            )
+
+                            EntryComposerOpeningGhost(
+                                inputHeight: entryInputHeight,
+                                isExpanded: isEntryGhostExpanded
+                            )
+                            .frame(
+                                width: isEntryGhostExpanded
+                                    ? max(viewportWidth - 20, compactFrame.width)
+                                    : compactFrame.width,
+                                height: isEntryGhostExpanded ? expandedHeight : compactFrame.height,
+                                alignment: .topLeading
+                            )
+                            .position(
+                                x: isEntryGhostExpanded ? viewportWidth / 2 : compactFrame.midX,
+                                y: isEntryGhostExpanded
+                                    ? safeTop + 12 + expandedHeight / 2
+                                    : compactFrame.midY
+                            )
+                            .transition(.opacity)
+                        }
+                    }
+                    .allowsHitTesting(false)
                 }
-                .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.18), value: isComposing)
         .background {
             OnboardingBackgroundView()
                 .ignoresSafeArea(.all)
@@ -98,6 +130,17 @@ struct MainView: View {
                     }
                 }
             }
+            .sheet(isPresented: $isEntrySheetPresented, onDismiss: {
+                dismissEntryComposer(clearDraft: true)
+            }) {
+                NewEntryComposerSheet(
+                    text: $input,
+                    isSubmitting: $isSubmitting,
+                    isNetworkConnected: net.isConnected,
+                    onCancel: cancelEntryComposer,
+                    onSave: saveEntry
+                )
+            }
             .alert(alertTitle, isPresented: $showAlert) {
                 Button("OK", role: .cancel) { }
             } message: { Text(alertMessage) }
@@ -117,8 +160,8 @@ struct MainView: View {
                 guard showing == nil, isPageActive else { return }
                 refreshMainViewData()
             }
-            .onChange(of: isComposing) { composing in
-                guard !composing, isPageActive else { return }
+            .onChange(of: isEntrySheetPresented) { presented in
+                guard !presented, isPageActive else { return }
                 refreshMainViewData()
             }
             .onDisappear {
@@ -202,6 +245,8 @@ struct MainView: View {
                             .frame(height: logoHeight(usesAccessibilityLayout: usesAccessibilityLayout))
                             .padding(.top, safeTop + 12)
                             .id(HomeScrollTarget.top)
+                            .opacity(isShowingEntryGhost ? 0.66 : 1)
+                            .animation(.easeOut(duration: 0.18), value: isShowingEntryGhost)
 
                         recentReminderSection(
                             cardContentWidth: recentReminderCardContentWidth(
@@ -209,6 +254,8 @@ struct MainView: View {
                             ),
                             usesAccessibilityLayout: usesAccessibilityLayout
                         )
+                        .opacity(isShowingEntryGhost ? 0.66 : 1)
+                        .animation(.easeOut(duration: 0.18), value: isShowingEntryGhost)
                     }
 
                     EntryComposer(
@@ -217,14 +264,20 @@ struct MainView: View {
                         inputHeight: entryInputHeight,
                         onBeginEditing: presentEntryComposer
                     )
+                    .opacity(isShowingEntryGhost || isEntrySheetPresented ? 0 : 1)
+                    .anchorPreference(key: EntryCardFramePreferenceKey.self, value: .bounds) { $0 }
 
                     saveStatusView
+                        .opacity(isShowingEntryGhost ? 0.66 : 1)
+                        .animation(.easeOut(duration: 0.18), value: isShowingEntryGhost)
                 }
                 .frame(width: topContentWidth, alignment: .top)
 
                 actionIconActions(count: count, viewportWidth: viewportWidth)
                     .frame(width: viewportWidth)
                     .padding(.top, 4)
+                    .opacity(isShowingEntryGhost ? 0.66 : 1)
+                    .animation(.easeOut(duration: 0.18), value: isShowingEntryGhost)
             }
             .frame(width: viewportWidth, alignment: .top)
             .padding(.bottom, safeBottom + 24)
@@ -673,9 +726,39 @@ struct MainView: View {
     }
 
     private func presentEntryComposer() {
-        guard !isComposing, activeHomeSheet == nil else { return }
-        withAnimation(.easeInOut(duration: 0.18)) {
-            isComposing = true
+        guard !isShowingEntryGhost, !isEntrySheetPresented, activeHomeSheet == nil else { return }
+        input = ""
+        entryPresentationTask?.cancel()
+        isEntryGhostExpanded = false
+
+        withAnimation(.easeOut(duration: 0.08)) {
+            isShowingEntryGhost = true
+        }
+
+        entryPresentationTask = Task { @MainActor in
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.spring(response: 0.22, dampingFraction: 0.90)) {
+                isEntryGhostExpanded = true
+            }
+
+            try? await Task.sleep(nanoseconds: 220_000_000)
+            guard !Task.isCancelled else { return }
+
+            var transaction = Transaction()
+            transaction.animation = nil
+            withTransaction(transaction) {
+                isEntrySheetPresented = true
+            }
+
+            try? await Task.sleep(nanoseconds: 140_000_000)
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeOut(duration: 0.10)) {
+                isShowingEntryGhost = false
+            }
+            entryPresentationTask = nil
         }
     }
 
@@ -684,20 +767,34 @@ struct MainView: View {
     }
 
     private func dismissEntryComposer(clearDraft: Bool) {
+        entryPresentationTask?.cancel()
+        entryPresentationTask = nil
+
         if clearDraft {
             input = ""
         }
 
-        hideKeyboard()
-        if isComposing {
-            withAnimation(.easeInOut(duration: 0.18)) {
-                isComposing = false
-            }
+        if isEntrySheetPresented {
+            isEntrySheetPresented = false
+        }
+
+        withAnimation(.easeOut(duration: 0.12)) {
+            isShowingEntryGhost = false
+            isEntryGhostExpanded = false
         }
     }
 
     private func constrainedTopContentWidth(for viewportWidth: CGFloat) -> CGFloat {
         max(viewportWidth - HomeLayout.horizontalPadding * 2, 1)
+    }
+
+    private func entryGhostTargetHeight(
+        viewportHeight: CGFloat,
+        safeTop: CGFloat,
+        compactHeight: CGFloat
+    ) -> CGFloat {
+        let expandedHeight = max(viewportHeight * 0.70, compactHeight + 180)
+        return min(expandedHeight, max(viewportHeight - safeTop - 28, compactHeight))
     }
 
     private func recentReminderCardContentWidth(for contentWidth: CGFloat) -> CGFloat {

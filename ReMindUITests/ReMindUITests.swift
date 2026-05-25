@@ -75,17 +75,13 @@ final class ReMindUITests: XCTestCase {
         XCTAssertTrue(compactComposer.isHittable)
         compactComposer.tap()
 
-        let fullScreenComposer = app.descendants(matching: .any)["home.entryComposer.fullScreen"]
+        let entrySheet = app.descendants(matching: .any)["home.entryComposer.sheet"]
         let editor = app.textViews["home.entryTextEditor"]
-        let cancel = app.buttons["home.entryComposer.fullScreen.cancel"]
-        XCTAssertTrue(fullScreenComposer.waitForExistence(timeout: 4))
+        let cancel = app.buttons["home.entryComposer.sheet.cancel"]
+        XCTAssertTrue(entrySheet.waitForExistence(timeout: 4))
         XCTAssertTrue(editor.waitForExistence(timeout: 4))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
-        XCTAssertFalse(compactComposer.exists)
-        XCTAssertFalse(app.staticTexts["Most recent reminder"].exists)
-        XCTAssertFalse(app.buttons["home.action.Help"].exists)
-        XCTAssertFalse(app.descendants(matching: .any)["home.entryComposer.overlay"].exists)
-        XCTAssertEqual(app.sheets.count, 0)
+        XCTAssertTrue(app.sheets.firstMatch.exists)
         assertEventuallyAboveKeyboard(cancel, keyboard: app.keyboards.firstMatch)
     }
 
@@ -103,23 +99,19 @@ final class ReMindUITests: XCTestCase {
 
         compactComposer.tap()
 
-        let fullScreenComposer = app.descendants(matching: .any)["home.entryComposer.fullScreen"]
+        let entrySheet = app.descendants(matching: .any)["home.entryComposer.sheet"]
         let editor = app.textViews["home.entryTextEditor"]
-        let save = app.buttons["home.entryComposer.fullScreen.save"]
-        XCTAssertTrue(fullScreenComposer.waitForExistence(timeout: 4))
+        let save = app.buttons["home.entryComposer.sheet.save"]
+        XCTAssertTrue(entrySheet.waitForExistence(timeout: 4))
         XCTAssertTrue(editor.waitForExistence(timeout: 4))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
-        XCTAssertFalse(compactComposer.exists)
-        XCTAssertFalse(app.staticTexts["Most recent reminder"].exists)
-        XCTAssertFalse(app.buttons["home.action.Help"].exists)
-        XCTAssertFalse(app.descendants(matching: .any)["home.entryComposer.overlay"].exists)
-        XCTAssertEqual(app.sheets.count, 0)
+        XCTAssertTrue(app.sheets.firstMatch.exists)
         assertEventuallyAboveKeyboard(save, keyboard: app.keyboards.firstMatch)
         XCTAssertFalse(save.isEnabled)
         editor.typeText("Testing the new composer")
         XCTAssertTrue(save.isEnabled)
 
-        let cancel = app.buttons["home.entryComposer.fullScreen.cancel"]
+        let cancel = app.buttons["home.entryComposer.sheet.cancel"]
         XCTAssertTrue(cancel.waitForExistence(timeout: 2))
         cancel.tap()
 
@@ -151,12 +143,12 @@ final class ReMindUITests: XCTestCase {
         XCTAssertTrue(compactComposer.isHittable)
         compactComposer.tap()
 
-        XCTAssertTrue(app.descendants(matching: .any)["home.entryComposer.fullScreen"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.descendants(matching: .any)["home.entryComposer.sheet"].waitForExistence(timeout: 4))
         XCTAssertTrue(app.textViews["home.entryTextEditor"].waitForExistence(timeout: 4))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
-        XCTAssertEqual(app.sheets.count, 0)
+        XCTAssertTrue(app.sheets.firstMatch.exists)
 
-        let cancel = app.buttons["home.entryComposer.fullScreen.cancel"]
+        let cancel = app.buttons["home.entryComposer.sheet.cancel"]
         XCTAssertTrue(cancel.waitForExistence(timeout: 4))
         assertEventuallyAboveKeyboard(cancel, keyboard: app.keyboards.firstMatch)
         XCTAssertTrue(cancel.isHittable)

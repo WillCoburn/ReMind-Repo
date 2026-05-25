@@ -14,7 +14,7 @@ The project was originally called ReMind in code and bundle identifiers. Product
 
 - Onboarding: user enters a phone number, agrees to receive texts, completes SMS code verification, and gets a Firebase Auth session.
 - Main screen: user sees the most recent received reminder, adds new entries to their private bank, opens Send One Now, exports, help, and the Inspiration Bank.
-- New entry: the compact home card expands into an inline editor on the main screen and saves through `AppViewModel.submit(text:)`.
+- New entry: the compact home card animates through a short ghost expansion into a native compose sheet and saves through `AppViewModel.submit(text:)`.
 - Automatic reminders: backend scheduling picks sendable entries and sends them by SMS according to user settings.
 - Send One Now: user manually triggers one SMS reminder immediately through a callable Cloud Function.
 - Community: user reads short uplifting posts, creates a community note, likes, reports, opens threads, and replies.
@@ -139,15 +139,16 @@ Important supporting components:
 Current new-entry behavior:
 
 - The home screen shows a compact "New entry" card.
-- Tapping it expands the same card into an inline `TextEditor`, not a sheet or custom overlay.
-- `EntryComposer` owns focus for its inline editor and `MainView` uses `ScrollViewReader` to keep the card comfortably visible.
-- Cancel clears the draft and collapses the card.
+- Tapping it briefly expands an anchored, noninteractive ghost of the home card before presenting `NewEntryComposerSheet`.
+- The actual editor lives in the native sheet for stable system keyboard behavior; the ghost carries no focus or input state.
+- The sheet fades its surface in and requests editor focus after presentation begins, so the keyboard does not lead the transition.
+- Cancel or interactive sheet dismissal clears the draft and removes any ghost presentation state.
 - Save calls the existing `AppViewModel.submit(text:)` path.
 - Normal SwiftUI viewport resizing and scrolling handle the keyboard; the composer deliberately avoids custom keyboard offset math.
 
 Recent caution:
 
-- Previous native sheet and animated overlay experiments felt disconnected or fragile. Keep the main entry flow inline and avoid custom keyboard-height-driven layout, matched geometry compose overlays, or competing focus systems unless there is a very strong reason.
+- Previous direct sheet, floating overlay, inline editing, and custom full-screen experiments each had tradeoffs. Keep the short ghost-to-native-sheet bridge and avoid custom keyboard-height-driven layout or competing focus systems.
 
 ## Settings / Stats / Right Panel
 
@@ -324,8 +325,9 @@ Community illustration:
 New entry composer:
 
 - Compact home card stays concise.
-- The same card expands inline to contain title, input, Cancel, and Save.
-- Inline placeholder copy is "What’s something worth remembering?".
+- A temporary visual ghost expands toward the native sheet before the real compose controls appear.
+- Input, Cancel, and Save live only inside `NewEntryComposerSheet`.
+- Placeholder copy is "What’s something worth remembering?".
 
 ## Known Architectural Pitfalls
 
@@ -344,7 +346,7 @@ New entry composer:
 - `ReMind/App/ReMindApp.swift`: app entry and app lifecycle hooks.
 - `ReMind/Views/RootView.swift`: auth/onboarding gate and three-page app shell.
 - `ReMind/Views/Main/MainView.swift`: main home screen, recent reminder card, sheets, help content.
-- `ReMind/Views/Main/Components/EntryComposer.swift`: compact entry card and native new-entry sheet.
+- `ReMind/Views/Main/Components/EntryComposer.swift`: compact entry card, opening ghost, and native new-entry sheet.
 - `ReMind/ViewModels/AppViewModel/AppViewModel.swift`: central app state, subscription capabilities, listeners.
 - `ReMind/ViewModels/AppViewModel/AppViewModel+Entries.swift`: entry add/delete/listen logic.
 - `ReMind/ViewModels/AppViewModel/AppViewModel+InitialLoad.swift`: initial user/profile/settings load.
