@@ -110,16 +110,14 @@ struct RootView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            ZStack(alignment: .top) {
-                // Global background is just system color now.
-                // The user photo is handled *inside MainView* only.
-                Color(UIColor.systemBackground)
-                    .ignoresSafeArea()
-
-                // Horizontal pager: Community ← Main → Right
-                pager
-            }
+            // Keep the branded surface behind keyboard edges without allowing its
+            // oversized decorative shapes to participate in pager measurement.
+            pager
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background {
+                OnboardingBackgroundView()
+                    .ignoresSafeArea()
+            }
         }
     }
 
@@ -147,9 +145,11 @@ struct RootView: View {
             .tag(Page.right)
         }
         .tabViewStyle(.page(indexDisplayMode: .never)) // Snapchat-style swipe
-        // Extend pages under container chrome without opting out of keyboard avoidance.
+        // Main's inline editor should allow the keyboard to overlay the existing page,
+        // instead of shrinking the paged host and exposing a background strip.
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(.container, edges: [.top, .bottom])
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 
     @ViewBuilder
@@ -166,6 +166,7 @@ struct RootView: View {
             NavigationStack {
                 MainView(isPageActive: true)
             }
+            .ignoresSafeArea(.keyboard, edges: .bottom)
         case .community:
             NavigationStack {
                 CommunityView()

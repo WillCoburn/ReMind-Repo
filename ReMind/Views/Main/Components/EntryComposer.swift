@@ -2,6 +2,7 @@
 // File: Views/Main/Components/EntryComposer.swift
 // ============================================
 import SwiftUI
+import UIKit
 
 private struct BrainMailEntryCardShell: View {
     var isPulsing = false
@@ -28,34 +29,144 @@ struct EntryComposer: View {
     @Binding var text: String
     var pulseEditor: Bool
     var inputHeight: CGFloat = 76
+    var isEditing: Bool
+    var isSubmitting: Bool
+    var isNetworkConnected: Bool
+    @Binding var isEditorFocused: Bool
+    var onCancel: () -> Void
+    var onSave: () async -> Bool
     var onBeginEditing: () -> Void
+
+    private var usesAccessibilityLayout: Bool {
+        dynamicTypeSize.brainMailUsesAccessibilityLayout
+    }
+
+    private var isSaveDisabled: Bool {
+        isSubmitting || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !isNetworkConnected
+    }
 
     var body: some View {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let hasText = !trimmedText.isEmpty
-        let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
 
-        VStack(alignment: .leading, spacing: 12) {
-            Text("New entry")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.black.opacity(0.72))
-                .lineLimit(usesAccessibilityLayout ? 2 : 1)
-                .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.86)
+        VStack(alignment: .leading, spacing: isEditing ? 14 : 12) {
+            if isEditing {
+                editingTitle
+                inlineWritingEditor
+                connectionMessage
+                actionRow
+                    .frame(maxWidth: .infinity, alignment: usesAccessibilityLayout ? .leading : .trailing)
+            } else {
+                Text("New entry")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.black.opacity(0.72))
+                    .lineLimit(usesAccessibilityLayout ? 2 : 1)
+                    .minimumScaleFactor(usesAccessibilityLayout ? 0.92 : 0.86)
 
-            collapsedWritingPreview(hasText: hasText)
+                collapsedWritingPreview(hasText: hasText)
+            }
         }
         .padding(16)
         .background {
             BrainMailEntryCardShell(isPulsing: pulseEditor)
         }
         .animation(.easeInOut(duration: 0.5), value: pulseEditor)
+        .animation(.easeOut(duration: 0.18), value: isEditing)
         .animation(.easeInOut(duration: 0.2), value: hasText)
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("home.entryComposer.compact")
+        .accessibilityIdentifier(isEditing ? "home.entryComposer.inline" : "home.entryComposer.compact")
         .frame(maxWidth: .infinity, alignment: .leading)
         .brainMailDynamicTypeRange()
         .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .onTapGesture(perform: onBeginEditing)
+        .onTapGesture {
+            if !isEditing {
+                onBeginEditing()
+            }
+        }
+    }
+
+    private var editingTitle: some View {
+        Text("New entry")
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Color.black.opacity(0.72))
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var actionRow: some View {
+        HStack(spacing: 12) {
+            Button {
+                isEditorFocused = false
+                onCancel()
+            } label: {
+                Text("Cancel")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.figmaBlue.opacity(0.86))
+                    .frame(minHeight: 40)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("home.entryComposer.inline.cancel")
+
+            Button {
+                guard !isSaveDisabled else { return }
+                Task { @MainActor in
+                    let didSave = await onSave()
+                    if !didSave {
+                        isEditorFocused = true
+                    }
+                }
+            } label: {
+                BrainMailComposePrimaryButtonLabel(
+                    title: "Save",
+                    loadingTitle: "Saving…",
+                    isLoading: isSubmitting,
+                    isDisabled: isSaveDisabled
+                )
+            }
+            .disabled(isSaveDisabled)
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("home.entryComposer.inline.save")
+        }
+    }
+
+    private var inlineWritingEditor: some View {
+        ZStack(alignment: .topLeading) {
+            BrainMailInlineTextView(
+                text: $text,
+                isFirstResponder: $isEditorFocused,
+                accessibilityIdentifier: "home.entryTextEditor"
+            )
+                .frame(height: usesAccessibilityLayout ? 136 : 122, alignment: .topLeading)
+                .padding(8)
+
+            if text.isEmpty {
+                Text("What’s something worth remembering?")
+                    .foregroundStyle(Color.black.opacity(0.38))
+                    .font(.body)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 16)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .allowsHitTesting(false)
+            }
+        }
+        .background {
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .fill(Color.white.opacity(0.48))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 17, style: .continuous)
+                        .stroke(Color.figmaBlue.opacity(isEditorFocused ? 0.18 : 0.08), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.025), radius: 7, x: 0, y: 3)
+        }
+    }
+
+    @ViewBuilder
+    private var connectionMessage: some View {
+        if !isNetworkConnected {
+            Text("Connect to the internet to save.")
+                .font(.caption)
+                .foregroundStyle(Color.red.opacity(0.82))
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private func collapsedWritingPreview(hasText: Bool) -> some View {
@@ -102,240 +213,71 @@ struct EntryComposer: View {
     }
 }
 
-struct EntryComposerOpeningGhost: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    let inputHeight: CGFloat
-    let isExpanded: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: isExpanded ? 16 : 12) {
-            Text("New entry")
-                .font(isExpanded ? .title3.weight(.semibold) : .subheadline.weight(.semibold))
-                .foregroundStyle(Color.black.opacity(isExpanded ? 0.80 : 0.72))
-                .fixedSize(horizontal: false, vertical: true)
-
-            if isExpanded {
-                Text("Write something you'd want to receive later.")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.black.opacity(0.52))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.opacity)
-            }
-
-            writingPreview
-        }
-        .padding(isExpanded ? 20 : 16)
-        .frame(maxWidth: .infinity, maxHeight: isExpanded ? .infinity : nil, alignment: .topLeading)
-        .background {
-            BrainMailEntryCardShell()
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-
-    private var writingPreview: some View {
-        ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: isExpanded ? 18 : 17, style: .continuous)
-                .fill(Color.white.opacity(isExpanded ? 0.52 : 0.48))
-                .overlay(
-                    RoundedRectangle(cornerRadius: isExpanded ? 18 : 17, style: .continuous)
-                        .stroke(Color.figmaBlue.opacity(0.06), lineWidth: 1)
-                )
-
-            if isExpanded {
-                Text("What’s something worth remembering?")
-                    .font(.body)
-                    .foregroundStyle(Color.black.opacity(0.36))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 18)
-                    .transition(.opacity)
-            } else {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 15 : 14, weight: .semibold))
-                        .foregroundStyle(Color.figmaBlue.opacity(0.36))
-
-                    Text("Tap to write to future you...")
-                        .font(.body)
-                        .foregroundColor(Color.black.opacity(0.38))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .lineLimit(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 3 : 2)
-                .padding(.top, 14)
-                .padding(.horizontal, 16)
-            }
-        }
-        .frame(minHeight: inputHeight, maxHeight: isExpanded ? .infinity : inputHeight, alignment: .topLeading)
-    }
-}
-
-struct NewEntryComposerSheet: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
+private struct BrainMailInlineTextView: UIViewRepresentable {
     @Binding var text: String
-    @Binding var isSubmitting: Bool
+    @Binding var isFirstResponder: Bool
+    let accessibilityIdentifier: String
 
-    let isNetworkConnected: Bool
-    var onCancel: () -> Void
-    var onSave: () async -> Bool
-
-    @FocusState private var isTextEditorFocused: Bool
-    @State private var isContentVisible = false
-
-    private var usesAccessibilityLayout: Bool {
-        dynamicTypeSize.brainMailUsesAccessibilityLayout
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
     }
 
-    private var isSaveDisabled: Bool {
-        isSubmitting || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !isNetworkConnected
+    func makeUIView(context: Context) -> UITextView {
+        let textView = UITextView()
+        textView.delegate = context.coordinator
+        textView.backgroundColor = .clear
+        textView.isOpaque = false
+        textView.font = .preferredFont(forTextStyle: .body)
+        textView.adjustsFontForContentSizeCategory = true
+        textView.textColor = .black
+        textView.autocapitalizationType = .sentences
+        textView.textContainerInset = UIEdgeInsets(top: 8, left: 4, bottom: 8, right: 4)
+        textView.textContainer.lineFragmentPadding = 0
+        textView.keyboardDismissMode = .interactive
+        textView.inputAccessoryView = nil
+        textView.accessibilityIdentifier = accessibilityIdentifier
+        return textView
     }
 
-    var body: some View {
-        if #available(iOS 16.4, *) {
-            sheetContent
-                .presentationBackground(.clear)
-        } else {
-            sheetContent
+    func updateUIView(_ textView: UITextView, context: Context) {
+        context.coordinator.parent = self
+
+        if textView.text != text {
+            textView.text = text
         }
-    }
 
-    private var sheetContent: some View {
-        ZStack {
-            BrainMailComposeSheetBackground()
-
-            ViewThatFits(in: .vertical) {
-                regularContent
-                constrainedContent
+        if isFirstResponder {
+            guard !textView.isFirstResponder else { return }
+            DispatchQueue.main.async {
+                guard self.isFirstResponder, textView.window != nil else { return }
+                textView.becomeFirstResponder()
             }
-        }
-        .opacity(isContentVisible ? 1 : 0)
-        .accessibilityIdentifier("home.entryComposer.sheet")
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .task {
-            isContentVisible = false
-            isTextEditorFocused = false
-            try? await Task.sleep(nanoseconds: 90_000_000)
-            guard !Task.isCancelled else { return }
-            withAnimation(.easeOut(duration: 0.14)) {
-                isContentVisible = true
-            }
-            try? await Task.sleep(nanoseconds: 130_000_000)
-            guard !Task.isCancelled else { return }
-            isTextEditorFocused = true
-        }
-        .onDisappear {
-            isTextEditorFocused = false
-        }
-        .brainMailDynamicTypeRange()
-    }
-
-    private var regularContent: some View {
-        VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 18 : 16) {
-            header
-
-            editor(minHeight: usesAccessibilityLayout ? 148 : 168)
-
-            connectionMessage
-
-            Spacer(minLength: usesAccessibilityLayout ? 18 : 16)
-
-            actionRow
-        }
-        .padding(.horizontal, usesAccessibilityLayout ? 28 : 24)
-        .padding(.top, usesAccessibilityLayout ? 48 : 44)
-        .padding(.bottom, usesAccessibilityLayout ? 22 : 18)
-    }
-
-    private var constrainedContent: some View {
-        VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 14 : 12) {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 18 : 16) {
-                    header
-                    editor(minHeight: usesAccessibilityLayout ? 112 : 126)
-                    connectionMessage
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .layoutPriority(1)
-
-            actionRow
-        }
-        .padding(.horizontal, usesAccessibilityLayout ? 28 : 24)
-        .padding(.top, usesAccessibilityLayout ? 40 : 36)
-        .padding(.bottom, usesAccessibilityLayout ? 22 : 18)
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: usesAccessibilityLayout ? 10 : 8) {
-            BrainMailComposeSheetHeader(title: "New entry")
-
-            Text("Write something you'd want to receive later.")
-                .font(.subheadline)
-                .foregroundStyle(Color.black.opacity(0.52))
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func editor(minHeight: CGFloat) -> some View {
-        BrainMailComposeInputBox(
-            text: $text,
-            placeholder: "What’s something worth remembering?",
-            minHeight: minHeight,
-            accessibilityIdentifier: "home.entryTextEditor",
-            focus: $isTextEditorFocused
-        )
-    }
-
-    @ViewBuilder
-    private var connectionMessage: some View {
-        if !isNetworkConnected {
-            Text("Connect to the internet to save.")
-                .font(.caption)
-                .foregroundStyle(Color.red.opacity(0.82))
-                .fixedSize(horizontal: false, vertical: true)
+        } else if textView.isFirstResponder {
+            textView.resignFirstResponder()
         }
     }
 
-    private var actionRow: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Button {
-                isTextEditorFocused = false
-                onCancel()
-            } label: {
-                Text("Cancel")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.figmaBlue.opacity(0.86))
-                    .frame(minHeight: usesAccessibilityLayout ? 50 : 44)
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("home.entryComposer.sheet.cancel")
+    static func dismantleUIView(_ textView: UITextView, coordinator: Coordinator) {
+        textView.resignFirstResponder()
+    }
 
-            Spacer(minLength: 12)
+    final class Coordinator: NSObject, UITextViewDelegate {
+        var parent: BrainMailInlineTextView
 
-            Button {
-                guard !isSaveDisabled else { return }
-                Task { @MainActor in
-                    let didSave = await onSave()
-                    if !didSave {
-                        isTextEditorFocused = true
-                    }
-                }
-            } label: {
-                BrainMailComposePrimaryButtonLabel(
-                    title: "Save",
-                    loadingTitle: "Saving…",
-                    isLoading: isSubmitting,
-                    isDisabled: isSaveDisabled
-                )
-            }
-            .disabled(isSaveDisabled)
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("home.entryComposer.sheet.save")
+        init(parent: BrainMailInlineTextView) {
+            self.parent = parent
+        }
+
+        func textViewDidChange(_ textView: UITextView) {
+            parent.text = textView.text
+        }
+
+        func textViewDidBeginEditing(_ textView: UITextView) {
+            parent.isFirstResponder = true
+        }
+
+        func textViewDidEndEditing(_ textView: UITextView) {
+            parent.isFirstResponder = false
         }
     }
 }
