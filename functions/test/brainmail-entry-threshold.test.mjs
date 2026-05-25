@@ -120,34 +120,29 @@ test("stale 3-entry onboarding and unlock copy is absent from first-time UI file
   }
 });
 
-test("entry composer uses native sheet focus instead of keyboard height math", () => {
+test("entry composer uses custom overlay focus instead of keyboard height math", () => {
   const composer = readRepoFile("ReMind/Views/Main/Components/EntryComposer.swift");
   const main = readRepoFile("ReMind/Views/Main/MainView.swift");
 
+  assert.match(composer, /struct NewEntryComposerOverlay:\s*View/);
   assert.match(composer, /struct NewEntryComposerSheet:\s*View/);
   assert.match(composer, /@FocusState private var isTextEditorFocused:\s*Bool/);
-  assert.match(composer, /\.task\s*\{[\s\S]*isTextEditorFocused = true/);
-  assert.match(main, /private enum ActiveHomeSheet:[\s\S]*case newEntry/);
+  assert.match(composer, /Task\.sleep\(nanoseconds:\s*190_000_000\)[\s\S]*isTextEditorFocused = true/);
+  assert.match(main, /@State private var isComposing = false/);
   assert.match(main, /\.sheet\(item:\s*\$activeHomeSheet\)/);
-  assert.match(main, /case \.newEntry:[\s\S]*NewEntryComposerSheet\(/);
-  assert.match(main, /private func presentEntrySheet\(\)[\s\S]*activeHomeSheet = \.newEntry/);
+  assert.doesNotMatch(main, /case newEntry|case \.newEntry|NewEntryComposerSheet\(/);
+  assert.match(main, /if isComposing[\s\S]*NewEntryComposerOverlay\(/);
+  assert.match(main, /private func presentEntryComposer\(\)[\s\S]*isComposing = true/);
   assert.doesNotMatch(main, /keyboardFrame|keyboardHeight|keyboardFrameEndUserInfoKey/);
   assert.doesNotMatch(composer, /keyboardFrame|keyboardHeight|keyboardFrameEndUserInfoKey/);
 });
 
-test("entry composer keeps compact tap card and clean native sheet actions", () => {
+test("entry composer keeps compact tap card and clean overlay actions", () => {
   const composer = readRepoFile("ReMind/Views/Main/Components/EntryComposer.swift");
 
   assert.match(composer, /Text\("New entry"\)/);
   assert.match(composer, /Tap to write to future you\.\.\./);
-  assert.match(composer, /placeholder:\s*""/);
-  assert.doesNotMatch(
-    composer,
-    new RegExp([
-      ["What.s", "something", "worth", "remembering"].join(" "),
-      ["What.s", "soemthing", "worth", "remembereing"].join(" "),
-    ].join("|"))
-  );
+  assert.match(composer, /placeholder:\s*"What’s something worth remembering\?"/);
   assert.doesNotMatch(
     composer,
     new RegExp(["Write", "something", "you.d", "want", "to", "receive", "later"].join(" "))
@@ -155,5 +150,7 @@ test("entry composer keeps compact tap card and clean native sheet actions", () 
   assert.match(composer, /writingSurfaceBackground/);
   assert.match(composer, /BrainMailComposePrimaryButtonLabel\([\s\S]*title: "Save"/);
   assert.match(composer, /Text\("Cancel"\)/);
+  assert.match(composer, /home\.entryComposer\.overlay\.cancel/);
+  assert.match(composer, /home\.entryComposer\.overlay\.save/);
   assert.doesNotMatch(composer, /cancelButton|Cancel reminder|Label\("Cancel"/);
 });

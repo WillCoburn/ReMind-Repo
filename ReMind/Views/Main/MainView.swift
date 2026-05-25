@@ -5,7 +5,6 @@ import SwiftUI
 import Foundation
 
 private enum ActiveHomeSheet: String, Equatable, Identifiable {
-    case newEntry
     case sendNow
     case export
     case inspiration
@@ -28,6 +27,7 @@ struct MainView: View {
     @State private var showSuccessMessage = false
     @State private var pulseEditor = false
     @State private var isSubmitting = false
+    @State private var isComposing = false
     @State private var isDeletingLatestReminder = false
 
     // Alerts
@@ -58,6 +58,10 @@ struct MainView: View {
                 entryInputHeight: entryInputHeight
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .blur(radius: isComposing ? 1.4 : 0)
+            .scaleEffect(isComposing ? 0.995 : 1)
+            .allowsHitTesting(!isComposing)
+            .animation(.easeInOut(duration: 0.18), value: isComposing)
         }
         .background {
             OnboardingBackgroundView()
@@ -65,14 +69,6 @@ struct MainView: View {
         }
             .sheet(item: $activeHomeSheet) { sheet in
                 switch sheet {
-                case .newEntry:
-                    NewEntryComposerSheet(
-                        text: $input,
-                        isSubmitting: $isSubmitting,
-                        isNetworkConnected: net.isConnected,
-                        onCancel: cancelEntrySheet,
-                        onSave: saveEntry
-                    )
                 case .sendNow:
                     NavigationStack {
                         SendNowSheet()
@@ -101,7 +97,7 @@ struct MainView: View {
             .onChange(of: isPageActive) { active in
                 guard active else {
                     guardedActionTask?.cancel()
-                    dismissEntrySheet(clearDraft: true)
+                    dismissEntryComposer(clearDraft: true)
                     return
                 }
                 refreshMainViewData()
@@ -110,33 +106,54 @@ struct MainView: View {
                 guard showing == nil, isPageActive else { return }
                 refreshMainViewData()
             }
+            .onChange(of: isComposing) { composing in
+                guard !composing, isPageActive else { return }
+                refreshMainViewData()
+            }
             .onDisappear {
                 guardedActionTask?.cancel()
-                dismissEntrySheet(clearDraft: true)
+                dismissEntryComposer(clearDraft: true)
             }
             .onChange(of: appVM.user?.uid) { _ in
                 guardedActionTask?.cancel()
-                dismissEntrySheet(clearDraft: true)
+                dismissEntryComposer(clearDraft: true)
                 activeHomeSheet = nil
             }
             .tint(.figmaBlue)
             .toolbar(.hidden, for: .navigationBar)
             .brainMailDynamicTypeRange()
             .overlay {
-                if showDeleteReminderConfirmation, let pendingDeleteReminder {
-                    BrainMailConfirmationOverlay(
-                        title: "Are you sure you want to remove this reminder from your bank?",
-                        message: "",
-                        confirmTitle: "Yes, delete",
-                        cancelTitle: "Cancel",
-                        symbolName: "trash",
-                        onConfirm: {
-                            confirmDeleteReminder(pendingDeleteReminder)
-                        },
-                        onCancel: cancelDeleteReminder
-                    )
-                    .transition(.opacity)
+                ZStack {
+                    if isComposing {
+                        NewEntryComposerOverlay(
+                            text: $input,
+                            isSubmitting: $isSubmitting,
+                            isNetworkConnected: net.isConnected,
+                            onCancel: cancelEntryComposer,
+                            onSave: saveEntry
+                        )
+                        .transition(.opacity)
+                        .zIndex(1)
+                    }
+
+                    if showDeleteReminderConfirmation, let pendingDeleteReminder {
+                        BrainMailConfirmationOverlay(
+                            title: "Are you sure you want to remove this reminder from your bank?",
+                            message: "",
+                            confirmTitle: "Yes, delete",
+                            cancelTitle: "Cancel",
+                            symbolName: "trash",
+                            onConfirm: {
+                                confirmDeleteReminder(pendingDeleteReminder)
+                            },
+                            onCancel: cancelDeleteReminder
+                        )
+                        .transition(.opacity)
+                        .zIndex(2)
+                    }
                 }
+                .animation(.spring(response: 0.34, dampingFraction: 0.88), value: isComposing)
+                .animation(.easeInOut(duration: 0.18), value: showDeleteReminderConfirmation)
             }
     }
 
@@ -203,7 +220,7 @@ struct MainView: View {
                         text: $input,
                         pulseEditor: pulseEditor,
                         inputHeight: entryInputHeight,
-                        onBeginEditing: presentEntrySheet
+                        onBeginEditing: presentEntryComposer
                     )
 
                     saveStatusView
@@ -547,7 +564,7 @@ struct MainView: View {
         do {
             try await appVM.submit(text: text)
             input = ""
-            dismissEntrySheet(clearDraft: false)
+            dismissEntryComposer(clearDraft: false)
 
             withAnimation(.easeInOut(duration: 0.5)) { pulseEditor = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -660,23 +677,27 @@ struct MainView: View {
         }
     }
 
-    private func presentEntrySheet() {
-        guard activeHomeSheet != .newEntry else { return }
-        activeHomeSheet = .newEntry
+    private func presentEntryComposer() {
+        guard !isComposing, activeHomeSheet == nil else { return }
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
+            isComposing = true
+        }
     }
 
-    private func cancelEntrySheet() {
-        dismissEntrySheet(clearDraft: true)
+    private func cancelEntryComposer() {
+        dismissEntryComposer(clearDraft: true)
     }
 
-    private func dismissEntrySheet(clearDraft: Bool) {
+    private func dismissEntryComposer(clearDraft: Bool) {
         if clearDraft {
             input = ""
         }
 
         hideKeyboard()
-        if activeHomeSheet == .newEntry {
-            activeHomeSheet = nil
+        if isComposing {
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+                isComposing = false
+            }
         }
     }
 

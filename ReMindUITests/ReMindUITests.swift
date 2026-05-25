@@ -71,7 +71,7 @@ final class ReMindUITests: XCTestCase {
         }
 
         let compactComposer = app.descendants(matching: .any)["home.entryComposer.compact"]
-        scrollUntilHittable(compactComposer, in: scrollView, direction: .down)
+        scrollUntilTappable(compactComposer, in: scrollView, app: app, direction: .down)
         XCTAssertTrue(compactComposer.isHittable)
         compactComposer.tap()
 
@@ -89,7 +89,7 @@ final class ReMindUITests: XCTestCase {
         XCTAssertTrue(scrollView.waitForExistence(timeout: 8))
 
         let compactComposer = app.descendants(matching: .any)["home.entryComposer.compact"]
-        scrollUntilHittable(compactComposer, in: scrollView, direction: .down)
+        scrollUntilTappable(compactComposer, in: scrollView, app: app)
         XCTAssertTrue(compactComposer.isHittable)
 
         compactComposer.tap()
@@ -99,7 +99,7 @@ final class ReMindUITests: XCTestCase {
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
         editor.typeText("Testing the new composer")
 
-        let cancel = app.buttons["home.entryComposer.sheet.cancel"]
+        let cancel = app.buttons["home.entryComposer.overlay.cancel"]
         XCTAssertTrue(cancel.waitForExistence(timeout: 2))
         cancel.tap()
 
@@ -107,6 +107,7 @@ final class ReMindUITests: XCTestCase {
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.keyboards.firstMatch)
         waitForExpectations(timeout: 4)
 
+        scrollUntilTappable(compactComposer, in: scrollView, app: app)
         compactComposer.tap()
         XCTAssertTrue(editor.waitForExistence(timeout: 4))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
@@ -232,6 +233,26 @@ final class ReMindUITests: XCTestCase {
     ) {
         for _ in 0..<maxAttempts {
             if element.exists && element.isHittable { return }
+            switch direction {
+            case .up:
+                scrollView.swipeUp()
+            case .down:
+                scrollView.swipeDown()
+            }
+        }
+    }
+
+    private func scrollUntilTappable(
+        _ element: XCUIElement,
+        in scrollView: XCUIElement,
+        app: XCUIApplication,
+        direction: ScrollDirection = .up,
+        maxAttempts: Int = 8
+    ) {
+        for _ in 0..<maxAttempts {
+            if element.exists && element.isHittable && app.frame.contains(CGPoint(x: element.frame.midX, y: element.frame.midY)) {
+                return
+            }
             switch direction {
             case .up:
                 scrollView.swipeUp()
