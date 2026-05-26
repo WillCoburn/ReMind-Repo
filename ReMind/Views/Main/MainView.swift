@@ -30,6 +30,8 @@ struct MainView: View {
     @State private var isEditingEntry = false
     @State private var isDeletingLatestReminder = false
     @State private var isEntryEditorFocused = false
+    @State private var retainedKeyboardScrollRunway: CGFloat = 0
+    @StateObject private var keyboardObserver = KeyboardObserver()
 
     // Alerts
     @State private var showAlert = false
@@ -44,6 +46,7 @@ struct MainView: View {
                 let safeTop = max(proxy.safeAreaInsets.top, 16)
                 let safeBottom = max(proxy.safeAreaInsets.bottom, 16)
                 let viewportWidth = max(proxy.size.width, 1)
+                let viewportHeight = max(proxy.size.height, 1)
                 let topContentWidth = constrainedTopContentWidth(for: viewportWidth)
                 let usesAccessibilityLayout = dynamicTypeSize.brainMailUsesAccessibilityLayout
                 let entryInputHeight = entryInputHeight(
@@ -55,6 +58,7 @@ struct MainView: View {
                     safeTop: safeTop,
                     safeBottom: safeBottom,
                     viewportWidth: viewportWidth,
+                    viewportHeight: viewportHeight,
                     topContentWidth: topContentWidth,
                     usesAccessibilityLayout: usesAccessibilityLayout,
                     entryInputHeight: entryInputHeight
@@ -176,6 +180,7 @@ struct MainView: View {
         safeTop: CGFloat,
         safeBottom: CGFloat,
         viewportWidth: CGFloat,
+        viewportHeight: CGFloat,
         topContentWidth: CGFloat,
         usesAccessibilityLayout: Bool,
         entryInputHeight: CGFloat
@@ -200,19 +205,28 @@ struct MainView: View {
                             .onTapGesture(perform: dismissEntryKeyboard)
                         }
 
-                        EntryComposer(
-                            text: $input,
-                            pulseEditor: pulseEditor,
-                            inputHeight: entryInputHeight,
-                            isEditing: isEditingEntry,
-                            isSubmitting: isSubmitting,
-                            isNetworkConnected: net.isConnected,
-                            isEditorFocused: $isEntryEditorFocused,
-                            onCancel: cancelEntryComposer,
-                            onSave: saveEntry,
-                            onBeginEditing: presentEntryComposer
-                        )
-                        .id(HomeScrollTarget.entryComposer)
+                        VStack(spacing: 0) {
+                            EntryComposer(
+                                text: $input,
+                                pulseEditor: pulseEditor,
+                                inputHeight: entryInputHeight,
+                                isEditing: isEditingEntry,
+                                isSubmitting: isSubmitting,
+                                isNetworkConnected: net.isConnected,
+                                isEditorFocused: $isEntryEditorFocused,
+                                onCancel: cancelEntryComposer,
+                                onSave: saveEntry,
+                                onBeginEditing: presentEntryComposer
+                            )
+                            .id(HomeScrollTarget.entryComposer)
+
+                            if isEditingEntry {
+                                // Position this marker at the keyboard edge to retain a calm gap under the card.
+                                Color.clear
+                                    .frame(height: 28)
+                                    .id(HomeScrollTarget.entryComposerClearance)
+                            }
+                        }
 
                         saveStatusView
                     }
@@ -226,16 +240,43 @@ struct MainView: View {
                         .animation(.easeOut(duration: 0.18), value: isEditingEntry)
                 }
                 .frame(width: viewportWidth, alignment: .top)
-                .padding(.bottom, safeBottom + 24)
+                // The keyboard overlays this page by design; add only scrollable runway while editing.
+                .padding(.bottom, safeBottom + 24 + editingScrollRunway)
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: isEntryEditorFocused) { isFocused in
-                guard isFocused else { return }
-                withAnimation(.easeOut(duration: 0.22)) {
-                    scrollProxy.scrollTo(
-                        HomeScrollTarget.entryComposer,
-                        anchor: UnitPoint(x: 0.5, y: usesAccessibilityLayout ? 0.12 : 0.18)
+                guard isFocused else {
+                    setEntryScrollRunway(0)
+                    return
+                }
+
+                if keyboardObserver.height > 0 {
+                    setEntryScrollRunway(
+                        max(retainedKeyboardScrollRunway, keyboardObserver.height + 16)
                     )
+                }
+            }
+            .onChange(of: keyboardObserver.height) { height in
+                guard isEditingEntry, isEntryEditorFocused else {
+                    if height <= 0 {
+                        setEntryScrollRunway(0)
+                    }
+                    return
+                }
+
+                guard height > 0 else {
+                    setEntryScrollRunway(0)
+                    return
+                }
+
+                setEntryScrollRunway(max(retainedKeyboardScrollRunway, height + 16))
+            }
+            .onChange(of: retainedKeyboardScrollRunway) { runway in
+                guard runway > 0, isEditingEntry, isEntryEditorFocused else { return }
+
+                // Reveal after the new scroll range has been laid out, not during its creation.
+                DispatchQueue.main.async {
+                    revealEntryComposer(using: scrollProxy, viewportHeight: viewportHeight)
                 }
             }
         }
@@ -711,6 +752,7 @@ struct MainView: View {
 
     private func dismissEntryComposer(clearDraft: Bool) {
         isEntryEditorFocused = false
+        setEntryScrollRunway(0)
 
         if clearDraft {
             input = ""
@@ -718,6 +760,37 @@ struct MainView: View {
 
         withAnimation(.easeOut(duration: 0.18)) {
             isEditingEntry = false
+        }
+    }
+
+    private var editingScrollRunway: CGFloat {
+        guard isEditingEntry, isEntryEditorFocused else { return 0 }
+        return retainedKeyboardScrollRunway
+    }
+
+    private func setEntryScrollRunway(_ height: CGFloat) {
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+
+        withTransaction(transaction) {
+            retainedKeyboardScrollRunway = height
+        }
+    }
+
+    private func revealEntryComposer(
+        using scrollProxy: ScrollViewProxy,
+        viewportHeight: CGFloat
+    ) {
+        let keyboardHeight = keyboardObserver.height
+        guard keyboardHeight > 0 else { return }
+
+        let keyboardTopAnchor = min(max((viewportHeight - keyboardHeight) / viewportHeight, 0.08), 0.92)
+
+        withAnimation(.easeOut(duration: max(keyboardObserver.animationContext.duration, 0.18))) {
+            scrollProxy.scrollTo(
+                HomeScrollTarget.entryComposerClearance,
+                anchor: UnitPoint(x: 0.5, y: keyboardTopAnchor)
+            )
         }
     }
 
@@ -861,6 +934,7 @@ private enum HomeActionIconStyle {
 private enum HomeScrollTarget: Hashable {
     case top
     case entryComposer
+    case entryComposerClearance
 }
 
 private enum HomeActionScrollTarget: Hashable {
