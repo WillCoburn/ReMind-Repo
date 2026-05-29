@@ -23,6 +23,7 @@ export const TWILIO_AUTH = defineSecret("TWILIO_AUTH"); // token
 export const TWILIO_FROM = defineSecret("TWILIO_FROM"); // +1XXXXXXXXXX
 export const TWILIO_MSID = defineSecret("TWILIO_MSID"); // optional
 export const REVENUECAT_WEBHOOK_AUTH = defineSecret("REVENUECAT_WEBHOOK_AUTH");
+export const REVENUECAT_REST_API_KEY = defineSecret("REVENUECAT_REST_API_KEY");
 
 // ----- Shared helpers & scheduling logic -----
 const clampWeeklyRate = (r: number) =>

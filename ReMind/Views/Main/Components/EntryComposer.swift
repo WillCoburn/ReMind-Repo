@@ -45,6 +45,10 @@ struct EntryComposer: View {
         isSubmitting || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !isNetworkConnected
     }
 
+    private var inlineEditorMinHeight: CGFloat {
+        usesAccessibilityLayout ? 162 : 122
+    }
+
     var body: some View {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let hasText = !trimmedText.isEmpty
@@ -135,11 +139,11 @@ struct EntryComposer: View {
                 isFirstResponder: $isEditorFocused,
                 accessibilityIdentifier: "home.entryTextEditor"
             )
-                .frame(height: usesAccessibilityLayout ? 136 : 122, alignment: .topLeading)
+                .frame(minHeight: inlineEditorMinHeight, alignment: .topLeading)
                 .padding(8)
 
             if text.isEmpty {
-                Text("What’s something worth remembering?")
+                Text("Hey future me, remember...")
                     .foregroundStyle(Color.black.opacity(0.38))
                     .font(.body)
                     .padding(.horizontal, 12)
@@ -183,23 +187,37 @@ struct EntryComposer: View {
                     .padding(.vertical, 14)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
             } else {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 15 : 14, weight: .semibold))
-                        .foregroundStyle(Color.figmaBlue.opacity(0.36))
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        collapsedPlaceholderIcon
+                        collapsedPlaceholderText
+                    }
 
-                    Text("Tap to write to future you...")
-                        .font(.body)
-                        .foregroundColor(Color.black.opacity(0.38))
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 8) {
+                        collapsedPlaceholderIcon
+                        collapsedPlaceholderText
+                    }
                 }
                 .lineLimit(dynamicTypeSize.brainMailUsesAccessibilityLayout ? 3 : 2)
                 .padding(.top, 14)
                 .padding(.horizontal, 16)
             }
         }
-        .frame(height: inputHeight, alignment: .topLeading)
+        .frame(minHeight: inputHeight, alignment: .topLeading)
         .contentShape(Rectangle())
+    }
+
+    private var collapsedPlaceholderIcon: some View {
+        Image(systemName: "square.and.pencil")
+            .font(.system(size: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 15 : 14, weight: .semibold))
+            .foregroundStyle(Color.figmaBlue.opacity(0.36))
+    }
+
+    private var collapsedPlaceholderText: some View {
+        Text("Tap to write to future you")
+            .font(.body)
+            .foregroundColor(Color.black.opacity(0.38))
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func writingSurfaceBackground(hasText: Bool) -> some View {

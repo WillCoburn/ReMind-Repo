@@ -141,10 +141,14 @@ final class ReMindUITests: XCTestCase {
         let compactComposer = app.descendants(matching: .any)["home.entryComposer.compact"]
         scrollUntilTappable(compactComposer, in: scrollView, app: app)
         XCTAssertTrue(compactComposer.isHittable)
+        let compactPrompt = app.staticTexts["Tap to write to future you"]
+        XCTAssertTrue(compactPrompt.exists)
+        XCTAssertLessThanOrEqual(compactPrompt.frame.maxY, compactComposer.frame.maxY + 1)
         compactComposer.tap()
 
         XCTAssertTrue(app.descendants(matching: .any)["home.entryComposer.inline"].waitForExistence(timeout: 4))
         XCTAssertTrue(app.textViews["home.entryTextEditor"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["Hey future me, remember..."].waitForExistence(timeout: 4))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
         XCTAssertFalse(app.sheets.firstMatch.exists)
 

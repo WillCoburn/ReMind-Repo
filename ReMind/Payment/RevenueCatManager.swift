@@ -32,6 +32,7 @@ final class RevenueCatManager: NSObject, ObservableObject {
     private var identifyInFlight = false
     private var pendingIdentifyCompletions: [() -> Void] = []
     private var refreshInFlight = false
+    private var pendingRefreshCompletions: [() -> Void] = []
     private var lastRefreshStartedAt: Date?
     private let refreshCooldownSec: TimeInterval = 5
 
@@ -98,16 +99,24 @@ final class RevenueCatManager: NSObject, ObservableObject {
 
     // MARK: - Refresh
 
-    func refreshEntitlementState(reason: String = "manual", force: Bool = false) {
+    func refreshEntitlementState(
+        reason: String = "manual",
+        force: Bool = false,
+        completion: (() -> Void)? = nil
+    ) {
         ensureConfigured()
         if refreshInFlight {
             debugLog("refresh skipped; already in flight", uid: Auth.auth().currentUser?.uid, reason: reason)
+            if let completion {
+                pendingRefreshCompletions.append(completion)
+            }
             return
         }
         if !force,
            let lastRefreshStartedAt,
            Date().timeIntervalSince(lastRefreshStartedAt) < refreshCooldownSec {
             debugLog("refresh skipped; cooldown", uid: Auth.auth().currentUser?.uid, reason: reason)
+            completion?()
             return
         }
 
@@ -122,11 +131,15 @@ final class RevenueCatManager: NSObject, ObservableObject {
         Purchases.shared.getCustomerInfo { [weak self] info, error in
             guard let self else { return }
             self.refreshInFlight = false
+            let completions = self.pendingRefreshCompletions
+            self.pendingRefreshCompletions = []
             if let info {
                 self.apply(info)
             } else if let error {
                 self.applyRefreshError(error, context: "getCustomerInfo", uid: Auth.auth().currentUser?.uid, reason: reason)
             }
+            completion?()
+            completions.forEach { $0() }
         }
     }
 

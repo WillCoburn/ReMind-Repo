@@ -16,8 +16,15 @@ import {
   TWILIO_AUTH,
   TWILIO_FROM,
   TWILIO_MSID,
+  REVENUECAT_REST_API_KEY,
 } from "../config/options";
-import { resolveServerCapabilities } from "../entitlements/capabilities";
+import {
+  resolveServerCapabilities,
+  resolveServerCapabilitiesWithRevenueCatEntitlement,
+  type RevenueCatEntitlementSnapshot,
+  type ServerCapabilities,
+} from "../entitlements/capabilities";
+import { fetchRevenueCatSubscriberEntitlement } from "../revenuecat/customerInfo";
 import { getTwilioClient, buildMsgParams, sendSMS } from "../twilio/client";
 import { assertSmsDeliveryAllowed } from "../sms/eligibility";
 import {
@@ -54,8 +61,100 @@ function twilioHttpsError(err: any) {
   );
 }
 
+function clientClaimsPro(clientEntitlement: Record<string, unknown>): boolean {
+  return (
+    clientEntitlement.isProUser === true ||
+    clientEntitlement.effectivePlan === "pro" ||
+    clientEntitlement.state === "subscribed"
+  );
+}
+
+async function mirrorRevenueCatVerification(
+  uid: string,
+  entitlement: RevenueCatEntitlementSnapshot
+): Promise<void> {
+  const expiresAt =
+    entitlement.expiresAtSeconds == null
+      ? null
+      : admin.firestore.Timestamp.fromMillis(entitlement.expiresAtSeconds * 1000);
+  const subscriptionStatus = entitlement.willRenew === false ? "cancelled" : "subscribed";
+
+  await db.doc(`users/${uid}`).set(
+    {
+      rc: {
+        entitlementActive: true,
+        expiresAt,
+        productId: entitlement.productId ?? null,
+        lastServerVerificationAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastServerVerificationSource: "sendOneNow",
+      },
+      plan: "pro",
+      subscriptionStatus,
+    },
+    { merge: true }
+  );
+}
+
+async function resolveSendOneNowCapabilities(
+  uid: string,
+  userSnap: FirebaseFirestore.DocumentSnapshot,
+  clientEntitlement: Record<string, unknown>
+): Promise<ServerCapabilities> {
+  const mirrorCapabilities = resolveServerCapabilities(userSnap);
+  if (!mirrorCapabilities.appliesFreeUsageLimits) return mirrorCapabilities;
+  if (!clientClaimsPro(clientEntitlement)) return mirrorCapabilities;
+
+  logger.info("[sendOneNow] verifying fresh RevenueCat Pro claim", {
+    uid,
+    mirrorPlan: mirrorCapabilities.plan,
+    mirrorSource: mirrorCapabilities.source,
+    mirrorReason: mirrorCapabilities.reason,
+    clientEntitlement,
+  });
+
+  try {
+    const entitlement = await fetchRevenueCatSubscriberEntitlement(
+      uid,
+      REVENUECAT_REST_API_KEY.value()
+    );
+    const verifiedCapabilities = resolveServerCapabilitiesWithRevenueCatEntitlement(
+      userSnap,
+      entitlement
+    );
+
+    if (!verifiedCapabilities.appliesFreeUsageLimits) {
+      await mirrorRevenueCatVerification(uid, entitlement);
+      logger.info("[sendOneNow] verified RevenueCat Pro; bypassing free quota", {
+        uid,
+        source: verifiedCapabilities.source,
+        reason: verifiedCapabilities.reason,
+      });
+      return verifiedCapabilities;
+    }
+
+    logger.warn("[sendOneNow] client claimed Pro but RevenueCat API did not confirm it", {
+      uid,
+      entitlement,
+      mirrorReason: mirrorCapabilities.reason,
+    });
+    return mirrorCapabilities;
+  } catch (err: any) {
+    logger.error("[sendOneNow] RevenueCat Pro verification unavailable", {
+      uid,
+      message: err?.message,
+    });
+    throw new HttpsError(
+      "failed-precondition",
+      "We're still confirming your Pro purchase. Please try Send One Now again in a moment."
+    );
+  }
+}
+
 export const sendOneNow = onCall(
-  { secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID], invoker: "public" },
+  {
+    secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID, REVENUECAT_REST_API_KEY],
+    invoker: "public",
+  },
   async (req) => {
     try {
       const uid = req.auth?.uid;
@@ -69,8 +168,12 @@ export const sendOneNow = onCall(
       const to = userSnap.get("phoneE164") as string | undefined;
       if (!to) throw new HttpsError("failed-precondition", "No phone number on file.");
 
-      const capabilities = resolveServerCapabilities(userSnap);
       const clientEntitlement = (req.data?.clientEntitlement ?? {}) as Record<string, unknown>;
+      const capabilities = await resolveSendOneNowCapabilities(
+        uid,
+        userSnap,
+        clientEntitlement
+      );
       logger.info("[sendOneNow] resolved capabilities", {
         uid,
         plan: capabilities.plan,

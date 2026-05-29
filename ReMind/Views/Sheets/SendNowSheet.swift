@@ -10,9 +10,14 @@ struct SendNowSheet: View {
     @EnvironmentObject private var appVM: AppViewModel
 
     @State private var isSending = false
+    @State private var isCheckingEntitlement = false
     @State private var errorMessage: String? = nil
     @State private var showWeeklyLimitAlert = false
     @State private var animateIllustration = false
+
+    private var isBusy: Bool {
+        isSending || isCheckingEntitlement
+    }
 
     var body: some View {
         ZStack {
@@ -70,7 +75,7 @@ struct SendNowSheet: View {
                                 Task { await sendNow() }
                             } label: {
                                 Group {
-                                    if isSending {
+                                    if isBusy {
                                         ProgressView()
                                             .progressViewStyle(.circular)
                                             .tint(.white)
@@ -85,10 +90,10 @@ struct SendNowSheet: View {
                                 .frame(minHeight: 52)
                             }
                             .foregroundColor(.white)
-                            .background((isSending || appVM.hasUsedFreeInstantSendThisWeek) ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
+                            .background((isBusy || appVM.hasUsedFreeInstantSendThisWeek) ? Color.figmaBlue.opacity(0.6) : Color.figmaBlue)
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .shadow(color: Color.figmaBlue.opacity(isSending ? 0 : 0.22), radius: 16, x: 0, y: 8)
-                            .disabled(isSending)
+                            .shadow(color: Color.figmaBlue.opacity(isBusy ? 0 : 0.22), radius: 16, x: 0, y: 8)
+                            .disabled(isBusy)
 
                             Button(action: { dismiss() }) {
                                 Text("Cancel")
@@ -136,7 +141,11 @@ struct SendNowSheet: View {
     }
 
     private func sendNow() async {
-        guard !isSending else { return }
+        guard !isBusy else { return }
+        isCheckingEntitlement = true
+        defer { isCheckingEntitlement = false }
+        await appVM.refreshRevenueCatEntitlementForSendNow(reason: "sendNowSheetSendTap")
+
         if appVM.hasUsedFreeInstantSendThisWeek {
             appVM.debugLogUsageGate("sendNowSheet.clientBlockedWeeklyInstant")
             showWeeklyLimitAlert = true

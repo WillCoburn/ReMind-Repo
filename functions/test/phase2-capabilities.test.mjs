@@ -6,8 +6,12 @@ const require = createRequire(import.meta.url);
 
 const {
   resolveServerCapabilities,
+  resolveServerCapabilitiesWithRevenueCatEntitlement,
   SERVER_LIMITS,
 } = require("../lib/entitlements/capabilities.js");
+const {
+  parseRevenueCatSubscriberEntitlement,
+} = require("../lib/revenuecat/customerInfo.js");
 const { deriveSubscriptionState } = require("../lib/revenuecat/state.js");
 
 function snap(data) {
@@ -118,6 +122,46 @@ test("server capabilities treat webhook delay as free until server mirror says p
   const capabilities = resolveServerCapabilities(snap({ plan: "free" }), 1_000);
   assert.equal(capabilities.plan, "free");
   assert.equal(capabilities.appliesFreeUsageLimits, true);
+});
+
+test("send-one-now capabilities let fresh RevenueCat Pro bypass stale free quota", () => {
+  const staleMirror = snap({
+    plan: "free",
+    subscriptionStatus: "unsubscribed",
+    rc: { entitlementActive: false },
+    usage: {
+      instantWeekKey: "1970-01-05",
+      instantSendsThisWeek: 1,
+    },
+  });
+  const beforeVerification = resolveServerCapabilities(staleMirror, 1_000);
+  assert.equal(beforeVerification.plan, "free");
+  assert.equal(beforeVerification.appliesFreeUsageLimits, true);
+
+  const revenueCatEntitlement = parseRevenueCatSubscriberEntitlement(
+    {
+      subscriber: {
+        entitlements: {
+          pro: {
+            expires_date: "1970-01-01T00:33:20.000Z",
+            product_identifier: "remind_pro_monthly",
+            purchase_date: "1970-01-01T00:16:40.000Z",
+          },
+        },
+      },
+    },
+    "pro",
+    1_000
+  );
+  const afterVerification = resolveServerCapabilitiesWithRevenueCatEntitlement(
+    staleMirror,
+    revenueCatEntitlement,
+    1_000
+  );
+
+  assert.equal(afterVerification.plan, "pro");
+  assert.equal(afterVerification.source, "revenueCatApi");
+  assert.equal(afterVerification.appliesFreeUsageLimits, false);
 });
 
 test("revenuecat state keeps cancelled users pro through the paid period", () => {

@@ -4,6 +4,7 @@ export type ServerPlan = "free" | "pro";
 export type ServerCapabilityState = "free" | "pro" | "expired";
 export type ServerCapabilitySource =
   | "revenueCatMirror"
+  | "revenueCatApi"
   | "serverProfile"
   | "expired"
   | "free";
@@ -26,6 +27,26 @@ export const SERVER_LIMITS = {
   freeMaxRemindersPerWeek: 3,
   proMaxRemindersPerWeek: 14,
 } as const;
+
+export type RevenueCatEntitlementSnapshot = {
+  entitlementActive: boolean;
+  expiresAtSeconds: number | null;
+  willRenew?: boolean | null;
+  productId?: string | null;
+  reason: string;
+};
+
+function proCapabilities(source: ServerCapabilitySource, reason: string): ServerCapabilities {
+  return {
+    state: "pro",
+    plan: "pro",
+    source,
+    reason,
+    canUseProReminderRange: true,
+    maxRemindersPerWeek: SERVER_LIMITS.proMaxRemindersPerWeek,
+    appliesFreeUsageLimits: false,
+  };
+}
 
 export function timestampSeconds(raw: unknown): number | null {
   if (raw == null) return null;
@@ -78,17 +99,43 @@ export function resolveServerCapabilities(
     `rcExpiresAt=${rcExpiresAtSeconds ?? "missing"}`,
   ].join(" ");
 
+  if (isPro) {
+    return proCapabilities(source, reason);
+  }
+
   return {
     state,
-    plan: isPro ? "pro" : "free",
+    plan: "free",
     source,
     reason,
-    canUseProReminderRange: isPro,
-    maxRemindersPerWeek: isPro
-      ? SERVER_LIMITS.proMaxRemindersPerWeek
-      : SERVER_LIMITS.freeMaxRemindersPerWeek,
-    appliesFreeUsageLimits: !isPro,
+    canUseProReminderRange: false,
+    maxRemindersPerWeek: SERVER_LIMITS.freeMaxRemindersPerWeek,
+    appliesFreeUsageLimits: true,
   };
+}
+
+export function resolveServerCapabilitiesWithRevenueCatEntitlement(
+  user: SnapshotLike,
+  revenueCat: RevenueCatEntitlementSnapshot | null,
+  nowSeconds = Date.now() / 1000
+): ServerCapabilities {
+  const base = resolveServerCapabilities(user, nowSeconds);
+  if (base.plan === "pro") return base;
+  if (!revenueCat?.entitlementActive) return base;
+  if (revenueCat.expiresAtSeconds != null && revenueCat.expiresAtSeconds < nowSeconds) {
+    return base;
+  }
+
+  return proCapabilities(
+    "revenueCatApi",
+    [
+      "source=revenueCatApi",
+      `rcApiActive=${String(revenueCat.entitlementActive)}`,
+      `rcApiExpiresAt=${revenueCat.expiresAtSeconds ?? "missing"}`,
+      `rcApiProductId=${revenueCat.productId ?? "missing"}`,
+      revenueCat.reason,
+    ].join(" ")
+  );
 }
 
 export function resolveServerPlan(

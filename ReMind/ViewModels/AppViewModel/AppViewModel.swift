@@ -380,8 +380,32 @@ final class AppViewModel: ObservableObject {
     }
 
     func refreshRevenueCatEntitlement(reason: String = "app") {
+        refreshRevenueCatEntitlement(reason: reason, force: false, completion: nil)
+    }
+
+    func refreshRevenueCatEntitlement(
+        reason: String = "app",
+        force: Bool = false,
+        completion: (() -> Void)? = nil
+    ) {
         revenueCat.forceIdentify(reason: reason) { [weak self] in
-            self?.revenueCat.refreshEntitlementState(reason: reason)
+            guard let self else {
+                completion?()
+                return
+            }
+            self.revenueCat.refreshEntitlementState(
+                reason: reason,
+                force: force,
+                completion: completion
+            )
+        }
+    }
+
+    func refreshRevenueCatEntitlementForSendNow(reason: String = "sendOneNow") async {
+        await withCheckedContinuation { continuation in
+            refreshRevenueCatEntitlement(reason: reason, force: true) {
+                continuation.resume()
+            }
         }
     }
 
