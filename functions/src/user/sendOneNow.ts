@@ -16,7 +16,8 @@ import {
   TWILIO_AUTH,
   TWILIO_FROM,
   TWILIO_MSID,
-  REVENUECAT_REST_API_KEY,
+  REVENUECAT_PROJECT_ID,
+  REVENUECAT_SECRET_API_KEY,
 } from "../config/options";
 import {
   resolveServerCapabilities,
@@ -115,7 +116,8 @@ async function resolveSendOneNowCapabilities(
   try {
     const entitlement = await fetchRevenueCatSubscriberEntitlement(
       uid,
-      REVENUECAT_REST_API_KEY.value()
+      REVENUECAT_SECRET_API_KEY.value(),
+      REVENUECAT_PROJECT_ID.value()
     );
     const verifiedCapabilities = resolveServerCapabilitiesWithRevenueCatEntitlement(
       userSnap,
@@ -141,7 +143,8 @@ async function resolveSendOneNowCapabilities(
   } catch (err: any) {
     logger.error("[sendOneNow] RevenueCat Pro verification unavailable", {
       uid,
-      message: err?.message,
+      errorMessage: err?.message,
+      errorName: err?.name,
     });
     throw new HttpsError(
       "failed-precondition",
@@ -152,7 +155,14 @@ async function resolveSendOneNowCapabilities(
 
 export const sendOneNow = onCall(
   {
-    secrets: [TWILIO_SID, TWILIO_AUTH, TWILIO_FROM, TWILIO_MSID, REVENUECAT_REST_API_KEY],
+    secrets: [
+      TWILIO_SID,
+      TWILIO_AUTH,
+      TWILIO_FROM,
+      TWILIO_MSID,
+      REVENUECAT_SECRET_API_KEY,
+      REVENUECAT_PROJECT_ID,
+    ],
     invoker: "public",
   },
   async (req) => {
