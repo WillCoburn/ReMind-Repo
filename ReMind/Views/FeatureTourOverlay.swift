@@ -27,15 +27,15 @@ struct FeatureTourOverlay: View {
         ),
         .init(
             step: .reminders,
-            title: "Save your first thought and BrainMail can start reminding you.",
-            message: "Add more over time to make those messages feel more varied. Sometimes they come when you need it most.",
+            title: "Entries will come back via SMS to nudge you back into that headspace.",
+            message: "",
             imageName: nil,
             textAlignment: .center
         ),
         .init(
             step: .sendNow,
             title: "Use the community page to share with and uplift others.",
-            message: "This forum is anonymous and moderated to create a safe and respectful space.",
+            message: "",
             imageName: nil,
             textAlignment: .center
         ),
