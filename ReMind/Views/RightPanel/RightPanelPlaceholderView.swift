@@ -141,6 +141,13 @@ struct RightPanelPlaceholderView: View {
     @State private var mailError: String?
     @State private var showFreeLimitsWhy = false
     @State private var settingsSaveSequence: Int64 = 0
+    @State private var pendingSettingsSave: PendingSettingsSave?
+
+    private struct PendingSettingsSave {
+        let settings: UserSettings
+        let expectedUid: String?
+        let revision: Int64
+    }
 
     var body: some View {
         ZStack {
@@ -262,6 +269,11 @@ struct RightPanelPlaceholderView: View {
         }
         .onDisappear {
             saveTask?.cancel()
+            if let pendingSettingsSave {
+                Task {
+                    await flushSettingsSave(pendingSettingsSave)
+                }
+            }
         }
         // Hide the nav bar so the custom layout can use the full vertical space.
         .toolbar(.hidden, for: .navigationBar)
@@ -493,26 +505,46 @@ struct RightPanelPlaceholderView: View {
         let settings = UserSettingsSync.currentFromAppStorage()
         let expectedUid = appVM.user?.uid
         let revision = Int64(Date().timeIntervalSince1970 * 1000)
+        pendingSettingsSave = PendingSettingsSave(
+            settings: settings,
+            expectedUid: expectedUid,
+            revision: revision
+        )
 
         saveTask = Task { @MainActor in
             do {
                 try await Task.sleep(nanoseconds: 600_000_000) // 0.6s debounce
                 try Task.checkCancellation()
                 guard sequence == settingsSaveSequence else { return }
-                guard expectedUid == appVM.user?.uid else { return }
-
-                print("🧪 committing settings batch")
-                try await UserSettingsSync.pushAndApply(
-                    settings: settings,
-                    expectedUid: expectedUid,
-                    clientRevision: revision
-                )
-                print("✅ pushAndApply (right panel) OK")
+                guard let pendingSettingsSave else { return }
+                await flushSettingsSave(pendingSettingsSave)
             } catch is CancellationError {
                 print("⚠️ pushAndApply (right panel) cancelled")
             } catch {
                 print("❌ pushAndApply (right panel) failed:", error.localizedDescription)
             }
+        }
+    }
+
+    @MainActor
+    private func flushSettingsSave(_ pending: PendingSettingsSave) async {
+        guard pending.expectedUid == appVM.user?.uid else { return }
+
+        do {
+            print("🧪 committing settings batch")
+            try await UserSettingsSync.pushAndApply(
+                settings: pending.settings,
+                expectedUid: pending.expectedUid,
+                clientRevision: pending.revision
+            )
+            if pendingSettingsSave?.revision == pending.revision {
+                pendingSettingsSave = nil
+            }
+            print("✅ pushAndApply (right panel) OK")
+        } catch is CancellationError {
+            print("⚠️ pushAndApply (right panel) cancelled")
+        } catch {
+            print("❌ pushAndApply (right panel) failed:", error.localizedDescription)
         }
     }
 

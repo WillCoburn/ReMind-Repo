@@ -25,6 +25,8 @@ export const applyUserSettings = onCall(
     const requestedSettings = req.data?.settings as Record<string, unknown> | undefined;
     const requestedRevision = clientRevision(req.data);
     const capabilities = resolveServerCapabilities(userSnap);
+    let savedSettings: Record<string, unknown> | null = null;
+    let skippedStaleRevision = false;
     logger.info("[applyUserSettings] resolved capabilities", {
       uid,
       plan: capabilities.plan,
@@ -44,16 +46,20 @@ export const applyUserSettings = onCall(
         existingRevision != null &&
         requestedRevision < existingRevision
       ) {
+        skippedStaleRevision = true;
         return;
       }
 
       const normalized = normalizeReminderSettings(requestedSettings ?? existing, capabilities);
       const { wasClamped: _wasClamped, ...settingsWrite } = normalized;
+      savedSettings = {
+        ...settingsWrite,
+        clientRevision: requestedRevision ?? existingRevision ?? Date.now(),
+      };
       tx.set(
         settingsRef,
         {
-          ...settingsWrite,
-          clientRevision: requestedRevision ?? existingRevision ?? Date.now(),
+          ...savedSettings,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         { merge: true }
@@ -61,6 +67,13 @@ export const applyUserSettings = onCall(
     });
 
     await scheduleNext(uid, new Date());
-    return { ok: true };
+    logger.info("[applyUserSettings] saved settings", {
+      uid,
+      skippedStaleRevision,
+      requestedSettings,
+      requestedRevision,
+      savedSettings,
+    });
+    return { ok: true, skippedStaleRevision, settings: savedSettings };
   }
 );

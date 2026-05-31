@@ -24,12 +24,16 @@ test("RevenueCat webhook validation rejects missing or wrong authorization", () 
     false
   );
   assert.equal(
-    isValidRevenueCatWebhook({ authorization: "shared-secret" }, "shared-secret"),
+    isValidRevenueCatWebhook({ authorization: "wrong" }, "shared-secret"),
     false
   );
 });
 
 test("RevenueCat webhook validation accepts the configured shared secret", () => {
+  assert.equal(
+    isValidRevenueCatWebhook({ authorization: "shared-secret" }, "shared-secret"),
+    true
+  );
   assert.equal(
     isValidRevenueCatWebhook({ authorization: "Bearer shared-secret" }, "shared-secret"),
     true

@@ -37,6 +37,10 @@ export function isValidRevenueCatWebhook(headers: HeaderMap, expectedAuth: strin
   const authorization = headerValue(headers, "authorization")?.trim();
   if (!authorization) return false;
 
+  if (authorization.length === configured.length && constantTimeEqual(authorization, configured)) {
+    return true;
+  }
+
   const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i);
   const bearerToken = bearerMatch?.[1]?.trim();
   if (!bearerToken) return false;

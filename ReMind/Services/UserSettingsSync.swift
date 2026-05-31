@@ -87,7 +87,7 @@ enum UserSettingsSync {
 
         let functions = Functions.functions()
         let callable = functions.httpsCallable("applyUserSettings")
-        _ = try await callable.call([
+        let result = try await callable.call([
             "settings": settingsData,
             "clientRevision": clientRevision
         ])
@@ -96,6 +96,6 @@ enum UserSettingsSync {
             throw CancellationError()
         }
 
-        print("✅ applyUserSettings success")
+        print("✅ applyUserSettings success:", result.data)
     }
 }
