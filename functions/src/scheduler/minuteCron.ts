@@ -2,6 +2,7 @@
 // File: functions/src/scheduler/minuteCron.ts
 // ============================
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { randomUUID } from "node:crypto";
 import {
   admin,
   db,
@@ -28,6 +29,60 @@ import {
 import { reserveInactivityAutoPause } from "../inactivity/schedulerPause";
 import { parseRcExpiresAt } from "../revenuecat/state";
 import { smsDeliveryBlockReason } from "../sms/eligibility";
+
+const AUTOMATED_SEND_LOCK_TTL_MS = 10 * 60 * 1000;
+
+function timestampMillis(raw: unknown): number | null {
+  if (raw == null) return null;
+  if (raw instanceof admin.firestore.Timestamp) return raw.toMillis();
+  if (raw instanceof Date) return raw.getTime();
+  if (typeof raw === "object" && "toMillis" in raw) {
+    const millis = (raw as { toMillis?: () => number }).toMillis?.();
+    return Number.isFinite(millis) ? millis ?? null : null;
+  }
+  const numeric = typeof raw === "string" ? Number(raw) : (raw as number);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+async function claimDueAutomatedSend(
+  ref: FirebaseFirestore.DocumentReference,
+  uid: string,
+  now: FirebaseFirestore.Timestamp
+): Promise<boolean> {
+  const lockId = randomUUID();
+  const nowMillis = now.toMillis();
+
+  return db.runTransaction(async (tx) => {
+    const fresh = await tx.get(ref);
+    if (!fresh.exists) return false;
+    if (fresh.get("active") !== true) return false;
+
+    const nextSendAtMillis = timestampMillis(fresh.get("nextSendAt"));
+    if (nextSendAtMillis == null || nextSendAtMillis > nowMillis) return false;
+
+    const existingLockAtMillis = timestampMillis(fresh.get("automatedSendLockAt"));
+    if (
+      existingLockAtMillis != null &&
+      nowMillis - existingLockAtMillis < AUTOMATED_SEND_LOCK_TTL_MS
+    ) {
+      logger.info("[minuteCron] skipping active automated send lock", {
+        uid,
+        lockAgeMs: nowMillis - existingLockAtMillis,
+      });
+      return false;
+    }
+
+    tx.set(
+      ref,
+      {
+        automatedSendLockAt: now,
+        automatedSendLockId: lockId,
+      },
+      { merge: true }
+    );
+    return true;
+  });
+}
 
 export const minuteCron = onSchedule(
   {
@@ -69,6 +124,8 @@ export const minuteCron = onSchedule(
           {
             active: false,
             nextSendAt: null,
+            automatedSendLockAt: admin.firestore.FieldValue.delete(),
+            automatedSendLockId: admin.firestore.FieldValue.delete(),
           },
           { merge: true }
         );
@@ -81,6 +138,9 @@ export const minuteCron = onSchedule(
       }
 
       try {
+        const claimed = await claimDueAutomatedSend(doc.ref, uid, now);
+        if (!claimed) continue;
+
         const { expiresAt, expiresAtSeconds: rcExpiresAtSeconds, needsNormalization } = parseRcExpiresAt(
           doc.get("rc.expiresAt")
         );
@@ -112,6 +172,8 @@ export const minuteCron = onSchedule(
             {
               active: false,
               nextSendAt: null,
+              automatedSendLockAt: admin.firestore.FieldValue.delete(),
+              automatedSendLockId: admin.firestore.FieldValue.delete(),
             },
             { merge: true }
           );
@@ -122,7 +184,7 @@ export const minuteCron = onSchedule(
           await (async () => {
             const params = buildMsgParams({
               to,
-              body: "Welcome to ReMind! Reply STOP to opt out or HELP for help.",
+              body: "Welcome to BrainMail! Reply STOP to opt out or HELP for help.",
               from,
               msid,
             });
@@ -164,7 +226,7 @@ export const minuteCron = onSchedule(
         ) {
           const pauseReservation = await reserveInactivityAutoPause(uid, now, nowSeconds);
           if (pauseReservation.paused) {
-            logger.info("[minuteCron] auto-paused inactive non-paying user", {
+            logger.info("[minuteCron] auto-paused inactive free user", {
               uid,
               alreadyPaused: pauseReservation.alreadyPaused,
               noticeReserved: pauseReservation.shouldSendNotice,
@@ -202,7 +264,14 @@ export const minuteCron = onSchedule(
         }
 
         if (!(await hasAtLeastEntries(uid, MIN_ENTRIES_FOR_SCHEDULING))) {
-          await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
+          await db.doc(`users/${uid}`).set(
+            {
+              nextSendAt: null,
+              automatedSendLockAt: admin.firestore.FieldValue.delete(),
+              automatedSendLockId: admin.firestore.FieldValue.delete(),
+            },
+            { merge: true }
+          );
           continue;
         }
 

@@ -18,7 +18,7 @@ import { getTwilioClient, buildMsgParams } from "../twilio/client";
 import { canTargetUid } from "../auth/callable";
 import { assertSmsDeliveryAllowed } from "../sms/eligibility";
 
-const WELCOME_TEXT = "Welcome to ReMind! Reply STOP to opt out or HELP for help.";
+const WELCOME_TEXT = "Welcome to BrainMail! Reply STOP to opt out or HELP for help.";
 
 async function getUserPhoneE164(uid: string): Promise<string | null> {
   const userDoc = await db.doc(`users/${uid}`).get();

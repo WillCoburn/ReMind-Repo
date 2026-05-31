@@ -21,17 +21,47 @@ const dayMillis = 24 * 60 * 60 * 1000;
 const nowMillis = Date.parse("2026-05-20T12:00:00Z");
 const freeCapabilities = { plan: "free" };
 const proCapabilities = { plan: "pro" };
+const expiredProCapabilities = { plan: "free", state: "expired" };
 
 function timestamp(millis) {
   return { toMillis: () => millis };
 }
 
-test("free inactive users are auto-paused and receive one pause notice reservation", () => {
+test("free active users receive scheduled automated reminders without inactivity pause", () => {
   const user = {
     active: true,
     smsOptOut: false,
     phoneE164: "+15555550100",
-    lastSeenAt: timestamp(nowMillis - (INACTIVITY_AUTO_PAUSE_DAYS + 1) * dayMillis),
+    lastSeenAt: timestamp(nowMillis),
+  };
+
+  assert.equal(
+    shouldAutoPauseAutomatedReminders(user, freeCapabilities, nowMillis),
+    false
+  );
+});
+
+test("free users inactive for less than four weeks can still receive automated reminders", () => {
+  const user = {
+    active: true,
+    smsOptOut: false,
+    phoneE164: "+15555550100",
+    lastSeenAt: timestamp(nowMillis - (INACTIVITY_AUTO_PAUSE_DAYS - 1) * dayMillis),
+  };
+
+  assert.equal(INACTIVITY_AUTO_PAUSE_DAYS, 28);
+  assert.equal(
+    shouldAutoPauseAutomatedReminders(user, freeCapabilities, nowMillis),
+    false
+  );
+});
+
+test("free users inactive for four or more weeks are auto-paused and receive one pause notice reservation", () => {
+  const user = {
+    active: true,
+    smsOptOut: false,
+    phoneE164: "+15555550100",
+    lastSeenAt: timestamp(nowMillis - INACTIVITY_AUTO_PAUSE_DAYS * dayMillis),
   };
 
   assert.equal(
@@ -99,17 +129,31 @@ test("a later inactivity cycle can reserve a new pause notice after reactivation
   assert.equal(shouldReserveInactivityPauseNotice(user), true);
 });
 
-test("pro users are not auto-paused by inactivity", () => {
+test("pro users are not auto-paused for automated reminders after four weeks", () => {
   const user = {
     active: true,
     smsOptOut: false,
     phoneE164: "+15555550100",
-    lastSeenAt: timestamp(nowMillis - (INACTIVITY_AUTO_PAUSE_DAYS + 10) * dayMillis),
+    lastSeenAt: timestamp(nowMillis - (INACTIVITY_AUTO_PAUSE_DAYS + 1) * dayMillis),
   };
 
   assert.equal(
     shouldAutoPauseAutomatedReminders(user, proCapabilities, nowMillis),
     false
+  );
+});
+
+test("expired pro users fall back to free inactivity pause behavior", () => {
+  const user = {
+    active: true,
+    smsOptOut: false,
+    phoneE164: "+15555550100",
+    lastSeenAt: timestamp(nowMillis - (INACTIVITY_AUTO_PAUSE_DAYS + 1) * dayMillis),
+  };
+
+  assert.equal(
+    shouldAutoPauseAutomatedReminders(user, expiredProCapabilities, nowMillis),
+    true
   );
 });
 
@@ -131,7 +175,7 @@ test("smsOptOut users do not receive pause notices and are not auto-resumed", ()
   assert.equal(shouldClearInactivityAutoPauseOnActivity(user), false);
 });
 
-test("manual and transactional SMS eligibility is not blocked by auto-pause fields", () => {
+test("manual Send One Now and transactional SMS eligibility are not blocked by auto-pause fields", () => {
   assert.doesNotThrow(() =>
     assertSmsDeliveryAllowed({
       active: true,

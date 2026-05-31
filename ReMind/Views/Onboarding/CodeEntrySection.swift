@@ -143,6 +143,7 @@ private final class OTPCodeInputUIView: UIView, UITextFieldDelegate {
     private var isActive = false
     private var isFocusScheduled = false
     private var isApplyingProgrammaticText = false
+    private var didAutoDismissCompletedCode = false
 
     private static let figmaBlue = UIColor(red: 59 / 255, green: 70 / 255, blue: 173 / 255, alpha: 1)
 
@@ -216,8 +217,12 @@ private final class OTPCodeInputUIView: UIView, UITextFieldDelegate {
 
     func applyExternalCode(_ code: String) {
         let sanitized = sanitizedCode(from: code)
+        if sanitized.count < boxViews.count {
+            didAutoDismissCompletedCode = false
+        }
         guard textField.text != sanitized else {
             refreshBoxes()
+            dismissKeyboardIfComplete(source: "externalCode")
             return
         }
 
@@ -228,6 +233,7 @@ private final class OTPCodeInputUIView: UIView, UITextFieldDelegate {
             self?.isApplyingProgrammaticText = false
         }
         refreshBoxes()
+        dismissKeyboardIfComplete(source: "externalCode")
     }
 
     func setActive(_ active: Bool, reason: String) {
@@ -238,6 +244,9 @@ private final class OTPCodeInputUIView: UIView, UITextFieldDelegate {
         isActive = active
 
         if active {
+            if sanitizedCode(from: textField.text ?? "").count < boxViews.count {
+                didAutoDismissCompletedCode = false
+            }
             scheduleFocusIfNeeded(reason: reason)
         } else {
             resignCodeFirstResponder(reason: reason)
@@ -248,6 +257,13 @@ private final class OTPCodeInputUIView: UIView, UITextFieldDelegate {
         guard isActive else {
             #if DEBUG
             print("[OTP] focus schedule skipped reason=\(reason) active=false view=\(debugID) textField=\(textFieldDebugID)")
+            #endif
+            return
+        }
+
+        guard !didAutoDismissCompletedCode else {
+            #if DEBUG
+            print("[OTP] focus schedule skipped reason=\(reason) completedCodeDismissed=true view=\(debugID) textField=\(textFieldDebugID)")
             #endif
             return
         }
@@ -381,6 +397,7 @@ private final class OTPCodeInputUIView: UIView, UITextFieldDelegate {
     }
 
     func textFieldDidBeginEditing(_ textField: UITextField) {
+        didAutoDismissCompletedCode = false
         #if DEBUG
         print("[OTP] textFieldDidBeginEditing isFirstResponder=\(textField.isFirstResponder) view=\(debugID) textField=\(textFieldDebugID)")
         #endif
@@ -430,6 +447,18 @@ private final class OTPCodeInputUIView: UIView, UITextFieldDelegate {
 
         refreshBoxes()
         delegate?.otpCodeInputView(self, didUpdateCode: sanitized, source: source)
+        dismissKeyboardIfComplete(source: source)
+    }
+
+    private func dismissKeyboardIfComplete(source: String) {
+        let isComplete = sanitizedCode(from: textField.text ?? "").count == boxViews.count
+        guard isComplete, textField.isFirstResponder else { return }
+
+        didAutoDismissCompletedCode = true
+        #if DEBUG
+        print("[OTP] auto dismiss keyboard source=\(source) view=\(debugID) textField=\(textFieldDebugID)")
+        #endif
+        resignCodeFirstResponder(reason: "completedCode")
     }
 
     private func refreshBoxes() {

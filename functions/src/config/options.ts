@@ -17,6 +17,13 @@ setGlobalOptions({ region: "us-central1" });
 if (admin.apps.length === 0) admin.initializeApp();
 const db = admin.firestore();
 
+function clearAutomatedSendLock() {
+  return {
+    automatedSendLockAt: admin.firestore.FieldValue.delete(),
+    automatedSendLockId: admin.firestore.FieldValue.delete(),
+  };
+}
+
 // ----- Secrets (v2 API) -----
 export const TWILIO_SID = defineSecret("TWILIO_SID");   // ACxxxxxxxx...
 export const TWILIO_AUTH = defineSecret("TWILIO_AUTH"); // token
@@ -118,14 +125,18 @@ async function scheduleNext(uid: string, fromUtc = new Date()) {
 
   const blockReason = smsDeliveryBlockReason(userSnap);
   if (blockReason) {
-    await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
+    await db
+      .doc(`users/${uid}`)
+      .set({ nextSendAt: null, ...clearAutomatedSendLock() }, { merge: true });
     logger.info("[scheduleNext] SMS blocked; nextSendAt=null", { uid, blockReason });
     return;
   }
 
   const capabilities = resolveServerCapabilities(userSnap);
   if (hasInactivityAutoPause(userSnap) && capabilities.plan !== "pro") {
-    await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
+    await db
+      .doc(`users/${uid}`)
+      .set({ nextSendAt: null, ...clearAutomatedSendLock() }, { merge: true });
     logger.info("[scheduleNext] inactivity auto-paused; nextSendAt=null", {
       uid,
       plan: capabilities.plan,
@@ -136,7 +147,9 @@ async function scheduleNext(uid: string, fromUtc = new Date()) {
   }
 
   if (!(await hasAtLeastEntries(uid, MIN_ENTRIES_FOR_SCHEDULING))) {
-    await db.doc(`users/${uid}`).set({ nextSendAt: null }, { merge: true });
+    await db
+      .doc(`users/${uid}`)
+      .set({ nextSendAt: null, ...clearAutomatedSendLock() }, { merge: true });
     logger.info("[scheduleNext] no sendable entries; nextSendAt=null", { uid });
     return;
   }
@@ -170,7 +183,10 @@ async function scheduleNext(uid: string, fromUtc = new Date()) {
   await db
     .doc(`users/${uid}`)
     .set(
-      { nextSendAt: admin.firestore.Timestamp.fromDate(nextUtc) },
+      {
+        nextSendAt: admin.firestore.Timestamp.fromDate(nextUtc),
+        ...clearAutomatedSendLock(),
+      },
       { merge: true }
     );
 }
@@ -190,7 +206,10 @@ const START_KEYWORDS = new Set(["START", "YES", "UNSTOP"]);
 async function applyOptOut(uid: string) {
   await db
     .doc(`users/${uid}`)
-    .set({ active: false, smsOptOut: true, nextSendAt: null }, { merge: true });
+    .set(
+      { active: false, smsOptOut: true, nextSendAt: null, ...clearAutomatedSendLock() },
+      { merge: true }
+    );
 }
 
 async function applyOptIn(uid: string) {

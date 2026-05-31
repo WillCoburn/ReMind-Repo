@@ -57,25 +57,39 @@ function escapeXml(text: string) {
   });
 }
 
+function maskPhone(phone: string) {
+  return phone.length > 4 ? `***${phone.slice(-4)}` : "***";
+}
+
 async function handleStopForPhone(phone: string) {
   const userDoc = await findUserByPhone(phone);
   if (!userDoc) {
-    logger.warn("[twilioWebhook] STOP received but no user matched", { phone });
+    logger.warn("[twilioWebhook] STOP received but no user matched", {
+      phone: maskPhone(phone),
+    });
     return false;
   }
   await applyOptOut(userDoc.id);
-  logger.warn("[twilioWebhook] user opted out", { uid: userDoc.id, phone });
+  logger.warn("[twilioWebhook] user opted out", {
+    uid: userDoc.id,
+    phone: maskPhone(phone),
+  });
   return true;
 }
 
 async function handleStartForPhone(phone: string) {
   const userDoc = await findUserByPhone(phone);
   if (!userDoc) {
-    logger.warn("[twilioWebhook] START received but no user matched", { phone });
+    logger.warn("[twilioWebhook] START received but no user matched", {
+      phone: maskPhone(phone),
+    });
     return false;
   }
   await applyOptIn(userDoc.id);
-  logger.info("[twilioWebhook] user re-subscribed", { uid: userDoc.id, phone });
+  logger.info("[twilioWebhook] user re-subscribed", {
+    uid: userDoc.id,
+    phone: maskPhone(phone),
+  });
   return true;
 }
 
@@ -129,11 +143,11 @@ export const twilioInboundSms = onRequest({ secrets: [TWILIO_AUTH] }, async (req
 
   if (STOP_KEYWORDS.has(keyword)) {
     handled = await handleStopForPhone(from);
-    message = "You have been unsubscribed from ReMind messages.";
+    message = "You have been unsubscribed from BrainMail messages.";
   } else if (START_KEYWORDS.has(keyword)) {
     handled = await handleStartForPhone(from);
     //Twilio already handles this
-    //message = "You have been re-subscribed to ReMind messages.";
+    //message = "You have been re-subscribed to BrainMail messages.";
   }
 
   const responseBody =

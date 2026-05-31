@@ -46,6 +46,8 @@ export async function reserveInactivityAutoPause(
     const update: Record<string, unknown> = {
       autoPauseReason: INACTIVITY_AUTO_PAUSE_REASON,
       nextSendAt: null,
+      automatedSendLockAt: admin.firestore.FieldValue.delete(),
+      automatedSendLockId: admin.firestore.FieldValue.delete(),
     };
 
     if (!alreadyPaused) {

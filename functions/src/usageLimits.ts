@@ -53,7 +53,7 @@ export async function enforceMonthlyLimit(
       logger.warn("[usageLimits] limit hit", { uid, field, limit, count });
       throw new HttpsError(
         "resource-exhausted",
-        "We're so sorry - but you've hit the maximum number of on-demand monthly ReMinders that our backend can support per user. You will still get the regular random ReMinders until this resets!"
+        "We're so sorry - but you've hit the maximum number of on-demand monthly BrainMails that our backend can support per user. You will still get the regular random BrainMails until this resets!"
       );
     }
 

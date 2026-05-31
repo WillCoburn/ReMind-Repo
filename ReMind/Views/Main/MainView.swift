@@ -24,6 +24,8 @@ struct MainView: View {
     @State private var guardedActionTask: Task<Void, Never>?
     @State private var showDeleteReminderConfirmation = false
     @State private var pendingDeleteReminder: LastReminder?
+    @State private var showReminderDeleteSuccess = false
+    @State private var reminderDeleteSuccessTask: Task<Void, Never>?
     @State private var showSuccessMessage = false
     @State private var pulseEditor = false
     @State private var isSubmitting = false
@@ -111,10 +113,13 @@ struct MainView: View {
             }
             .onDisappear {
                 guardedActionTask?.cancel()
+                reminderDeleteSuccessTask?.cancel()
                 dismissEntryComposer(clearDraft: true)
             }
             .onChange(of: appVM.user?.uid) { _ in
                 guardedActionTask?.cancel()
+                reminderDeleteSuccessTask?.cancel()
+                showReminderDeleteSuccess = false
                 dismissEntryComposer(clearDraft: true)
                 activeHomeSheet = nil
             }
@@ -159,7 +164,7 @@ struct MainView: View {
                 .clipped()
         }
             .frame(maxWidth: .infinity)
-            .accessibilityLabel("ReMind")
+            .accessibilityLabel("BrainMail")
     }
 
     private var saveStatusView: some View {
@@ -355,6 +360,23 @@ struct MainView: View {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .stroke(Color.white.opacity(0.82), lineWidth: 1)
                 )
+            }
+
+            if showReminderDeleteSuccess {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Removed from your bank")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .foregroundStyle(Color.green.opacity(0.92))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.green.opacity(0.10))
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .padding(16)
@@ -684,10 +706,27 @@ struct MainView: View {
         do {
             try await appVM.softDeleteReminderFromBank(reminder)
             Haptics.success()
+            showReminderDeleteSuccessConfirmation()
         } catch {
             alertTitle = "Couldn't remove reminder"
             alertMessage = error.localizedDescription
             showAlert = true
+        }
+    }
+
+    private func showReminderDeleteSuccessConfirmation() {
+        reminderDeleteSuccessTask?.cancel()
+
+        withAnimation(.easeOut(duration: 0.18)) {
+            showReminderDeleteSuccess = true
+        }
+
+        reminderDeleteSuccessTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_200_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeIn(duration: 0.2)) {
+                showReminderDeleteSuccess = false
+            }
         }
     }
 
@@ -705,7 +744,7 @@ struct MainView: View {
         """
         It looks like you’ve opted out of SMS for this number, so texts can’t be delivered.
 
-        To re-enable messages, reply START or UNSTOP to the last ReMind text. After that, try again.
+        To re-enable messages, reply START or UNSTOP to the last BrainMail text. After that, try again.
         """
         showAlert = true
     }

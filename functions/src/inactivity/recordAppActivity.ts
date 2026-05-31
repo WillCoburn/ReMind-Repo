@@ -12,13 +12,17 @@ export const recordAppActivity = onCall({ invoker: "public" }, async (req) => {
 
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(userRef);
-    if (!snap.exists) throw new HttpsError("not-found", "User not found.");
-
     const update: Record<string, unknown> = {
+      uid,
       lastSeenAt: now,
+      updatedAt: now,
     };
 
-    if (shouldClearInactivityAutoPauseOnActivity(snap)) {
+    if (!snap.exists) {
+      update.createdAt = now;
+    }
+
+    if (snap.exists && shouldClearInactivityAutoPauseOnActivity(snap)) {
       resumed = true;
       update.autoPausedAt = admin.firestore.FieldValue.delete();
       update.autoPauseReason = admin.firestore.FieldValue.delete();

@@ -130,15 +130,13 @@ struct CommunityView: View {
             if isLoading {
                 GeometryReader { proxy in
                     ScrollView {
-                        VStack(spacing: 0) {
+                        ZStack(alignment: .top) {
                             header
-
-                            Spacer(minLength: 12)
 
                             loadingCommunityState
                                 .padding(.horizontal, 28)
-
-                            Spacer(minLength: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 112 : 84)
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: proxy.size.height, alignment: .center)
                         }
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: proxy.size.height)
@@ -163,20 +161,18 @@ struct CommunityView: View {
             } else if posts.isEmpty {
                 GeometryReader { proxy in
                     ScrollView {
-                        VStack(spacing: 0) {
+                        ZStack(alignment: .top) {
                             header
                             if appVM.isGodModeUser {
                                 GodModeBanner()
                                     .padding(.horizontal)
-                                    .padding(.bottom, 16)
+                                    .padding(.top, 96)
                             }
-
-                            Spacer(minLength: 12)
 
                             emptyCommunityState
                                 .padding(.horizontal, 28)
-
-                            Spacer(minLength: dynamicTypeSize.brainMailUsesAccessibilityLayout ? 112 : 84)
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: proxy.size.height, alignment: .center)
                         }
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: proxy.size.height)

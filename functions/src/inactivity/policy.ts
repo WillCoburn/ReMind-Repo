@@ -1,7 +1,8 @@
 import type { ServerCapabilities } from "../entitlements/capabilities";
 
-export const INACTIVITY_AUTO_PAUSE_DAYS = 30;
-export const INACTIVITY_AUTO_PAUSE_REASON = "inactive_non_paying_user";
+export const INACTIVITY_AUTO_PAUSE_DAYS = 28;
+export const INACTIVITY_AUTO_PAUSE_REASON = "inactive_user";
+const LEGACY_INACTIVITY_AUTO_PAUSE_REASON = "inactive_non_paying_user";
 export const INACTIVITY_AUTO_PAUSE_NOTICE_TEXT =
   "Your BrainMail reminders have been paused due to inactivity. Open the app anytime to resume them. Reply STOP to opt out permanently.";
 
@@ -85,8 +86,10 @@ export function shouldAutoPauseAutomatedReminders(
 }
 
 export function hasInactivityAutoPause(user: UserDataLike): boolean {
+  const reason = fieldValue(user, "autoPauseReason");
   return (
-    fieldValue(user, "autoPauseReason") === INACTIVITY_AUTO_PAUSE_REASON &&
+    (reason === INACTIVITY_AUTO_PAUSE_REASON ||
+      reason === LEGACY_INACTIVITY_AUTO_PAUSE_REASON) &&
     fieldValue(user, "autoPausedAt") != null
   );
 }

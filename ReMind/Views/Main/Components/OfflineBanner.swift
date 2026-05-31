@@ -18,7 +18,7 @@ struct OfflineBanner: View {
                     .font(.system(size: 36, weight: .semibold))
                 Text("You’re Offline")
                     .font(.headline)
-                Text("Please reconnect to the internet to continue using ReMind.")
+                Text("Please reconnect to the internet to continue using BrainMail.")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .foregroundColor(.secondary)

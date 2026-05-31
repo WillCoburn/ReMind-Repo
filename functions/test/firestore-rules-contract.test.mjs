@@ -45,6 +45,8 @@ test("server-owned user fields are not client-writeable", () => {
     "autoPauseReason",
     "autoPauseNotifiedAt",
     "nextSendAt",
+    "automatedSendLockAt",
+    "automatedSendLockId",
   ];
 
   for (const field of serverOwnedFields) {

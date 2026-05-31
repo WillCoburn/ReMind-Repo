@@ -125,7 +125,7 @@ export const sendExportLink = onCall(
       const msid = TWILIO_MSID.value();
       const client = getTwilioClient(sid, auth);
 
-      const body = `Here’s your ReMind PDF export: ${link} (expires in 7 days).`;
+      const body = `Here’s your BrainMail PDF export: ${link} (expires in 7 days).`;
       const msgParams = buildMsgParams({ to, body, from, msid });
       let messageSid: string | undefined;
 

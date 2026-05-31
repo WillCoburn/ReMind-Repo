@@ -18,14 +18,14 @@ extension AppViewModel {
             return
         }
 
-        lastAppActivityRecordedUid = uid
-        lastAppActivityRecordedAt = now
         appActivityTask = Task { @MainActor [weak self] in
             guard let self else { return }
             do {
                 _ = try await self.functions.httpsCallable("recordAppActivity").call([
                     "reason": reason
                 ])
+                self.lastAppActivityRecordedUid = uid
+                self.lastAppActivityRecordedAt = now
             } catch {
 #if DEBUG
                 print("⚠️ recordAppActivity error:", error.localizedDescription)
