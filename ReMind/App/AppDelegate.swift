@@ -6,6 +6,9 @@ import FirebaseCore
 class AppDelegate: NSObject, UIApplicationDelegate {
     private static var isPhoneAuthAPNSTokenReady = false
     private static var didFinishPhoneAuthAPNsRegistration = false
+    #if DEBUG
+    private static var phoneAuthAPNSTokenRegisteredAt: Date?
+    #endif
 
     // MARK: - App Launch
     func application(
@@ -49,7 +52,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         Self.isPhoneAuthAPNSTokenReady = true
         Self.didFinishPhoneAuthAPNsRegistration = true
         #if DEBUG
-        print("✅ Successfully registered for remote notifications. Token length: \(deviceToken.count) bytes")
+        Self.phoneAuthAPNSTokenRegisteredAt = Date()
+        #endif
+        #if DEBUG
+        print("✅ [PhoneAuth/APNs] Token registered with FirebaseAuth. type=\(tokenType) tokenBytes=\(deviceToken.count)")
         #endif
     }
 
@@ -81,7 +87,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) {
         let handled = Auth.auth().canHandleNotification(userInfo)
         #if DEBUG
-        print("📲 [APNs] Forwarded to FirebaseAuth.canHandleNotification: handled=\(handled), keys=\(Array(userInfo.keys))")
+        print("📲 [PhoneAuth/APNs] Silent notification forwarded to FirebaseAuth. handled=\(handled) keys=\(Array(userInfo.keys))")
+        if handled {
+            print("✅ [PhoneAuth/APNs] FirebaseAuth accepted the silent verification notification; reCAPTCHA fallback should not be needed for this attempt.")
+        }
         #endif
         if handled {
             completionHandler(.noData)
@@ -92,6 +101,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     @MainActor
     static func waitForPhoneAuthAPNSToken(timeout: TimeInterval = 2.0) async -> Bool {
+        #if DEBUG
+        print("📲 [PhoneAuth/APNs] Waiting for APNs token before requesting SMS. ready=\(isPhoneAuthAPNSTokenReady) finished=\(didFinishPhoneAuthAPNsRegistration)")
+        #endif
         guard !isPhoneAuthAPNSTokenReady else { return true }
 
         let deadline = Date().addingTimeInterval(timeout)
@@ -99,6 +111,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
 
+        #if DEBUG
+        let elapsedSinceToken = phoneAuthAPNSTokenRegisteredAt.map { String(format: "%.2fs", Date().timeIntervalSince($0)) } ?? "n/a"
+        print("📲 [PhoneAuth/APNs] Token wait finished. ready=\(isPhoneAuthAPNSTokenReady) registrationFinished=\(didFinishPhoneAuthAPNsRegistration) tokenAge=\(elapsedSinceToken)")
+        if !isPhoneAuthAPNSTokenReady {
+            print("⚠️ [PhoneAuth/APNs] No APNs token was available before verifyPhoneNumber; Firebase may fall back to reCAPTCHA.")
+        }
+        #endif
         return isPhoneAuthAPNSTokenReady
     }
 }

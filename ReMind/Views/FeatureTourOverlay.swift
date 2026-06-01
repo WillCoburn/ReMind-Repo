@@ -66,70 +66,73 @@ struct FeatureTourOverlay: View {
                 Color(red: 244/255, green: 248/255, blue: 255/255)
                     .ignoresSafeArea()
 
-                TabView(selection: $step) {
-                    ForEach(pages) { page in
-                        FeatureTourPageView(page: page)
-                            .padding(.horizontal, horizontalPadding)
-                            .padding(.top, topInset + 72)
-                            .padding(.bottom, bottomInset + (isOnLastPage ? 150 : 96))
-                            .frame(width: proxy.size.width, height: proxy.size.height)
-                            .clipped()
-                            .tag(page.step)
-                    }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))   // custom dots instead
-                .animation(.easeInOut(duration: 0.25), value: step)
-
-                VStack {
-                    Button(action: onSkip) {
-                        Text("Skip")
-                            .font(.headline)
-                            .foregroundColor(.figmaBlue)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                    }
-                    .frame(width: overlayWidth, alignment: .trailing)
-                    .padding(.top, topInset + 6)
-
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
-                VStack(spacing: 18) {
-                    Spacer()
-
-                    HStack(spacing: 8) {
-                        ForEach(0..<totalPages, id: \.self) { idx in
-                            Circle()
-                                .frame(width: 8, height: 8)
-                                .foregroundColor(
-                                    idx == currentIndex
-                                    ? Color.figmaBlue
-                                    : Color.figmaBlue.opacity(0.3)
-                                )
+                VStack(spacing: 0) {
+                    HStack {
+                        Spacer()
+                        Button(action: onSkip) {
+                            Text("Skip")
+                                .font(.headline)
+                                .foregroundColor(.figmaBlue)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
                         }
                     }
+                    .frame(maxWidth: overlayWidth)
+                    .padding(.top, topInset + 6)
+                    .padding(.bottom, 8)
+
+                    TabView(selection: $step) {
+                        ForEach(pages) { page in
+                            FeatureTourPageView(page: page)
+                                .padding(.horizontal, horizontalPadding)
+                                .tag(page.step)
+                        }
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))   // custom dots instead
                     .animation(.easeInOut(duration: 0.25), value: step)
 
-                    if isOnLastPage {
-                        Button(action: onComplete) {
-                            Text("Get started!")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(Color.figmaBlue)
-                                .cornerRadius(14)
-                        }
-                        .frame(maxWidth: OnboardingLayout.maxContentWidth)
-                    }
+                    bottomControls
+                        .padding(.horizontal, horizontalPadding)
+                        .padding(.top, 18)
+                        .padding(.bottom, bottomInset + 24)
                 }
-                .padding(.horizontal, horizontalPadding)
-                .padding(.bottom, bottomInset + 24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .preferredColorScheme(.light)
         .dynamicTypeSize(.xSmall ... .xxLarge)
+    }
+
+    private var bottomControls: some View {
+        VStack(spacing: 18) {
+            HStack(spacing: 8) {
+                ForEach(0..<totalPages, id: \.self) { idx in
+                    Circle()
+                        .frame(width: 8, height: 8)
+                        .foregroundColor(
+                            idx == currentIndex
+                            ? Color.figmaBlue
+                            : Color.figmaBlue.opacity(0.3)
+                        )
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: step)
+
+            if isOnLastPage {
+                Button(action: onComplete) {
+                    Text("Get started!")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.figmaBlue)
+                        .cornerRadius(14)
+                }
+                .frame(maxWidth: OnboardingLayout.maxContentWidth)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: isOnLastPage)
     }
 }
 

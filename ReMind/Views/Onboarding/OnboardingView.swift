@@ -123,8 +123,20 @@ struct OnboardingView: View {
         let e164 = "+1\(phoneDigits)"
 
         do {
-            _ = await AppDelegate.waitForPhoneAuthAPNSToken()
+            #if DEBUG
+            print("📲 [Onboarding/PhoneAuth] Starting SMS verification request. phoneLast4=\(String(phoneDigits.suffix(4)))")
+            #endif
+            let hasAPNSToken = await AppDelegate.waitForPhoneAuthAPNSToken()
+            #if DEBUG
+            print("📲 [Onboarding/PhoneAuth] APNs token available before verifyPhoneNumber: \(hasAPNSToken)")
+            if !hasAPNSToken {
+                print("⚠️ [Onboarding/PhoneAuth] Firebase may show reCAPTCHA because silent APNs verification is not ready.")
+            }
+            #endif
             let verID = try await PhoneAuthProvider.provider().verifyPhoneNumber(e164, uiDelegate: nil)
+            #if DEBUG
+            print("✅ [Onboarding/PhoneAuth] verifyPhoneNumber returned verificationID. Silent APNs path was attempted; if no browser challenge appeared, the user avoided reCAPTCHA.")
+            #endif
             self.verificationID = verID
             self.isAdvancing = true
             #if DEBUG
@@ -136,6 +148,10 @@ struct OnboardingView: View {
             }
 
         } catch {
+            #if DEBUG
+            let nsError = error as NSError
+            print("❌ [Onboarding/PhoneAuth] verifyPhoneNumber failed. domain=\(nsError.domain) code=\(nsError.code) message=\(nsError.localizedDescription)")
+            #endif
             if let nsError = error as NSError?,
                let code = AuthErrorCode(rawValue: nsError.code) {
 
@@ -148,6 +164,9 @@ struct OnboardingView: View {
                     self.errorText = "Too many attempts. Please wait a few minutes and try again."
 
                 case .captchaCheckFailed:
+                    #if DEBUG
+                    print("⚠️ [Onboarding/PhoneAuth] CAPTCHA check failed; this usually means Firebase used the reCAPTCHA fallback and it did not complete.")
+                    #endif
                     self.errorText = "Verification failed. Please try again and ensure Safari is available."
 
                 case .appNotAuthorized:
