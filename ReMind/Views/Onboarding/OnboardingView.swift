@@ -126,11 +126,12 @@ struct OnboardingView: View {
             #if DEBUG
             print("📲 [Onboarding/PhoneAuth] Starting SMS verification request. phoneLast4=\(String(phoneDigits.suffix(4)))")
             #endif
-            let hasAPNSToken = await AppDelegate.waitForPhoneAuthAPNSToken()
+            let isPhoneAuthPushPathPrepared = await AppDelegate.preparePhoneAuthAPNSToken()
+            defer { AppDelegate.finishPhoneAuthAPNSTokenAttempt() }
             #if DEBUG
-            print("📲 [Onboarding/PhoneAuth] APNs token available before verifyPhoneNumber: \(hasAPNSToken)")
-            if !hasAPNSToken {
-                print("⚠️ [Onboarding/PhoneAuth] Firebase may show reCAPTCHA because silent APNs verification is not ready.")
+            print("📲 [Onboarding/PhoneAuth] Firebase notification forwarding prepared before verifyPhoneNumber: \(isPhoneAuthPushPathPrepared)")
+            if !isPhoneAuthPushPathPrepared {
+                print("⚠️ [Onboarding/PhoneAuth] Firebase may reject silent push verification or fall back to reCAPTCHA.")
             }
             #endif
             let verID = try await PhoneAuthProvider.provider().verifyPhoneNumber(e164, uiDelegate: nil)
