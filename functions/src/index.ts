@@ -81,7 +81,7 @@ export const createCommunityPost = onCall(async (request) => {
     now.toMillis() + 7 * 24 * 60 * 60 * 1000
   ); // 7 days
 
-  await db.collection("communityPosts").add({
+  const postRef = await db.collection("communityPosts").add({
     text,
     authorId: uid,
     createdAt: now,
@@ -92,7 +92,20 @@ export const createCommunityPost = onCall(async (request) => {
     isHidden: false,
   });
 
-  return { ok: true };
+  return {
+    ok: true,
+    post: {
+      id: postRef.id,
+      text,
+      authorId: uid,
+      createdAtMillis: now.toMillis(),
+      expiresAtMillis: expiresAt.toMillis(),
+      likeCount: 0,
+      reportCount: 0,
+      commentCount: 0,
+      isHidden: false,
+    },
+  };
 });
 
 export const toggleCommunityLike = onCall(async (request) => {

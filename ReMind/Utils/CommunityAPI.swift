@@ -57,6 +57,39 @@ struct CommunityPost: Identifiable, Hashable {
         self.commentCount = data["commentCount"] as? Int ?? 0
         self.isHidden = data["isHidden"] as? Bool ?? false
     }
+
+    init?(fromCallable data: [String: Any]) {
+        guard let id = data["id"] as? String,
+              let text = data["text"] as? String,
+              let authorId = data["authorId"] as? String,
+              let createdAtMillis = Self.numberValue(data["createdAtMillis"]),
+              let expiresAtMillis = Self.numberValue(data["expiresAtMillis"]) else {
+            return nil
+        }
+
+        self.id = id
+        self.authorId = authorId
+        self.text = text
+        self.createdAt = Date(timeIntervalSince1970: createdAtMillis / 1000)
+        self.expiresAt = Date(timeIntervalSince1970: expiresAtMillis / 1000)
+        self.likeCount = Self.integerValue(data["likeCount"]) ?? 0
+        self.reportCount = Self.integerValue(data["reportCount"]) ?? 0
+        self.commentCount = Self.integerValue(data["commentCount"]) ?? 0
+        self.isHidden = data["isHidden"] as? Bool ?? false
+    }
+
+    private static func numberValue(_ value: Any?) -> Double? {
+        if let value = value as? Double { return value }
+        if let value = value as? Int { return Double(value) }
+        if let value = value as? NSNumber { return value.doubleValue }
+        return nil
+    }
+
+    private static func integerValue(_ value: Any?) -> Int? {
+        if let value = value as? Int { return value }
+        if let value = value as? NSNumber { return value.intValue }
+        return nil
+    }
 }
 
 struct CommunityComment: Identifiable, Hashable {
@@ -183,9 +216,14 @@ final class CommunityAPI {
     
     // MARK: - Actions
 
-    func createPost(text: String) async throws {
+    func createPost(text: String) async throws -> CommunityPost? {
         let data: [String: Any] = ["text": text]
-        _ = try await functions.httpsCallable("createCommunityPost").call(data)
+        let result = try await functions.httpsCallable("createCommunityPost").call(data)
+        guard let response = result.data as? [String: Any],
+              let postData = response["post"] as? [String: Any] else {
+            return nil
+        }
+        return CommunityPost(fromCallable: postData)
     }
 
     func toggleLike(postId: String) async throws {

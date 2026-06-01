@@ -19,6 +19,7 @@ struct CommunityView: View {
     @State private var reportedPostIds: Set<String> = []
     @State private var pendingPostLikeIds: Set<String> = []
     @State private var pendingPostReportIds: Set<String> = []
+    @State private var optimisticCreatedPostIds: Set<String> = []
     @State private var blockedAuthorIds: Set<String> = []
 
     @State private var listener: ListenerRegistration?
@@ -57,7 +58,9 @@ struct CommunityView: View {
         }
 
         .sheet(isPresented: $showComposer) {
-            CommunityComposerSheet()
+            CommunityComposerSheet { post in
+                handlePostSucceeded(post)
+            }
         }
         .alert(
             "Action Failed",
@@ -408,6 +411,7 @@ struct CommunityView: View {
         do {
             let latest = try await CommunityAPI.shared.fetchLatest()
             await MainActor.run {
+                reconcileOptimisticPostIds(with: latest)
                 posts = overlayPendingPosts(on: filteredPosts(latest))
                 isLoading = false
                 errorMessage = nil
@@ -436,6 +440,27 @@ struct CommunityView: View {
     }
     
     // MARK: - Optimistic UI helpers
+
+    @MainActor
+    private func handlePostSucceeded(_ post: CommunityPost?) {
+        if let post {
+            optimisticCreatedPostIds.insert(post.id)
+            upsertPost(post)
+        }
+
+        Task {
+            await refreshFeed()
+        }
+    }
+
+    @MainActor
+    private func upsertPost(_ post: CommunityPost) {
+        var nextPosts = posts.filter { $0.id != post.id }
+        nextPosts.insert(post, at: 0)
+        posts = nextPosts.sorted { $0.createdAt > $1.createdAt }
+        isLoading = false
+        errorMessage = nil
+    }
 
     @MainActor
     private func applyLikeState(for post: CommunityPost, isLiked: Bool) {
@@ -509,6 +534,7 @@ struct CommunityView: View {
         listener = CommunityAPI.shared.observeFeed { newPosts in
             Task { @MainActor in
                 let filtered = filteredPosts(newPosts)
+                self.reconcileOptimisticPostIds(with: filtered)
                 self.posts = overlayPendingPosts(on: filtered)
                 self.isLoading = false
                 self.errorMessage = nil
@@ -533,7 +559,7 @@ struct CommunityView: View {
     }
 
     private func overlayPendingPosts(on serverPosts: [CommunityPost]) -> [CommunityPost] {
-        serverPosts.map { serverPost in
+        let overlaidServerPosts = serverPosts.map { serverPost in
             guard pendingPostLikeIds.contains(serverPost.id) || pendingPostReportIds.contains(serverPost.id),
                   let current = posts.first(where: { $0.id == serverPost.id }) else {
                 return serverPost
@@ -551,6 +577,27 @@ struct CommunityView: View {
                 expiresAt: serverPost.expiresAt
             )
         }
+
+        let serverIds = Set(serverPosts.map(\.id))
+        let locallyCreatedPosts = posts.filter { post in
+            optimisticCreatedPostIds.contains(post.id) &&
+            !serverIds.contains(post.id) &&
+            !blockedAuthorIds.contains(post.authorId) &&
+            !post.isHidden
+        }
+
+        return (overlaidServerPosts + locallyCreatedPosts)
+            .reduce(into: [CommunityPost]()) { uniquePosts, post in
+                guard !uniquePosts.contains(where: { $0.id == post.id }) else { return }
+                uniquePosts.append(post)
+            }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    @MainActor
+    private func reconcileOptimisticPostIds(with serverPosts: [CommunityPost]) {
+        let serverIds = Set(serverPosts.map(\.id))
+        optimisticCreatedPostIds.subtract(serverIds)
     }
 
     private func syncPostInteractionState(for posts: [CommunityPost]) {
