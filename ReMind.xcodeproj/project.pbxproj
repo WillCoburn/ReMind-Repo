@@ -47,7 +47,6 @@
 		D23CFAF92ECAAB0F00FEBF3D /* CommunityComposerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */; };
 		D257852F2EE53D80007D13FA /* SendNowSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D257852E2EE53D7C007D13FA /* SendNowSheet.swift */; };
 		D25785312EE6212F007D13FA /* Deleting Account Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25785302EE62128007D13FA /* Deleting Account Sheet.swift */; };
-		D2FA10022F5A000000000001 /* InspirationBankSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2FA10012F5A000000000001 /* InspirationBankSheet.swift */; };
 		D25C557E2EED16C300A5240E /* CodeEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */; };
 		D25C55802EED16DF00A5240E /* PhoneEntryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */; };
 		D25C55822EED206400A5240E /* KeyboardObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = D25C55812EED206400A5240E /* KeyboardObserver.swift */; };
@@ -111,6 +110,7 @@
 		D2ED482D2EC8F94D0030CBA7 /* TrialBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */; };
 		D2ED48322EC8FB020030CBA7 /* ReMindBackgrounds.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */; };
 		D2F7A0022F12345000ABCDEF /* SubscriptionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F7A0012F12345000ABCDEF /* SubscriptionSheet.swift */; };
+		D2FA10022F5A000000000001 /* InspirationBankSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2FA10012F5A000000000001 /* InspirationBankSheet.swift */; };
 		E1A0B1C22F33445500C0DE01 /* OnboardingBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C12F33445500C0DE01 /* OnboardingBackgroundView.swift */; };
 		E1A0B1C42F33445500C0DE01 /* BottleAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C32F33445500C0DE01 /* BottleAnimationView.swift */; };
 		E1A0B1C52F33449900C0DE01 /* OnboardingLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A0B1C42F33449900C0DE01 /* OnboardingLayout.swift */; };
@@ -178,7 +178,6 @@
 		D23CFAF82ECAAB0B00FEBF3D /* CommunityComposerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityComposerSheet.swift; sourceTree = "<group>"; };
 		D257852E2EE53D7C007D13FA /* SendNowSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendNowSheet.swift; sourceTree = "<group>"; };
 		D25785302EE62128007D13FA /* Deleting Account Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Deleting Account Sheet.swift"; sourceTree = "<group>"; };
-		D2FA10012F5A000000000001 /* InspirationBankSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspirationBankSheet.swift; sourceTree = "<group>"; };
 		D25C557D2EED16B900A5240E /* CodeEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeEntryScreen.swift; sourceTree = "<group>"; };
 		D25C557F2EED16DA00A5240E /* PhoneEntryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEntryScreen.swift; sourceTree = "<group>"; };
 		D25C55812EED206400A5240E /* KeyboardObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardObserver.swift; sourceTree = "<group>"; };
@@ -230,6 +229,7 @@
 		D2ED482C2EC8F9490030CBA7 /* TrialBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrialBanner.swift; sourceTree = "<group>"; };
 		D2ED48312EC8FAFB0030CBA7 /* ReMindBackgrounds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReMindBackgrounds.swift; sourceTree = "<group>"; };
 		D2F7A0012F12345000ABCDEF /* SubscriptionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSheet.swift; sourceTree = "<group>"; };
+		D2FA10012F5A000000000001 /* InspirationBankSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspirationBankSheet.swift; sourceTree = "<group>"; };
 		D6E39490C77444FDB245A026 /* SubscriptionReminderBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionReminderBanner.swift; sourceTree = "<group>"; };
 		E1A0B1C12F33445500C0DE01 /* OnboardingBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingBackgroundView.swift; sourceTree = "<group>"; };
 		E1A0B1C32F33445500C0DE01 /* BottleAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottleAnimationView.swift; sourceTree = "<group>"; };
@@ -989,7 +989,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				MARKETING_VERSION = 1.02;
+				MARKETING_VERSION = 1.04;
 				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMind;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -1033,7 +1033,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				MARKETING_VERSION = 1.02;
+				MARKETING_VERSION = 1.04;
 				PRODUCT_BUNDLE_IDENTIFIER = WillC.ReMind;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;

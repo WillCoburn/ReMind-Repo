@@ -1198,7 +1198,7 @@ private struct HelpGuideSheet: View {
                         HelpSectionCard(title: "Do I have to pay?", systemImage: "creditcard") {
                             VStack(alignment: .leading, spacing: 10) {
                                 HelpBodyText("All features are free to use, but we had to place some limits due to SMS backend cost.")
-                                HelpBodyText("If you’d like roomier limits — 15 auto/week and unlimited instant sends — consider upgrading to Pro for $0.99/month.")
+                                HelpBodyText("If you’d like roomier limits — 14 auto/week and unlimited instant sends — consider upgrading to Pro for $0.99/month.")
                                 HelpBodyText("If you genuinely can’t pay for premium but it would improve your well-being, hit the help email and I’ll hook you up.")
                             }
                         }
